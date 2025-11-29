@@ -1,46 +1,36 @@
-# Node
+# Global
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Environment variables
-*.env
-*.env.local
-*.env.*.local
-
-# Logs
-logs/
+package-lock.json
 *.log
-pnpm-debug.log*
-
-# OS / Editor garbage
+logs/
+*.swp
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
-*.swp
+
+# Env
+*.env
+*.env.local
+*.env.*.local
+
+# Build / artifacts
+*.tsbuildinfo
 
 # Backend
-backend/node_modules/
 backend/dist/
+backend/node_modules/
 backend/dev.db
 backend/dev.db-journal
 backend/tmp/
 backend/*.sqlite
 backend/*.sqlite-journal
-
-# Prisma
+backend/prisma/*.db
+backend/prisma/*.db-journal
 backend/prisma/migrations/
 
 # Frontend
-frontend/node_modules/
 frontend/dist/
+frontend/node_modules/
 frontend/.vite/
-
-# Coverage / Tests
-coverage/
-*.lcov
-
-# Build artifacts
-*.tsbuildinfo
+frontend/coverage/

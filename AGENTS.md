@@ -7,9 +7,9 @@ We are building a Discord-authenticated Advent calendar web app for the Ars Neca
 High-level goals:
 
 - Web app (SPA) where users log in with Discord.
-- Two languages: English and German, seamless switching.
+- Two languages: English and German, seamless switching (UI + riddles).
 - Two difficulties: `normal` and `vet`. Chosen at first login, can be downgraded later.
-- For now: simple per-day riddle (text-based) with server-side verification.
+- For now: simple per-day riddle (markdown → HTML) with server-side verification.
 - Later: more complex “board + inventory” puzzle interactions and Discord bot integration.
 
 ## Tech Stack
@@ -85,7 +85,28 @@ model UserProgress {
 
 We enforce the difficulty values (`NORMAL` | `VET`) in TypeScript, not as a DB enum.
 
-## Backend Requirements (MVP)
+## Backend (current)
+
+- Express app with CORS, sessions, passport-discord.
+- Prisma-backed Discord auth; user upsert on login.
+- Endpoints implemented:
+  - Auth: `/auth/discord`, `/auth/discord/callback`, `/auth/logout`, `/api/auth/me`.
+  - User prefs: `/api/user/locale`, `/api/user/mode` (vet → normal allowed, normal → vet blocked after first choice).
+  - Days: `/api/days`, `/api/days/:day`, `/api/days/:day/submit` with availability, solution validation, and UserProgress writes.
+- Content loader: reads `backend/content/dayXX/{normal|vet}.{en|de}.md` via gray-matter + marked.
+- Sample content present for day01 in all locale/mode combos.
+
+## Frontend (current)
+
+- React SPA (Vite) with routes:
+  - `/` landing (login link to backend).
+  - `/calendar` day grid (availability + solved state).
+  - `/day/:day` riddle view; on solve, input hides, solved pill remains.
+  - `/settings` difficulty selector (respects backend rules).
+- Language switcher toggles EN/DE (UI + riddles) via `/api/user/locale`.
+- Theming matched to `logo-arsvent-2025.png`; header sized to avoid layout shifts; mobile-friendly header/actions.
+
+## Backend Requirements (MVP, reference)
 
 The backend should provide:
 
@@ -307,93 +328,16 @@ The frontend SPA should:
     - Shows visual feedback for correct/incorrect answers (e.g. message, color change).
     - If solved, the UI should reflect that state.
 
-### Language switcher
-
-- A simple `LanguageSwitcher` component that:
-  - Toggles between `en` and `de`.
-  - Calls `POST /api/user/locale` with the new locale.
-  - Refetches data from the APIs so that the UI and riddle content show the correct language.
-
 ### State handling
 
-- The SPA should store the current user (from `/api/auth/me`) in state.
-- After login or logout, the frontend should refresh the state accordingly.
+- The SPA stores the current user from `/api/auth/me` and refreshes after login/logout/locale change.
 
-## Tasks for Coding Agents (initial)
+## Next tasks / guidelines for agents
 
-### Task 1 – Backend bootstrap
-
-Implement `backend/src/index.ts` with:
-
-- Express app.
-- CORS configured to allow the frontend origin (e.g. `http://localhost:5173`) with credentials.
-- `cookie-parser`.
-- `express-session` configured for development (non-secure cookie, `sameSite: "lax"`).
-- `passport` with `passport-discord` strategy using environment variables:
-  - `DISCORD_CLIENT_ID`
-  - `DISCORD_CLIENT_SECRET`
-  - `DISCORD_CALLBACK_URL`
-- Routes:
-  - `GET /auth/discord`
-  - `GET /auth/discord/callback`
-  - `POST /auth/logout`
-  - `GET /api/auth/me`
-- Session-based auth middleware.
-
-Ensure TypeScript build & dev scripts in `backend/package.json`:
-
-- `"dev": "nodemon --watch src --exec ts-node src/index.ts"`
-- `"build": "tsc"`
-- `"start": "node dist/index.js"`
-
-### Task 2 – Prisma integration
-
-- Integrate Prisma client (`@prisma/client`) into the backend.
-- Implement user creation/update in the Discord strategy verify callback:
-  - `upsert` on `User` using the Discord user id.
-- Implement `GET /api/auth/me` using Prisma to read the user from the DB.
-- Implement `POST /api/user/locale` and `POST /api/user/mode` with the business rules described above.
-
-### Task 3 – Content loading & per-day API
-
-- Add a content loader module in the backend, e.g. `src/content/loader.ts`, that:
-  - Given `(day: number, locale: "en" | "de", mode: "NORMAL" | "VET")`, constructs the file path.
-  - Loads and parses the markdown file using `gray-matter`.
-  - Returns an object with:
-    - `title: string`
-    - `body: string` (HTML or markdown)
-    - `solution: string`
-- Implement:
-  - `GET /api/days`
-    - Computes `isAvailable` based on the current date.
-    - Reads `UserProgress` to determine `isSolved`.
-  - `GET /api/days/:day`
-    - Uses the loader to fetch riddle metadata and content.
-    - Returns `isSolved` and `canPlay`.
-  - `POST /api/days/:day/submit`
-    - Validates the day is available.
-    - Loads riddle solution.
-    - Compares the submitted answer.
-    - Updates `UserProgress` if correct.
-
-### Task 4 – Frontend SPA
-
-- Bootstrap React SPA with Vite + TypeScript in `/frontend`.
-- Implement pages/components:
-  - `Home`:
-    - Calls `/api/auth/me` on mount.
-    - If not authenticated, shows login link to `/auth/discord`.
-    - If authenticated, shows link/button to `/calendar`.
-  - `Calendar`:
-    - Calls `/api/days`.
-    - Renders a grid/list of days with available/solved states.
-  - `DayView`:
-    - Calls `/api/days/:day`.
-    - Renders the riddle.
-    - Handles answer submission and feedback display.
-  - `LanguageSwitcher`:
-    - Calls `POST /api/user/locale` and then refetches.
-- All API calls should use `fetch` with `credentials: "include"` so that cookies are sent.
+- Add riddles for days 02–24 in both locales/modes.
+- Add 401 handling on frontend (prompt re-login on expired session).
+- Consider caching riddles on the backend.
+- Add tests (mode change rules, submit flows).
 
 ## Constraints
 
