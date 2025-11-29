@@ -1,0 +1,36 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             String        @id @map("discord_id")
+  username       String
+  globalName     String?
+  avatar         String?
+  locale         String        @default("en")
+  mode           String        @default("NORMAL") // "NORMAL" | "VET"
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  progresses     UserProgress[]
+}
+
+model UserProgress {
+  id          Int       @id @default(autoincrement())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  day         Int
+  solved      Boolean   @default(false)
+  solvedAt    DateTime?
+  hardMode    Boolean   @default(false)
+
+  @@unique([userId, day])
+}
