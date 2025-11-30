@@ -24,6 +24,29 @@ export default function CalendarPage({ user, version, onModeChange }: Props) {
       .finally(() => setLoading(false));
   }, [t, version]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = () => {
+      fetchDays()
+        .then((d) => {
+          if (!cancelled) setDays(d);
+        })
+        .catch(() => {
+          if (!cancelled) setError(t("dayLoadFailed"));
+        });
+    };
+    const interval = window.setInterval(refresh, 10000);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [t]);
+
   return (
     <div className="panel">
       <header className="panel-header">
