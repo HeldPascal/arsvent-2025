@@ -26,7 +26,6 @@ backend/*.sqlite
 backend/*.sqlite-journal
 backend/prisma/*.db
 backend/prisma/*.db-journal
-backend/prisma/migrations/
 
 # Frontend
 frontend/dist/
