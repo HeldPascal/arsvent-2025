@@ -77,3 +77,19 @@ export const adminSetAdmin = (userId: string, isAdmin: boolean) =>
     method: "POST",
     body: JSON.stringify({ isAdmin }),
   });
+
+export const adminUnlockNext = () => apiFetch<{ unlockedDay: number }>("/api/admin/unlock/increment", { method: "POST" });
+
+export const adminUnlockSet = (unlockedDay: number) =>
+  apiFetch<{ unlockedDay: number }>("/api/admin/unlock/set", {
+    method: "POST",
+    body: JSON.stringify({ unlockedDay }),
+  });
+
+export const fetchAudit = (limit?: number) =>
+  apiFetch<AdminOverview["recentAudit"] extends Array<infer T> ? T[] : never>(
+    `/api/admin/audit${limit ? `?limit=${limit}` : ""}`,
+  );
+
+export const deleteAuditEntry = (id: number) =>
+  apiFetch<{ success: boolean }>(`/api/admin/audit/${id}`, { method: "DELETE" });

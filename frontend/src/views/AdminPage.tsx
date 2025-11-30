@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
-import type { AdminOverview, AdminUserSummary, Mode, User } from "../types";
+import { useNavigate } from "react-router-dom";
+import type { AdminAuditEntry, AdminOverview, AdminUserSummary, Mode, User } from "../types";
 import {
   adminDeleteUser,
   adminRevokeSessions,
   adminSetAdmin,
+  adminUnlockNext,
+  adminUnlockSet,
   adminUpdateMode,
   adminUpdateProgress,
+  deleteAuditEntry,
   fetchAdminOverview,
   fetchAdminUsers,
+  fetchAudit,
 } from "../services/api";
 import StatBar from "./components/StatBar";
 import CollapsibleHistogram from "./components/CollapsibleHistogram";
@@ -19,10 +24,17 @@ interface Props {
 export default function AdminPage({ user }: Props) {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [users, setUsers] = useState<AdminUserSummary[]>([]);
+  const [userLookup, setUserLookup] = useState<Record<string, AdminUserSummary>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
   const [progressDay, setProgressDay] = useState<Record<string, number>>({});
+  const [unlockedInput, setUnlockedInput] = useState<number>(0);
+  const [unlocking, setUnlocking] = useState(false);
+  const [audit, setAudit] = useState<AdminAuditEntry[]>([]);
+  const auditLimit = 3;
+  const [auditLoading, setAuditLoading] = useState(false);
+  const navigate = useNavigate();
 
   const loadData = useCallback(
     async (showLoader = false) => {
@@ -34,6 +46,11 @@ export default function AdminPage({ user }: Props) {
         const [ov, us] = await Promise.all([fetchAdminOverview(), fetchAdminUsers()]);
         setOverview(ov);
         setUsers(us);
+        const map = us.reduce<Record<string, AdminUserSummary>>((acc, u) => {
+          acc[u.id] = u;
+          return acc;
+        }, {});
+        setUserLookup(map);
       } catch (err) {
         setError((err as Error).message);
       } finally {
@@ -45,14 +62,39 @@ export default function AdminPage({ user }: Props) {
     [],
   );
 
+  const loadAudit = useCallback(
+    async (limit: number) => {
+      setAuditLoading(true);
+      try {
+        const entries = await fetchAudit(limit);
+        setAudit(entries ?? []);
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        setAuditLoading(false);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     loadData(true);
-  }, [loadData]);
+    loadAudit(auditLimit);
+  }, [loadData, loadAudit]);
+
+  useEffect(() => {
+    if (overview) {
+      setUnlockedInput(overview.diagnostics.availableDay);
+    }
+  }, [overview]);
 
   useEffect(() => {
     let cancelled = false;
     const refresh = () => {
-      if (!cancelled) loadData(false);
+      if (!cancelled) {
+        loadData(false);
+        loadAudit(auditLimit);
+      }
     };
     const interval = window.setInterval(refresh, 10000);
     const onVisibility = () => {
@@ -139,6 +181,51 @@ export default function AdminPage({ user }: Props) {
     setProgressDay((prev) => ({ ...prev, [userId]: safeValue }));
   };
 
+  const handleUnlockNext = async () => {
+    setUnlocking(true);
+    try {
+      await adminUnlockNext();
+      await loadData();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setUnlocking(false);
+    }
+  };
+
+  const handleUnlockSet = async () => {
+    setUnlocking(true);
+    try {
+      await adminUnlockSet(unlockedInput);
+      await loadData();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setUnlocking(false);
+    }
+  };
+
+  const handleDeleteAudit = async (id: number) => {
+    try {
+      await deleteAuditEntry(id);
+      await loadAudit(auditLimit);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  const userLabel = (id?: string | null) => {
+    if (!id) return null;
+    const user = userLookup[id];
+    if (user) return `${user.username} (${id})`;
+    return id;
+  };
+
+  const actorLabel = (actorId?: string | null) => {
+    if (!actorId) return "unknown";
+    return userLabel(actorId) ?? actorId;
+  };
+
   return (
     <div className="stack">
       <div className="panel">
@@ -158,6 +245,27 @@ export default function AdminPage({ user }: Props) {
         <>
           <div className="panel" style={{ marginBottom: 12 }}>
             <h3>Progress</h3>
+            <div className="progress-controls">
+              <div className="muted">Current unlocked day: {overview.diagnostics.availableDay}</div>
+              <div className="progress-actions">
+                <button className="primary" type="button" onClick={handleUnlockNext} disabled={unlocking}>
+                  Unlock next
+                </button>
+                <label className="progress-set">
+                  Set day
+                  <input
+                    type="number"
+                    min={0}
+                    max={24}
+                    value={unlockedInput}
+                    onChange={(e) => setUnlockedInput(Number(e.target.value))}
+                  />
+                </label>
+                <button className="ghost" type="button" onClick={handleUnlockSet} disabled={unlocking}>
+                  Apply
+                </button>
+              </div>
+            </div>
             <StatBar
               label="Available days"
               total={overview.diagnostics.maxDay}
@@ -214,6 +322,57 @@ export default function AdminPage({ user }: Props) {
                 ]}
               />
             </div>
+          </div>
+
+          <div className="panel">
+            <h3>Audit log</h3>
+            <div className="panel-actions" style={{ justifyContent: "space-between" }}>
+              <span className="muted">Most recent {auditLimit} events</span>
+              <button className="ghost" type="button" onClick={() => navigate("/admin/audit")}>
+                Show more
+              </button>
+            </div>
+            {auditLoading && <div className="muted">Loading audit…</div>}
+            <ul className="plain-list">
+              {audit.map((entry) => (
+                <li key={entry.id} className="list-row">
+                  <div className="list-title">
+                    {entry.action}{" "}
+                    <span className="muted">
+                      · {actorLabel(entry.actorId)} · {new Date(entry.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  {entry.details && (
+                    <div className="muted small">
+                      {(() => {
+                        try {
+                          const parsed = JSON.parse(entry.details);
+                          const targetHint = parsed.targetId ? userLabel(parsed.targetId) : null;
+                          return (
+                            <>
+                              <span title={entry.details}>{entry.details}</span>
+                              {targetHint ? (
+                                <span className="muted small" style={{ display: "block" }}>
+                                  Target: {targetHint}
+                                </span>
+                              ) : null}
+                            </>
+                          );
+                        } catch {
+                          return <span title={entry.details}>{entry.details}</span>;
+                        }
+                      })()}
+                    </div>
+                  )}
+                  <div className="panel-actions">
+                    <button className="ghost" type="button" onClick={() => handleDeleteAudit(entry.id)}>
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              ))}
+              {!auditLoading && audit.length === 0 && <li className="muted">No audit entries yet.</li>}
+            </ul>
           </div>
 
           <div className="metrics-grid">

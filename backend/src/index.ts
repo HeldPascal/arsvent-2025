@@ -177,12 +177,40 @@ const requireSuperAdmin: RequestHandler = (req, res, next) => {
 
 const MAX_DAY = 24;
 
-const availableThroughToday = () => {
-  const today = new Date();
-  return Math.min(today.getDate(), MAX_DAY);
+const ensureAppState = async () =>
+  prisma.appState.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1, unlockedDay: 0 },
+  });
+
+const getUnlockedDay = async () => {
+  const state = await ensureAppState();
+  return Math.min(Math.max(state.unlockedDay ?? 0, 0), MAX_DAY);
 };
 
-const isDayAvailable = (day: number) => day >= 1 && day <= availableThroughToday();
+const setUnlockedDay = async (day: number, updatedBy?: string | null) => {
+  const value = Math.min(Math.max(day, 0), MAX_DAY);
+  const state = await prisma.appState.update({
+    where: { id: 1 },
+    data: { unlockedDay: value, updatedBy: updatedBy ?? null },
+  });
+  return state.unlockedDay;
+};
+
+const logAdminAction = async (action: string, actorId?: string | null, details?: Record<string, unknown>) => {
+  try {
+    await prisma.auditLog.create({
+      data: {
+        action,
+        actorId: actorId ?? null,
+        details: details ? JSON.stringify(details) : null,
+      },
+    });
+  } catch (err) {
+    console.error("Failed to log admin action", err);
+  }
+};
 
 const getUserLocale = (user?: PrismaUser): Locale => (user?.locale === "de" ? "de" : "en");
 const getUserMode = (user?: PrismaUser): Mode => (user?.mode === "VET" ? "VET" : "NORMAL");
@@ -276,9 +304,9 @@ app.post("/api/user/mode", requireAuth, async (req: Request, res: Response, next
 
 app.get("/api/days", requireAuth, async (req, res, next) => {
   try {
+    const unlockedDay = await getUnlockedDay();
     const lastSolved = req.user!.lastSolvedDay ?? 0;
-    const todayLimit = availableThroughToday();
-    const playLimit = Math.min(todayLimit, lastSolved + 1);
+    const playLimit = Math.min(unlockedDay, lastSolved + 1);
 
     const days = Array.from({ length: MAX_DAY }, (_, index) => {
       const day = index + 1;
@@ -301,10 +329,11 @@ app.get("/api/days/:day", requireAuth, async (req, res, next) => {
     return res.status(400).json({ error: "Day must be between 1 and 24" });
   }
 
-  const available = isDayAvailable(day);
   try {
+    const unlockedDay = await getUnlockedDay();
     const lastSolved = req.user!.lastSolvedDay ?? 0;
     const orderAllowed = day <= lastSolved + 1;
+    const available = day <= unlockedDay;
 
     const locale = normalizeLocale(getUserLocale(req.user as PrismaUser));
     const mode = getUserMode(req.user as PrismaUser);
@@ -349,16 +378,17 @@ app.post("/api/days/:day/submit", requireAuth, async (req, res, next) => {
     return res.status(400).json({ error: "Day must be between 1 and 24" });
   }
 
-  if (!isDayAvailable(day)) {
-    return res.status(400).json({ error: "This day is not available yet." });
-  }
-
   const { answer } = req.body as { answer?: string };
   if (typeof answer !== "string") {
     return res.status(400).json({ error: "Answer must be a string" });
   }
 
   try {
+    const unlockedDay = await getUnlockedDay();
+    if (day > unlockedDay) {
+      return res.status(400).json({ error: "This day is not available yet." });
+    }
+
     const lastSolved = req.user!.lastSolvedDay ?? 0;
     if (day <= lastSolved) {
       return res.json({
@@ -403,7 +433,19 @@ app.post("/api/days/:day/submit", requireAuth, async (req, res, next) => {
 
 app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next) => {
   try {
-    const [totalUsers, adminUsers, vetUsers, normalUsers, progressedUsers, downgradedUsers, recentUsers, recentSolves, solveHistogram, downgradeHistogram] =
+    const [
+      totalUsers,
+      adminUsers,
+      vetUsers,
+      normalUsers,
+      progressedUsers,
+      downgradedUsers,
+      recentUsers,
+      recentSolves,
+      solveHistogram,
+      downgradeHistogram,
+      unlockedDay,
+    ] =
       await Promise.all([
         prisma.user.count(),
         prisma.user.count({ where: { isAdmin: true } }),
@@ -411,55 +453,56 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
         prisma.user.count({ where: { mode: "NORMAL" } }),
         prisma.user.count({ where: { lastSolvedDay: { gt: 0 } } }),
         prisma.user.count({ where: { lastDowngradedAt: { not: null } } }),
-      prisma.user.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 8,
-        select: {
-          id: true,
-          username: true,
-          locale: true,
-          mode: true,
-          isAdmin: true,
-          isSuperAdmin: true,
-          createdAt: true,
-          updatedAt: true,
-          lastLoginAt: true,
-          lastSolvedDay: true,
-        },
-      }),
-      prisma.user.findMany({
-        where: { lastSolvedAt: { not: null } },
-        orderBy: { lastSolvedAt: "desc" },
-        take: 8,
-        select: { id: true, username: true, lastSolvedDay: true, lastSolvedAt: true, mode: true },
-      }),
-      (async () => {
-        const users = await prisma.user.findMany({ select: { lastSolvedDay: true } });
-        const hist = Array.from({ length: MAX_DAY + 1 }, () => 0);
-        users.forEach((u) => {
-          const idx = Math.min(Math.max(u.lastSolvedDay ?? 0, 0), MAX_DAY);
-          hist[idx] = (hist[idx] ?? 0) + 1;
-        });
-        return hist;
-      })(),
-      (async () => {
-        const users = await prisma.user.findMany({ select: { lastSolvedDay: true, lastDowngradedAt: true, lastDowngradedFromDay: true } });
-        const hist = Array.from({ length: MAX_DAY + 1 }, () => 0);
-        users.forEach((u) => {
-          if (u.lastDowngradedAt) {
-            const idx = Math.min(Math.max(u.lastDowngradedFromDay ?? u.lastSolvedDay ?? 0, 0), MAX_DAY);
+        prisma.user.findMany({
+          orderBy: { createdAt: "desc" },
+          take: 8,
+          select: {
+            id: true,
+            username: true,
+            locale: true,
+            mode: true,
+            isAdmin: true,
+            isSuperAdmin: true,
+            createdAt: true,
+            updatedAt: true,
+            lastLoginAt: true,
+            lastSolvedDay: true,
+          },
+        }),
+        prisma.user.findMany({
+          where: { lastSolvedAt: { not: null } },
+          orderBy: { lastSolvedAt: "desc" },
+          take: 8,
+          select: { id: true, username: true, lastSolvedDay: true, lastSolvedAt: true, mode: true },
+        }),
+        (async () => {
+          const users = await prisma.user.findMany({ select: { lastSolvedDay: true } });
+          const hist = Array.from({ length: MAX_DAY + 1 }, () => 0);
+          users.forEach((u) => {
+            const idx = Math.min(Math.max(u.lastSolvedDay ?? 0, 0), MAX_DAY);
             hist[idx] = (hist[idx] ?? 0) + 1;
-          }
-        });
-        return hist;
-      })(),
-    ]);
+          });
+          return hist;
+        })(),
+        (async () => {
+          const users = await prisma.user.findMany({ select: { lastSolvedDay: true, lastDowngradedAt: true, lastDowngradedFromDay: true } });
+          const hist = Array.from({ length: MAX_DAY + 1 }, () => 0);
+          users.forEach((u) => {
+            if (u.lastDowngradedAt) {
+              const idx = Math.min(Math.max(u.lastDowngradedFromDay ?? u.lastSolvedDay ?? 0, 0), MAX_DAY);
+              hist[idx] = (hist[idx] ?? 0) + 1;
+            }
+          });
+          return hist;
+        })(),
+        getUnlockedDay(),
+      ]);
 
     res.json({
       diagnostics: {
         uptimeSeconds: Math.round(process.uptime()),
         serverTime: new Date().toISOString(),
-        availableDay: availableThroughToday(),
+        availableDay: unlockedDay,
         maxDay: MAX_DAY,
         nodeVersion: process.version,
         superAdminId: superAdminId || null,
@@ -541,6 +584,7 @@ app.post("/api/admin/users/:id/mode", requireAuth, requireAdmin, async (req, res
         lastDowngradedFromDay: mode === "VET" ? 0 : target.lastSolvedDay ?? 0,
       },
     });
+    await logAdminAction("admin:set-mode", req.user?.id, { targetId: target.id, mode });
     res.json({ id: updated.id, mode: updated.mode });
   } catch (error) {
     next(error);
@@ -573,6 +617,8 @@ app.post("/api/admin/users/:id/progress", requireAuth, requireAdmin, async (req,
       data: { lastSolvedDay, lastSolvedAt: solvedAt, stateVersion: { increment: 1 } },
     });
 
+    await logAdminAction("admin:set-progress", req.user?.id, { targetId: target.id, lastSolvedDay, lastSolvedAt: solvedAt });
+
     res.json({ id: updated.id, lastSolvedDay: updated.lastSolvedDay, lastSolvedAt: updated.lastSolvedAt });
   } catch (error) {
     next(error);
@@ -599,7 +645,36 @@ app.post("/api/admin/users/:id/revoke-sessions", requireAuth, requireAdmin, asyn
       data: { sessionVersion: { increment: 1 } },
     });
 
+    await logAdminAction("admin:revoke-sessions", req.user?.id, { targetId: target.id });
+
     res.json({ id: updated.id, sessionVersion: updated.sessionVersion });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/admin/unlock/increment", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const current = await getUnlockedDay();
+    const next = Math.min(current + 1, MAX_DAY);
+    const newVal = await setUnlockedDay(next, req.user?.id);
+    await logAdminAction("admin:unlock-next", req.user?.id, { from: current, to: newVal });
+    res.json({ unlockedDay: newVal });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/admin/unlock/set", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const { unlockedDay } = req.body as { unlockedDay?: number };
+    if (!Number.isInteger(unlockedDay) || unlockedDay === undefined || unlockedDay < 0 || unlockedDay > MAX_DAY) {
+      return res.status(400).json({ error: "unlockedDay must be between 0 and 24" });
+    }
+    const current = await getUnlockedDay();
+    const newVal = await setUnlockedDay(unlockedDay, req.user?.id);
+    await logAdminAction("admin:unlock-set", req.user?.id, { from: current, to: newVal });
+    res.json({ unlockedDay: newVal });
   } catch (error) {
     next(error);
   }
@@ -628,6 +703,7 @@ app.post("/api/admin/users/:id/admin", requireAuth, requireSuperAdmin, async (re
       where: { id: target.id },
       data: { isAdmin, stateVersion: { increment: 1 } },
     });
+    await logAdminAction("admin:set-admin", req.user?.id, { targetId: target.id, isAdmin });
     res.json({ id: updated.id, isAdmin: updated.isAdmin });
   } catch (error) {
     next(error);
@@ -653,6 +729,34 @@ app.delete("/api/admin/users/:id", requireAuth, requireAdmin, async (req, res, n
     }
 
     await prisma.user.delete({ where: { id: target.id } });
+    await logAdminAction("admin:delete-user", req.user?.id, { targetId: target.id });
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/admin/audit", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const limitParam = req.query.limit ? Number(req.query.limit) : null;
+    const limit = limitParam && Number.isInteger(limitParam) ? Math.max(Math.min(limitParam, 200), 1) : 20;
+    const entries = await prisma.auditLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    });
+    res.json(entries);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete("/api/admin/audit/:id", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ error: "Invalid id" });
+    }
+    await prisma.auditLog.delete({ where: { id } });
     res.json({ success: true });
   } catch (error) {
     next(error);

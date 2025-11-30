@@ -117,6 +117,16 @@ a {
   gap: 10px;
 }
 
+.panel-actions + .plain-list {
+  margin-top: 10px;
+}
+
+.audit-scroll {
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
 .eyebrow {
   font-size: 12px;
   letter-spacing: 0.08em;
@@ -653,6 +663,35 @@ a {
 
 .hist-body {
   padding: 0 14px 14px;
+}
+
+.progress-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.progress-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.progress-set {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.progress-set input {
+  width: 70px;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #2a2e33;
+  color: var(--text);
 }
 
 .statbar-header {

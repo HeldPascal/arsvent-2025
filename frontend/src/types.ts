@@ -72,6 +72,7 @@ export interface AdminOverview {
     lastSolvedAt: string | null;
     mode: Mode;
   }>;
+  recentAudit?: AdminAuditEntry[];
 }
 
 export interface AdminUserSummary {
@@ -90,4 +91,12 @@ export interface AdminUserSummary {
   sessionVersion: number;
   stateVersion: number;
   lastSolvedDay: number;
+}
+
+export interface AdminAuditEntry {
+  id: number;
+  action: string;
+  actorId?: string | null;
+  details?: string | null;
+  createdAt: string;
 }
