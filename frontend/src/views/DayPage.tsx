@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { fetchDay, submitAnswer } from "../services/api";
-import type { DayDetail, User } from "../types";
+import type { DayDetail, RiddleAnswerPayload, User } from "../types";
 import { useI18n } from "../i18n";
 import ConfirmDialog from "./components/ConfirmDialog";
+import RiddleAnswerForm from "./components/RiddleAnswerForm";
 
 interface Props {
   user: User;
@@ -18,11 +19,11 @@ export default function DayPage({ user, version }: Props) {
   const [detail, setDetail] = useState<DayDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState<{ message: string; correct: boolean } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [warned, setWarned] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState<RiddleAnswerPayload | null>(null);
 
   useEffect(() => {
     if (!Number.isInteger(dayNumber) || dayNumber < 1 || dayNumber > 24) {
@@ -30,38 +31,44 @@ export default function DayPage({ user, version }: Props) {
       return;
     }
 
+    setLoading(true);
+    setError(null);
+    setFeedback(null);
+    setPendingPayload(null);
+    setWarned(false);
+    setShowConfirm(false);
+
     fetchDay(dayNumber)
       .then((data) => setDetail(data))
       .catch(() => setError(t("dayLoadFailed")))
       .finally(() => setLoading(false));
   }, [dayNumber, navigate, t, version]);
 
-  const performSubmit = async () => {
+  const performSubmit = async (payload: RiddleAnswerPayload) => {
     if (!detail) return;
     setSubmitting(true);
     setFeedback(null);
+    setPendingPayload(null);
     try {
-      const resp = await submitAnswer(detail.day, answer);
-      setDetail({ ...detail, isSolved: resp.isSolved });
+      const resp = await submitAnswer(detail.day, payload);
+      setDetail((current) => (current ? { ...current, isSolved: resp.isSolved } : current));
       setFeedback({ message: resp.message, correct: resp.correct });
-      if (resp.correct) {
-        setAnswer("");
-      }
     } catch (err) {
-      setFeedback({ message: t("submissionFailed"), correct: false });
+      const message = err instanceof Error ? err.message : t("submissionFailed");
+      setFeedback({ message, correct: false });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const onSubmit = async (evt: React.FormEvent) => {
-    evt.preventDefault();
+  const onSubmit = (payload: RiddleAnswerPayload) => {
     if (!detail) return;
     if (user.mode === "NORMAL" && detail.day === 1 && !warned) {
+      setPendingPayload(payload);
       setShowConfirm(true);
       return;
     }
-    await performSubmit();
+    void performSubmit(payload);
   };
 
   if (loading) return <div className="panel">{t("loading")}</div>;
@@ -94,19 +101,7 @@ export default function DayPage({ user, version }: Props) {
             </>
           ) : (
             <>
-              <form className="answer-form" onSubmit={onSubmit}>
-                <input
-                  type="text"
-                  placeholder={t("yourAnswer")}
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  required
-                  disabled={submitting}
-                />
-                <button className="primary" type="submit" disabled={submitting}>
-                  {submitting ? t("checking") : t("submit")}
-                </button>
-              </form>
+              <RiddleAnswerForm detail={detail} submitting={submitting} onSubmit={onSubmit} />
               {feedback && (
                 <div className={`feedback ${feedback.correct ? "success" : "error"}`}>{feedback.message}</div>
               )}
@@ -125,7 +120,9 @@ export default function DayPage({ user, version }: Props) {
           onConfirm={() => {
             setWarned(true);
             setShowConfirm(false);
-            void performSubmit();
+            if (pendingPayload) {
+              void performSubmit(pendingPayload);
+            }
           }}
           onCancel={() => setShowConfirm(false)}
         />

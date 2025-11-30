@@ -46,7 +46,16 @@ type TranslationKey =
   | "locked"
   | "settingsTitle"
   | "settingsSubtitle"
-  | "calendarLink";
+  | "calendarLink"
+  | "chooseOne"
+  | "chooseMany"
+  | "sortInstruction"
+  | "moveUp"
+  | "moveDown"
+  | "groupInstruction"
+  | "selectGroup"
+  | "assignAllOptions"
+  | "enterAnswer";
 
 const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -95,6 +104,15 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     settingsTitle: "Settings",
     settingsSubtitle: "Adjust your difficulty. You can downgrade from Veteran to Normal anytime.",
     calendarLink: "Calendar",
+    chooseOne: "Select exactly one answer.",
+    chooseMany: "Select one or more answers.",
+    sortInstruction: "Arrange the options in the correct order.",
+    moveUp: "Move up",
+    moveDown: "Move down",
+    groupInstruction: "Assign each option to a group.",
+    selectGroup: "Select a group",
+    assignAllOptions: "Please assign all options to a group.",
+    enterAnswer: "Please enter an answer.",
   },
   de: {
     brand: "Arsvent",
@@ -142,6 +160,15 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     settingsTitle: "Einstellungen",
     settingsSubtitle: "Passe deine Schwierigkeit an. Von Veteran auf Normal kannst du jederzeit herabstufen.",
     calendarLink: "Kalender",
+    chooseOne: "Wähle genau eine Antwort.",
+    chooseMany: "Wähle eine oder mehrere Antworten.",
+    sortInstruction: "Bringe die Optionen in die richtige Reihenfolge.",
+    moveUp: "Nach oben",
+    moveDown: "Nach unten",
+    groupInstruction: "Ordne jede Option einer Gruppe zu.",
+    selectGroup: "Gruppe auswählen",
+    assignAllOptions: "Bitte ordne alle Optionen einer Gruppe zu.",
+    enterAnswer: "Bitte gib eine Antwort ein.",
   },
 };
 

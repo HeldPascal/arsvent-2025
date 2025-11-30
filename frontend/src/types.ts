@@ -1,5 +1,23 @@
 export type Locale = "en" | "de";
 export type Mode = "NORMAL" | "VET";
+export type RiddleType = "text" | "single-choice" | "multi-choice" | "sort" | "group";
+
+export interface RiddleOption {
+  id: string;
+  label: string;
+}
+
+export interface RiddleGroup {
+  id: string;
+  label: string;
+}
+
+export type RiddleAnswerPayload =
+  | { type: "text"; answer: string }
+  | { type: "single-choice"; answer: string }
+  | { type: "multi-choice"; answer: string[] }
+  | { type: "sort"; answer: string[] }
+  | { type: "group"; answer: Record<string, string[]> };
 
 export interface User {
   id: string;
@@ -29,6 +47,10 @@ export interface DayDetail {
   day: number;
   title: string;
   body: string;
+  type: RiddleType;
+  options?: RiddleOption[];
+  groups?: RiddleGroup[];
+  minSelections?: number;
   isSolved: boolean;
   canPlay: boolean;
   message?: string;

@@ -1,4 +1,13 @@
-import type { AdminOverview, AdminUserSummary, DayDetail, DaySummary, Locale, Mode, User } from "../types";
+import type {
+  AdminOverview,
+  AdminUserSummary,
+  DayDetail,
+  DaySummary,
+  Locale,
+  Mode,
+  RiddleAnswerPayload,
+  User,
+} from "../types";
 
 const BASE = import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ?? "";
 
@@ -32,10 +41,10 @@ export const fetchDays = () => apiFetch<DaySummary[]>("/api/days");
 
 export const fetchDay = (day: number) => apiFetch<DayDetail>(`/api/days/${day}`);
 
-export const submitAnswer = (day: number, answer: string) =>
+export const submitAnswer = (day: number, payload: RiddleAnswerPayload) =>
   apiFetch<{ day: number; isSolved: boolean; correct: boolean; message: string }>(`/api/days/${day}/submit`, {
     method: "POST",
-    body: JSON.stringify({ answer }),
+    body: JSON.stringify(payload),
   });
 
 export const updateLocale = (locale: Locale) =>

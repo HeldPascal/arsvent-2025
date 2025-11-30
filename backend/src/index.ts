@@ -12,7 +12,7 @@ import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
 import type { User as PrismaUser } from "@prisma/client";
 import { loadRiddle, RiddleNotFoundError } from "./content/loader.js";
-import type { Locale, Mode } from "./content/loader.js";
+import type { Locale, Mode, RiddleContent } from "./content/loader.js";
 
 dotenv.config();
 
@@ -215,6 +215,113 @@ const logAdminAction = async (action: string, actorId?: string | null, details?:
 const getUserLocale = (user?: PrismaUser): Locale => (user?.locale === "de" ? "de" : "en");
 const getUserMode = (user?: PrismaUser): Mode => (user?.mode === "VET" ? "VET" : "NORMAL");
 
+const normalizeAnswerId = (value: unknown, message: string) => {
+  if (typeof value !== "string") {
+    throw new Error(message);
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    throw new Error(message);
+  }
+  return trimmed;
+};
+
+const ensureStringArrayAnswer = (value: unknown, message: string) => {
+  if (!Array.isArray(value)) {
+    throw new Error(message);
+  }
+  return value.map((entry) => normalizeAnswerId(entry, "Each answer entry must be a string"));
+};
+
+const evaluateAnswer = (content: RiddleContent, answer: unknown) => {
+  switch (content.type) {
+    case "text": {
+      const normalizedAnswer = normalizeAnswerId(answer, "Answer must be a string").toLowerCase();
+      const normalizedSolution = content.solution.trim().toLowerCase();
+      return normalizedAnswer === normalizedSolution;
+    }
+    case "single-choice": {
+      const choice = normalizeAnswerId(answer, "Answer must be a single choice id");
+      const validOptions = new Set(content.options.map((opt) => opt.id));
+      if (!validOptions.has(choice)) {
+        throw new Error("Unknown choice");
+      }
+      return choice === content.solution;
+    }
+    case "multi-choice": {
+      const choices = ensureStringArrayAnswer(answer, "Answer must be an array of choices");
+      if (choices.length === 0) {
+        throw new Error("Select at least one option");
+      }
+      const validOptions = new Set(content.options.map((opt) => opt.id));
+      const uniqueChoices = new Set<string>();
+      choices.forEach((choice) => {
+        if (!validOptions.has(choice)) {
+          throw new Error("Unknown choice");
+        }
+        if (uniqueChoices.has(choice)) {
+          throw new Error("Duplicate choices are not allowed");
+        }
+        uniqueChoices.add(choice);
+      });
+      const expected = new Set(content.solution);
+      return uniqueChoices.size === expected.size && choices.every((choice) => expected.has(choice));
+    }
+    case "sort": {
+      const order = ensureStringArrayAnswer(answer, "Answer must list the options in order");
+      const validOptions = new Set(content.options.map((opt) => opt.id));
+      if (order.length !== content.options.length) {
+        throw new Error("Answer must include all options in an order");
+      }
+      const seen = new Set<string>();
+      order.forEach((entry) => {
+        if (!validOptions.has(entry)) {
+          throw new Error("Unknown choice");
+        }
+        if (seen.has(entry)) {
+          throw new Error("Each option can only appear once");
+        }
+        seen.add(entry);
+      });
+      return order.every((entry, index) => entry === content.solution[index]);
+    }
+    case "group": {
+      if (!answer || typeof answer !== "object" || Array.isArray(answer)) {
+        throw new Error("Answer must map groups to option ids");
+      }
+      const payload = answer as Record<string, unknown>;
+      const validGroups = new Set(content.groups.map((g) => g.id));
+      const validOptions = new Set(content.options.map((opt) => opt.id));
+      const assignments = new Map<string, string>();
+      Object.entries(payload).forEach(([groupId, value]) => {
+        if (!validGroups.has(groupId)) {
+          throw new Error("Unknown group");
+        }
+        const ids = ensureStringArrayAnswer(value, "Group answers must be arrays of option ids");
+        ids.forEach((id) => {
+          if (!validOptions.has(id)) {
+            throw new Error("Unknown choice");
+          }
+          if (assignments.has(id)) {
+            throw new Error("Each option can only be assigned once");
+          }
+          assignments.set(id, groupId);
+        });
+      });
+      if (assignments.size !== validOptions.size) {
+        throw new Error("All options must be assigned to a group");
+      }
+      const expectedGroup = new Map<string, string>();
+      Object.entries(content.solution).forEach(([groupId, ids]) => {
+        ids.forEach((id) => expectedGroup.set(id, groupId));
+      });
+      return content.options.every((opt) => assignments.get(opt.id) === expectedGroup.get(opt.id));
+    }
+    default:
+      return false;
+  }
+};
+
 app.get("/auth/discord", passport.authenticate("discord"));
 
 app.get(
@@ -357,13 +464,26 @@ app.get("/api/days/:day", requireAuth, async (req, res, next) => {
 
     const content = await loadRiddle(day, locale, mode);
 
-    return res.json({
+    const response: Record<string, unknown> = {
       day,
       title: content.title,
       body: content.body,
+      type: content.type,
       isSolved: day <= lastSolved,
       canPlay: true,
-    });
+    };
+
+    if ("options" in content) {
+      response.options = content.options;
+    }
+    if ("groups" in content) {
+      response.groups = content.groups;
+    }
+    if ("minSelections" in content) {
+      response.minSelections = content.minSelections;
+    }
+
+    return res.json(response);
   } catch (error) {
     if (error instanceof RiddleNotFoundError) {
       return res.status(404).json({ error: "Riddle not found" });
@@ -378,10 +498,7 @@ app.post("/api/days/:day/submit", requireAuth, async (req, res, next) => {
     return res.status(400).json({ error: "Day must be between 1 and 24" });
   }
 
-  const { answer } = req.body as { answer?: string };
-  if (typeof answer !== "string") {
-    return res.status(400).json({ error: "Answer must be a string" });
-  }
+  const { answer, type: submittedType } = req.body as { answer?: unknown; type?: string };
 
   try {
     const unlockedDay = await getUnlockedDay();
@@ -406,9 +523,16 @@ app.post("/api/days/:day/submit", requireAuth, async (req, res, next) => {
     const mode = getUserMode(req.user as PrismaUser);
     const content = await loadRiddle(day, locale, mode);
 
-    const normalizedAnswer = answer.trim().toLowerCase();
-    const normalizedSolution = content.solution.trim().toLowerCase();
-    const correct = normalizedAnswer === normalizedSolution;
+    if (submittedType && submittedType !== content.type) {
+      return res.status(400).json({ error: "Answer type does not match riddle" });
+    }
+
+    let correct = false;
+    try {
+      correct = evaluateAnswer(content, answer);
+    } catch (err) {
+      return res.status(400).json({ error: (err as Error).message });
+    }
 
     if (correct) {
       await prisma.user.update({
