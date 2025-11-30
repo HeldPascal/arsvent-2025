@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import HomePage from "./views/HomePage";
 import CalendarPage from "./views/CalendarPage";
@@ -14,32 +14,63 @@ import { I18nProvider } from "./i18n";
 export default function AppRouter() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [locale, setLocale] = useState<Locale>("en");
+  const initialLocale = (() => {
+    const params = new URLSearchParams(window.location.search);
+    const queryLang = params.get("lang");
+    if (queryLang === "en" || queryLang === "de") return queryLang;
+    try {
+      const stored = localStorage.getItem("arsvent_locale");
+      if (stored === "en" || stored === "de") return stored;
+    } catch {
+      // ignore storage errors
+    }
+    return "en";
+  })();
+  const [locale, setLocale] = useState<Locale>(initialLocale);
   const [stateVersion, setStateVersion] = useState(0);
   const navigate = useNavigate();
+  const hadUserRef = useRef(false);
+  const backendBase = import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ?? "";
+  const logoutUrl = `${backendBase}/auth/logout`;
+
+  const pushToast = (detail: { type: "success" | "error" | "info"; message?: string; key?: string }) => {
+    window.dispatchEvent(new CustomEvent("app:toast", { detail }));
+  };
 
   useEffect(() => {
     fetchMe()
       .then((u) => {
         setUser(u);
-        setLocale(u.locale);
+        const nextLocale = (["en", "de"] as const).includes(locale) ? locale : u.locale;
+        setLocale(nextLocale);
+        try {
+          localStorage.setItem("arsvent_locale", nextLocale);
+        } catch {
+          // ignore
+        }
         setStateVersion(u.stateVersion ?? 0);
+        hadUserRef.current = true;
       })
       .catch(() => {
         setUser(null);
-        setLocale("en");
+        setLocale(initialLocale);
         setStateVersion(0);
+        hadUserRef.current = false;
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [initialLocale, locale]);
 
   const handleUserPatch = (patch: Partial<User>) => {
     setUser((prev) => (prev ? { ...prev, ...patch } : prev));
   };
 
   const handleLogout = () => {
-    setUser(null);
-    navigate("/");
+    fetch(logoutUrl, { method: "POST", credentials: "include" }).finally(() => {
+      setUser(null);
+      hadUserRef.current = false;
+      navigate("/");
+      pushToast({ type: "success", key: "logoutSuccess" });
+    });
   };
 
   useEffect(() => {
@@ -53,9 +84,14 @@ export default function AppRouter() {
           setUser(u);
           setLocale(u.locale);
           setStateVersion(u.stateVersion ?? 0);
+          hadUserRef.current = true;
         })
         .catch(() => {
           if (cancelled) return;
+          if (hadUserRef.current) {
+            pushToast({ type: "info", key: "sessionEnded" });
+          }
+          hadUserRef.current = false;
           setUser(null);
           setLocale("en");
           setStateVersion(0);
@@ -81,6 +117,11 @@ export default function AppRouter() {
   const handleLocaleChange = (loc: Locale) => {
     setLocale(loc);
     setUser((prev) => (prev ? { ...prev, locale: loc } : prev));
+    try {
+      localStorage.setItem("arsvent_locale", loc);
+    } catch {
+      // ignore
+    }
   };
 
   return (

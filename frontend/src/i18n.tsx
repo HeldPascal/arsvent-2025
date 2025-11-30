@@ -55,7 +55,11 @@ type TranslationKey =
   | "groupInstruction"
   | "selectGroup"
   | "assignAllOptions"
-  | "enterAnswer";
+  | "enterAnswer"
+  | "loginSuccess"
+  | "loginFailed"
+  | "logoutSuccess"
+  | "sessionEnded";
 
 const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -64,8 +68,8 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     languageLabel: "Language",
     loading: "Loading…",
     homeTitle: "Arsvent 2025",
-    homeSubtitle: "Discord-authenticated Advent calendar for Ars Necandi.",
-    login: "Login with Discord",
+    homeSubtitle: "Advent calendar of puzzles and progress for the ESO guild Ars Necandi.",
+    login: "Login",
     continueCalendar: "Continue to your calendar",
     loadingSession: "Loading your session…",
     calendarTitle: "Your calendar",
@@ -113,6 +117,10 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     selectGroup: "Select a group",
     assignAllOptions: "Please assign all options to a group.",
     enterAnswer: "Please enter an answer.",
+    loginSuccess: "Logged in with Discord. Welcome!",
+    loginFailed: "Login failed. Please try again.",
+    logoutSuccess: "You have been logged out.",
+    sessionEnded: "Your session ended. Please log in again.",
   },
   de: {
     brand: "Arsvent",
@@ -120,8 +128,8 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     languageLabel: "Sprache",
     loading: "Lade…",
     homeTitle: "Arsvent 2025",
-    homeSubtitle: "Discord-authentifizierter Adventskalender für Ars Necandi.",
-    login: "Mit Discord anmelden",
+    homeSubtitle: "Adventskalender mit Rätseln und Fortschritt für die ESO-Gilde Ars Necandi.",
+    login: "Login",
     continueCalendar: "Weiter zum Kalender",
     loadingSession: "Lade deine Sitzung…",
     calendarTitle: "Dein Kalender",
@@ -169,6 +177,10 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     selectGroup: "Gruppe auswählen",
     assignAllOptions: "Bitte ordne alle Optionen einer Gruppe zu.",
     enterAnswer: "Bitte gib eine Antwort ein.",
+    loginSuccess: "Mit Discord eingeloggt. Willkommen!",
+    loginFailed: "Login fehlgeschlagen. Bitte versuche es erneut.",
+    logoutSuccess: "Du wurdest abgemeldet.",
+    sessionEnded: "Deine Sitzung ist beendet. Bitte erneut einloggen.",
   },
 };
 

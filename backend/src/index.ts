@@ -331,7 +331,7 @@ app.get(
     if (req.user) {
       storeSessionVersion(req, req.user as PrismaUser);
     }
-    res.redirect(`${FRONTEND_ORIGIN}/calendar`);
+    res.redirect(`${FRONTEND_ORIGIN}/calendar?auth=success`);
   },
 );
 
