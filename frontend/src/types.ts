@@ -11,6 +11,7 @@ export interface User {
   createdAt: string;
   updatedAt: string;
   lastLoginAt?: string | null;
+  lastSolvedAt?: string | null;
   isAdmin: boolean;
   isSuperAdmin: boolean;
   sessionVersion: number;
@@ -48,6 +49,9 @@ export interface AdminOverview {
     vetUsers: number;
     normalUsers: number;
     progressedUsers: number;
+    downgradedUsers: number;
+    solveHistogram: number[];
+    downgradeHistogram: number[];
   };
   recentUsers: Array<{
     id: string;
@@ -61,7 +65,13 @@ export interface AdminOverview {
     lastLoginAt: string | null;
     lastSolvedDay: number;
   }>;
-  recentSolves: [];
+  recentSolves: Array<{
+    id: string;
+    username: string;
+    lastSolvedDay: number;
+    lastSolvedAt: string | null;
+    mode: Mode;
+  }>;
 }
 
 export interface AdminUserSummary {
@@ -75,6 +85,8 @@ export interface AdminUserSummary {
   createdAt: string;
   updatedAt: string;
   lastLoginAt?: string | null;
+  lastSolvedAt?: string | null;
+  lastDowngradedAt?: string | null;
   sessionVersion: number;
   stateVersion: number;
   lastSolvedDay: number;

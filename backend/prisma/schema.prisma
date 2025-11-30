@@ -22,21 +22,10 @@ model User {
   sessionVersion Int           @default(1)
   stateVersion   Int           @default(1)
   lastSolvedDay  Int           @default(0)
+  lastSolvedAt   DateTime?
+  lastDowngradedAt DateTime?
+  lastDowngradedFromDay Int    @default(0)
   lastLoginAt    DateTime?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
-
-  progresses     UserProgress[]
-}
-
-model UserProgress {
-  id          Int       @id @default(autoincrement())
-  user        User      @relation(fields: [userId], references: [id])
-  userId      String
-  day         Int
-  solved      Boolean   @default(false)
-  solvedAt    DateTime?
-  hardMode    Boolean   @default(false)
-
-  @@unique([userId, day])
 }

@@ -256,7 +256,12 @@ app.post("/api/user/mode", requireAuth, async (req: Request, res: Response, next
 
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
-      data: { mode, stateVersion: { increment: 1 } },
+      data: {
+        mode,
+        stateVersion: { increment: 1 },
+        lastDowngradedAt: user.mode === "VET" && mode === "NORMAL" ? new Date() : null,
+        lastDowngradedFromDay: user.mode === "VET" && mode === "NORMAL" ? user.lastSolvedDay ?? 0 : 0,
+      },
     });
 
     req.login(updatedUser, (err) => {
@@ -378,7 +383,7 @@ app.post("/api/days/:day/submit", requireAuth, async (req, res, next) => {
     if (correct) {
       await prisma.user.update({
         where: { id: req.user!.id },
-        data: { lastSolvedDay: day, stateVersion: { increment: 1 } },
+        data: { lastSolvedDay: day, lastSolvedAt: new Date(), stateVersion: { increment: 1 } },
       });
     }
 
@@ -398,12 +403,14 @@ app.post("/api/days/:day/submit", requireAuth, async (req, res, next) => {
 
 app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next) => {
   try {
-    const [totalUsers, adminUsers, vetUsers, normalUsers, progressedUsers, recentUsers] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({ where: { isAdmin: true } }),
-      prisma.user.count({ where: { mode: "VET" } }),
-      prisma.user.count({ where: { mode: "NORMAL" } }),
-      prisma.user.count({ where: { lastSolvedDay: { gt: 0 } } }),
+    const [totalUsers, adminUsers, vetUsers, normalUsers, progressedUsers, downgradedUsers, recentUsers, recentSolves, solveHistogram, downgradeHistogram] =
+      await Promise.all([
+        prisma.user.count(),
+        prisma.user.count({ where: { isAdmin: true } }),
+        prisma.user.count({ where: { mode: "VET" } }),
+        prisma.user.count({ where: { mode: "NORMAL" } }),
+        prisma.user.count({ where: { lastSolvedDay: { gt: 0 } } }),
+        prisma.user.count({ where: { lastDowngradedAt: { not: null } } }),
       prisma.user.findMany({
         orderBy: { createdAt: "desc" },
         take: 8,
@@ -420,6 +427,32 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
           lastSolvedDay: true,
         },
       }),
+      prisma.user.findMany({
+        where: { lastSolvedAt: { not: null } },
+        orderBy: { lastSolvedAt: "desc" },
+        take: 8,
+        select: { id: true, username: true, lastSolvedDay: true, lastSolvedAt: true, mode: true },
+      }),
+      (async () => {
+        const users = await prisma.user.findMany({ select: { lastSolvedDay: true } });
+        const hist = Array.from({ length: MAX_DAY + 1 }, () => 0);
+        users.forEach((u) => {
+          const idx = Math.min(Math.max(u.lastSolvedDay ?? 0, 0), MAX_DAY);
+          hist[idx] = (hist[idx] ?? 0) + 1;
+        });
+        return hist;
+      })(),
+      (async () => {
+        const users = await prisma.user.findMany({ select: { lastSolvedDay: true, lastDowngradedAt: true, lastDowngradedFromDay: true } });
+        const hist = Array.from({ length: MAX_DAY + 1 }, () => 0);
+        users.forEach((u) => {
+          if (u.lastDowngradedAt) {
+            const idx = Math.min(Math.max(u.lastDowngradedFromDay ?? u.lastSolvedDay ?? 0, 0), MAX_DAY);
+            hist[idx] = (hist[idx] ?? 0) + 1;
+          }
+        });
+        return hist;
+      })(),
     ]);
 
     res.json({
@@ -437,9 +470,12 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
         vetUsers,
         normalUsers,
         progressedUsers,
+        downgradedUsers,
+        solveHistogram,
+        downgradeHistogram,
       },
       recentUsers,
-      recentSolves: [],
+      recentSolves,
     });
   } catch (error) {
     next(error);
@@ -467,6 +503,7 @@ app.get("/api/admin/users", requireAuth, requireAdmin, async (req, res, next) =>
       sessionVersion: user.sessionVersion,
       lastSolvedDay: user.lastSolvedDay ?? 0,
       stateVersion: user.stateVersion,
+      lastSolvedAt: user.lastSolvedAt,
     }));
 
     res.json(summaries);
@@ -494,9 +531,15 @@ app.post("/api/admin/users/:id/mode", requireAuth, requireAdmin, async (req, res
       return res.status(403).json({ error: "Cannot modify super admin" });
     }
 
+    const now = new Date();
     const updated = await prisma.user.update({
       where: { id: target.id },
-      data: { mode, stateVersion: { increment: 1 } },
+      data: {
+        mode,
+        stateVersion: { increment: 1 },
+        lastDowngradedAt: mode === "VET" ? null : now,
+        lastDowngradedFromDay: mode === "VET" ? 0 : target.lastSolvedDay ?? 0,
+      },
     });
     res.json({ id: updated.id, mode: updated.mode });
   } catch (error) {
@@ -510,7 +553,7 @@ app.post("/api/admin/users/:id/progress", requireAuth, requireAdmin, async (req,
     if (!targetId) {
       return res.status(400).json({ error: "User id is required" });
     }
-    const { lastSolvedDay } = req.body as { lastSolvedDay?: number };
+    const { lastSolvedDay, lastSolvedAt } = req.body as { lastSolvedDay?: number; lastSolvedAt?: string | null };
     if (!Number.isInteger(lastSolvedDay) || lastSolvedDay === undefined || lastSolvedDay < 0 || lastSolvedDay > MAX_DAY) {
       return res.status(400).json({ error: "lastSolvedDay must be between 0 and 24" });
     }
@@ -523,12 +566,14 @@ app.post("/api/admin/users/:id/progress", requireAuth, requireAdmin, async (req,
       return res.status(403).json({ error: "Cannot modify super admin progress" });
     }
 
+    const solvedAt = lastSolvedDay > 0 ? (lastSolvedAt ? new Date(lastSolvedAt) : new Date()) : null;
+
     const updated = await prisma.user.update({
       where: { id: target.id },
-      data: { lastSolvedDay, stateVersion: { increment: 1 } },
+      data: { lastSolvedDay, lastSolvedAt: solvedAt, stateVersion: { increment: 1 } },
     });
 
-    res.json({ id: updated.id, lastSolvedDay: updated.lastSolvedDay });
+    res.json({ id: updated.id, lastSolvedDay: updated.lastSolvedDay, lastSolvedAt: updated.lastSolvedAt });
   } catch (error) {
     next(error);
   }
@@ -607,7 +652,6 @@ app.delete("/api/admin/users/:id", requireAuth, requireAdmin, async (req, res, n
       return res.status(403).json({ error: "Cannot delete this user" });
     }
 
-    await prisma.userProgress.deleteMany({ where: { userId: target.id } });
     await prisma.user.delete({ where: { id: target.id } });
     res.json({ success: true });
   } catch (error) {

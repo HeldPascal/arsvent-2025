@@ -9,6 +9,8 @@ import {
   fetchAdminOverview,
   fetchAdminUsers,
 } from "../services/api";
+import StatBar from "./components/StatBar";
+import CollapsibleHistogram from "./components/CollapsibleHistogram";
 
 interface Props {
   user: User;
@@ -152,13 +154,73 @@ export default function AdminPage({ user }: Props) {
         {loading && <p>Loading admin data…</p>}
         {error && <p className="error">{error}</p>}
 
-        {overview && (
-          <>
-            <div className="metrics-grid">
-              <MetricCard label="Users" value={overview.stats.totalUsers} hint={`${overview.stats.adminUsers} admins`} />
-              <MetricCard
+      {overview && (
+        <>
+          <div className="panel" style={{ marginBottom: 12 }}>
+            <h3>Progress</h3>
+            <StatBar
+              label="Available days"
+              total={overview.diagnostics.maxDay}
+              segments={[
+                { label: "Unlocked", value: overview.diagnostics.availableDay, color: "#8b5cf6" },
+                { label: "Locked", value: Math.max(overview.diagnostics.maxDay - overview.diagnostics.availableDay, 0), color: "#334155" },
+              ]}
+            />
+            <CollapsibleHistogram
+              title="Players per last solved day"
+              values={overview.stats.solveHistogram}
+              labelPrefix="Day"
+            />
+            <CollapsibleHistogram
+              title="Downgrades by last solved day"
+              values={overview.stats.downgradeHistogram}
+              labelPrefix="Day"
+            />
+          </div>
+
+          <div className="panel">
+            <h3>At a glance</h3>
+            <div className="grid">
+              <StatBar
+                label="Users started"
+                total={overview.stats.totalUsers}
+                segments={[
+                  { label: "Started", value: overview.stats.progressedUsers, color: "#4aa96c" },
+                  { label: "Not started", value: Math.max(overview.stats.totalUsers - overview.stats.progressedUsers, 0), color: "#d44d3f" },
+                ]}
+              />
+              <StatBar
+                label="Downgrades"
+                total={overview.stats.totalUsers}
+                segments={[
+                  { label: "Downgraded", value: overview.stats.downgradedUsers, color: "#f97316" },
+                  { label: "Others", value: Math.max(overview.stats.totalUsers - overview.stats.downgradedUsers, 0), color: "#475569" },
+                ]}
+              />
+              <StatBar
                 label="Difficulty split"
-                value={`${overview.stats.vetUsers} VET / ${overview.stats.normalUsers} NORMAL`}
+                total={overview.stats.totalUsers}
+                segments={[
+                  { label: "VET", value: overview.stats.vetUsers, color: "#f59e0b" },
+                  { label: "NORMAL", value: overview.stats.normalUsers, color: "#60a5fa" },
+                ]}
+              />
+              <StatBar
+                label="Solve depth"
+                total={24}
+                segments={[
+                  { label: "Avg last day", value: Math.round((overview.recentSolves.reduce((acc, s) => acc + s.lastSolvedDay, 0) || 0) / Math.max(overview.recentSolves.length || overview.stats.progressedUsers || 1, 1)), color: "#22c55e" },
+                  { label: "Max day", value: Math.max(...overview.recentSolves.map((s) => s.lastSolvedDay), 0), color: "#6366f1" },
+                ]}
+              />
+            </div>
+          </div>
+
+          <div className="metrics-grid">
+            <MetricCard label="Users" value={overview.stats.totalUsers} hint={`${overview.stats.adminUsers} admins`} />
+            <MetricCard
+              label="Difficulty split"
+              value={`${overview.stats.vetUsers} VET / ${overview.stats.normalUsers} NORMAL`}
                 hint="Current user modes"
               />
               <MetricCard
@@ -205,7 +267,17 @@ export default function AdminPage({ user }: Props) {
               <div>
                 <h3>Recent solves</h3>
                 <ul className="plain-list">
-                  <li className="muted">Sequential mode enabled; per-solve history not tracked.</li>
+                  {overview.recentSolves.map((s) => (
+                    <li key={`${s.id}-${s.lastSolvedDay}`} className="list-row">
+                      <div className="list-title">
+                        {s.username} · Day {s.lastSolvedDay}
+                      </div>
+                      <div className="muted">
+                        {s.mode} · {s.lastSolvedAt ? new Date(s.lastSolvedAt).toLocaleString() : "time unknown"}
+                      </div>
+                    </li>
+                  ))}
+                  {overview.recentSolves.length === 0 && <li className="muted">No solves yet.</li>}
                 </ul>
               </div>
             </div>
@@ -249,7 +321,10 @@ export default function AdminPage({ user }: Props) {
                 <span>State v{u.stateVersion}</span>
               </div>
 
-              <div className="user-stats">Last solved day: {u.lastSolvedDay}</div>
+              <div className="user-stats">
+                <span>Last solved day: {u.lastSolvedDay}</span>
+                <span>Last solved at: {u.lastSolvedAt ? new Date(u.lastSolvedAt).toLocaleString() : "n/a"}</span>
+              </div>
 
               <div className="admin-actions">
                 <button disabled={busyUserId === u.id} onClick={() => handleModeChange(u.id, "NORMAL")}>
