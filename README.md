@@ -23,6 +23,7 @@ DISCORD_CLIENT_ID=...
 DISCORD_CLIENT_SECRET=...
 DISCORD_CALLBACK_URL=http://localhost:4000/auth/discord/callback
 SESSION_SECRET=dev-secret
+SUPER_ADMIN_DISCORD_ID=123456789012345678
 DATABASE_URL=file:./dev.db
 FRONTEND_ORIGIN=http://localhost:5173
 PORT=4000
@@ -47,6 +48,14 @@ VITE_BACKEND_URL=http://localhost:4000
 - `/day/:day`: shows riddle (HTML from markdown) via `/api/days/:day`, allows answer submit via `/api/days/:day/submit`; when solved, input hides and solved pill remains.
 - `/settings`: houses difficulty selector. Rules: can always downgrade VET → NORMAL; upgrading from NORMAL → VET after first choice is blocked by backend and UI.
 - Language switcher: toggles EN/DE, calls `/api/user/locale`, updates UI and content.
+- Sequential play: riddles must be solved in order. Only the next unlocked day (and past solved days) are playable; backend enforces this using a `lastSolvedDay` field.
+
+## Admin tooling
+
+- Provide a Discord user id via `SUPER_ADMIN_DISCORD_ID` to bootstrap a super admin. They are always treated as admin on login.
+- Admin UI lives at `/admin` (no nav link). Accessible only to admins/super admins.
+- Features: diagnostics (uptime, runtime, unlocked day), usage stats, recent users/solves, user list with progress counters.
+- User actions: change mode, mark a day solved/unsolved, revoke sessions (bumps `sessionVersion` to force logout), delete users/data. Only the super admin can promote/demote admins; super admin account cannot be demoted or deleted.
 
 ## Content
 

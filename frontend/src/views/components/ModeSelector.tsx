@@ -1,22 +1,36 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { updateMode } from "../../services/api";
 import type { Mode } from "../../types";
 import { useI18n } from "../../i18n";
+import ConfirmDialog from "./ConfirmDialog";
 
 interface Props {
   mode: Mode;
+  lastSolvedDay: number;
   onUpdated?: (mode: Mode) => void;
 }
 
-export default function ModeSelector({ mode, onUpdated }: Props) {
+export default function ModeSelector({ mode, lastSolvedDay, onUpdated }: Props) {
   const [current, setCurrent] = useState<Mode>(mode);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pendingMode, setPendingMode] = useState<Mode | null>(null);
   const { t } = useI18n();
-  const vetLocked = current === "NORMAL";
+  const vetLocked = current === "NORMAL" && lastSolvedDay > 0;
 
-  const changeMode = async (next: Mode) => {
+  useEffect(() => {
+    setCurrent(mode);
+    setError(null);
+  }, [mode]);
+
+  const changeMode = async (next: Mode, skipConfirm = false) => {
     if (next === current || (next === "VET" && vetLocked)) return;
+    if (!skipConfirm && current === "VET" && next === "NORMAL" && lastSolvedDay > 0) {
+      setPendingMode(next);
+      setShowConfirm(true);
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -55,6 +69,24 @@ export default function ModeSelector({ mode, onUpdated }: Props) {
       </div>
       <div className="mode-hint">{t("modeHint")}</div>
       {error && <div className="error">{error}</div>}
+
+      {showConfirm && pendingMode && (
+        <ConfirmDialog
+          message={t("confirmVetToNormal")}
+          confirmLabel={t("confirm")}
+          cancelLabel={t("cancel")}
+          onConfirm={() => {
+            setShowConfirm(false);
+            const modeToApply = pendingMode;
+            setPendingMode(null);
+            changeMode(modeToApply, true);
+          }}
+          onCancel={() => {
+            setPendingMode(null);
+            setShowConfirm(false);
+          }}
+        />
+      )}
     </div>
   );
 }

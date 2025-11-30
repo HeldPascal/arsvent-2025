@@ -1,13 +1,14 @@
 import { Link } from "react-router-dom";
 import ModeSelector from "./components/ModeSelector";
-import type { User } from "../types";
+import type { Mode, User } from "../types";
 import { useI18n } from "../i18n";
 
 interface Props {
   user: User;
+  onModeChange?: (mode: Mode) => void;
 }
 
-export default function SettingsPage({ user }: Props) {
+export default function SettingsPage({ user, onModeChange }: Props) {
   const { t } = useI18n();
 
   return (
@@ -22,7 +23,13 @@ export default function SettingsPage({ user }: Props) {
           {t("backToCalendar")}
         </Link>
       </header>
-      <ModeSelector mode={user.mode} />
+      <ModeSelector
+        mode={user.mode}
+        lastSolvedDay={user.lastSolvedDay}
+        onUpdated={(mode) => {
+          onModeChange?.(mode);
+        }}
+      />
     </div>
   );
 }

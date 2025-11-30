@@ -1,4 +1,4 @@
-import type { DayDetail, DaySummary, Locale, Mode, User } from "../types";
+import type { AdminOverview, AdminUserSummary, DayDetail, DaySummary, Locale, Mode, User } from "../types";
 
 const BASE = import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ?? "";
 
@@ -12,7 +12,16 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     },
   });
   if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`);
+    let message = `Request failed: ${res.status}`;
+    try {
+      const data = await res.json();
+      if (typeof data?.error === "string") {
+        message = data.error;
+      }
+    } catch {
+      // ignore parse errors
+    }
+    throw new Error(message);
   }
   return res.json() as Promise<T>;
 }
@@ -39,4 +48,32 @@ export const updateMode = (mode: Mode) =>
   apiFetch<{ id: string; mode: Mode }>("/api/user/mode", {
     method: "POST",
     body: JSON.stringify({ mode }),
+  });
+
+export const fetchAdminOverview = () => apiFetch<AdminOverview>("/api/admin/overview");
+
+export const fetchAdminUsers = () => apiFetch<AdminUserSummary[]>("/api/admin/users");
+
+export const adminUpdateMode = (userId: string, mode: Mode) =>
+  apiFetch<{ id: string; mode: Mode }>(`/api/admin/users/${userId}/mode`, {
+    method: "POST",
+    body: JSON.stringify({ mode }),
+  });
+
+export const adminUpdateProgress = (userId: string, lastSolvedDay: number) =>
+  apiFetch<{ id: string; lastSolvedDay: number }>(`/api/admin/users/${userId}/progress`, {
+    method: "POST",
+    body: JSON.stringify({ lastSolvedDay }),
+  });
+
+export const adminRevokeSessions = (userId: string) =>
+  apiFetch<{ id: string; sessionVersion: number }>(`/api/admin/users/${userId}/revoke-sessions`, { method: "POST" });
+
+export const adminDeleteUser = (userId: string) =>
+  apiFetch<{ success: boolean }>(`/api/admin/users/${userId}`, { method: "DELETE" });
+
+export const adminSetAdmin = (userId: string, isAdmin: boolean) =>
+  apiFetch<{ id: string; isAdmin: boolean }>(`/api/admin/users/${userId}/admin`, {
+    method: "POST",
+    body: JSON.stringify({ isAdmin }),
   });

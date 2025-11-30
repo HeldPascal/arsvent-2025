@@ -13,11 +13,20 @@ type TranslationKey =
   | "loadingSession"
   | "calendarTitle"
   | "calendarSubtitle"
+  | "calendarOrderHint"
+  | "welcomeTitle"
+  | "welcomeBody"
   | "daySolved"
   | "dayAvailable"
   | "dayLocked"
+  | "daySolvePrev"
+  | "dayNext"
   | "open"
   | "soon"
+  | "warnNormalLock"
+  | "confirmVetToNormal"
+  | "confirm"
+  | "cancel"
   | "backToCalendar"
   | "day"
   | "solved"
@@ -52,11 +61,20 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     loadingSession: "Loading your session…",
     calendarTitle: "Your calendar",
     calendarSubtitle: "Click an available day to play the riddle.",
+    calendarOrderHint: "Solve days in order. Only the next unlocked day can be played.",
+    welcomeTitle: "Welcome! Pick your difficulty",
+    welcomeBody: "You can freely choose Normal or Veteran until you solve your first riddle. After that, upgrading is locked.",
     daySolved: "Solved",
     dayAvailable: "Available",
     dayLocked: "Locked",
+    daySolvePrev: "Solve the previous day first",
+    dayNext: "Next to solve",
     open: "Open",
     soon: "Soon",
+    warnNormalLock: "Solving day 1 on Normal will lock Veteran. Continue?",
+    confirmVetToNormal: "You have solved as Veteran. Switching to Normal will lock you out of Veteran. Continue?",
+    confirm: "Confirm",
+    cancel: "Cancel",
     backToCalendar: "Back to calendar",
     day: "Day",
     solved: "Solved",
@@ -90,11 +108,20 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     loadingSession: "Lade deine Sitzung…",
     calendarTitle: "Dein Kalender",
     calendarSubtitle: "Klicke auf einen verfügbaren Tag, um das Rätsel zu spielen.",
+    calendarOrderHint: "Löse die Tage der Reihenfolge nach. Nur der nächste Tag ist spielbar.",
+    welcomeTitle: "Willkommen! Wähle deine Schwierigkeit",
+    welcomeBody: "Du kannst Normal oder Veteran frei wählen, bis du dein erstes Rätsel gelöst hast. Danach ist ein Upgrade gesperrt.",
     daySolved: "Gelöst",
     dayAvailable: "Verfügbar",
     dayLocked: "Gesperrt",
+    daySolvePrev: "Löse zuerst den vorherigen Tag",
+    dayNext: "Als Nächstes",
     open: "Öffnen",
     soon: "Bald",
+    warnNormalLock: "Wenn du Tag 1 auf Normal löst, ist Veteran gesperrt. Fortfahren?",
+    confirmVetToNormal: "Du hast als Veteran gelöst. Beim Wechsel auf Normal ist Veteran gesperrt. Fortfahren?",
+    confirm: "Bestätigen",
+    cancel: "Abbrechen",
     backToCalendar: "Zurück zum Kalender",
     day: "Tag",
     solved: "Gelöst",

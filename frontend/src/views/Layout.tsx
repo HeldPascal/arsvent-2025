@@ -31,6 +31,11 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
               <span className="user-chip" title={user.globalName ?? user.username}>
                 {user.globalName ?? user.username}
               </span>
+              {user.isAdmin || user.isSuperAdmin ? (
+                <Link className="ghost nav-link" to="/admin">
+                  Admin
+                </Link>
+              ) : null}
               <Link className="ghost nav-link" to="/settings">
                 {t("settingsTitle")}
               </Link>

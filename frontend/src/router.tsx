@@ -4,6 +4,7 @@ import HomePage from "./views/HomePage";
 import CalendarPage from "./views/CalendarPage";
 import DayPage from "./views/DayPage";
 import SettingsPage from "./views/SettingsPage";
+import AdminPage from "./views/AdminPage";
 import { fetchMe } from "./services/api";
 import type { Locale, User } from "./types";
 import Layout from "./views/Layout";
@@ -13,6 +14,7 @@ export default function AppRouter() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [locale, setLocale] = useState<Locale>("en");
+  const [stateVersion, setStateVersion] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,18 +22,60 @@ export default function AppRouter() {
       .then((u) => {
         setUser(u);
         setLocale(u.locale);
+        setStateVersion(u.stateVersion ?? 0);
       })
       .catch(() => {
         setUser(null);
         setLocale("en");
+        setStateVersion(0);
       })
       .finally(() => setLoading(false));
   }, []);
+
+  const handleUserPatch = (patch: Partial<User>) => {
+    setUser((prev) => (prev ? { ...prev, ...patch } : prev));
+  };
 
   const handleLogout = () => {
     setUser(null);
     navigate("/");
   };
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    const refresh = () => {
+      fetchMe()
+        .then((u) => {
+          if (cancelled) return;
+          setUser(u);
+          setLocale(u.locale);
+          setStateVersion(u.stateVersion ?? 0);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setUser(null);
+          setLocale("en");
+          setStateVersion(0);
+          navigate("/");
+        });
+    };
+
+    const interval = window.setInterval(refresh, 10000);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        refresh();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [user, navigate]);
 
   const handleLocaleChange = (loc: Locale) => {
     setLocale(loc);
@@ -47,7 +91,11 @@ export default function AppRouter() {
             path="/calendar"
             element={
               user ? (
-                <CalendarPage user={user} />
+                <CalendarPage
+                  user={user}
+                  version={stateVersion}
+                  onModeChange={(mode) => handleUserPatch({ mode })}
+                />
               ) : loading ? (
                 <div className="panel">Loading…</div>
               ) : (
@@ -59,7 +107,7 @@ export default function AppRouter() {
             path="/day/:day"
             element={
               user ? (
-                <DayPage user={user} />
+                <DayPage user={user} version={stateVersion} />
             ) : loading ? (
                 <div className="panel">Loading…</div>
               ) : (
@@ -71,7 +119,23 @@ export default function AppRouter() {
             path="/settings"
             element={
               user ? (
-                <SettingsPage user={user} />
+                <SettingsPage user={user} onModeChange={(mode) => handleUserPatch({ mode })} />
+              ) : loading ? (
+                <div className="panel">Loading…</div>
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              user ? (
+                user.isAdmin || user.isSuperAdmin ? (
+                  <AdminPage user={user} />
+                ) : (
+                  <Navigate to="/" replace />
+                )
               ) : loading ? (
                 <div className="panel">Loading…</div>
               ) : (

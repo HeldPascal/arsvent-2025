@@ -3,12 +3,14 @@ import { useNavigate, useParams } from "react-router-dom";
 import { fetchDay, submitAnswer } from "../services/api";
 import type { DayDetail, User } from "../types";
 import { useI18n } from "../i18n";
+import ConfirmDialog from "./components/ConfirmDialog";
 
 interface Props {
   user: User;
+  version: number;
 }
 
-export default function DayPage({ user }: Props) {
+export default function DayPage({ user, version }: Props) {
   const { day } = useParams<{ day: string }>();
   const navigate = useNavigate();
   const dayNumber = Number(day);
@@ -19,6 +21,8 @@ export default function DayPage({ user }: Props) {
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState<{ message: string; correct: boolean } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [warned, setWarned] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     if (!Number.isInteger(dayNumber) || dayNumber < 1 || dayNumber > 24) {
@@ -30,10 +34,9 @@ export default function DayPage({ user }: Props) {
       .then((data) => setDetail(data))
       .catch(() => setError(t("dayLoadFailed")))
       .finally(() => setLoading(false));
-  }, [dayNumber, navigate, t]);
+  }, [dayNumber, navigate, t, version]);
 
-  const onSubmit = async (evt: React.FormEvent) => {
-    evt.preventDefault();
+  const performSubmit = async () => {
     if (!detail) return;
     setSubmitting(true);
     setFeedback(null);
@@ -49,6 +52,16 @@ export default function DayPage({ user }: Props) {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const onSubmit = async (evt: React.FormEvent) => {
+    evt.preventDefault();
+    if (!detail) return;
+    if (user.mode === "NORMAL" && detail.day === 1 && !warned) {
+      setShowConfirm(true);
+      return;
+    }
+    await performSubmit();
   };
 
   if (loading) return <div className="panel">{t("loading")}</div>;
@@ -75,7 +88,10 @@ export default function DayPage({ user }: Props) {
         <>
           <article className="riddle-body" dangerouslySetInnerHTML={{ __html: detail.body }} />
           {detail.isSolved ? (
-            <span className="pill success">{t("solved")}</span>
+            <>
+              <span className="pill success">{t("solved")}</span>
+              {feedback && <div className={`feedback ${feedback.correct ? "success" : "error"}`}>{feedback.message}</div>}
+            </>
           ) : (
             <>
               <form className="answer-form" onSubmit={onSubmit}>
@@ -99,6 +115,20 @@ export default function DayPage({ user }: Props) {
         </>
       ) : (
         <div className="muted">{detail.message ?? t("notAvailable")}</div>
+      )}
+
+      {showConfirm && (
+        <ConfirmDialog
+          message={t("warnNormalLock")}
+          confirmLabel={t("confirm")}
+          cancelLabel={t("cancel")}
+          onConfirm={() => {
+            setWarned(true);
+            setShowConfirm(false);
+            void performSubmit();
+          }}
+          onCancel={() => setShowConfirm(false)}
+        />
       )}
     </div>
   );
