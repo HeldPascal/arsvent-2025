@@ -1,0 +1,28 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: arsvent-backend
+    env_file:
+      - /opt/arsvent-2025/env/backend.env
+    volumes:
+      - /opt/arsvent-2025/data/backend:/app/data
+    restart: unless-stopped
+    expose:
+      - "4000"
+    ports:
+      - "127.0.0.1:4000:4000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Inject the backend URL into Vite build
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL}
+    env_file:
+      - /opt/arsvent-2025/env/frontend.env
+    restart: unless-stopped
+    expose:
+      - "80"
+    ports:
+      - "127.0.0.1:4173:80"
