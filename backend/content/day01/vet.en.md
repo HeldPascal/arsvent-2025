@@ -2,16 +2,22 @@
 type: single-choice
 options:
   - id: "1"
+    label: ""
     image: "/assets/25_01_option1.png"
   - id: "4"
+    label: ""
     image: "/assets/25_01_option4.png"
   - id: "5"
+    label: ""
     image: "/assets/25_01_option5.png"
   - id: "2"
+    label: ""
     image: "/assets/25_01_option2.png"
   - id: "3"
+    label: ""
     image: "/assets/25_01_option3.png"
   - id: "6"
+    label: ""
     image: "/assets/25_01_option6.png"
 solution: "1"
 reward:
