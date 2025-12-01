@@ -945,6 +945,42 @@ a {
   opacity: 0.95;
 }
 
+.banner + .riddle-body,
+.banner + .reward-card {
+  margin-top: 10px;
+}
+
+.reward-card {
+  margin-top: 12px;
+  border: 1px solid rgba(255, 215, 128, 0.4);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(255, 215, 128, 0.08), rgba(255, 215, 128, 0.02)), var(--panel-contrast);
+  box-shadow: 0 0 0 1px rgba(255, 215, 128, 0.15), 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.reward-image {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 215, 128, 0.4);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1), transparent 50%), #1f2327;
+}
+
+.reward-title {
+  font-weight: 900;
+  letter-spacing: 0.01em;
+}
+
+.reward-desc {
+  color: var(--muted);
+  font-size: 14px;
+}
+
 .statbar {
   border: 1px solid var(--line);
   border-radius: 12px;

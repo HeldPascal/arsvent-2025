@@ -23,12 +23,20 @@ export interface RiddleGroup {
   label: string;
 }
 
+export interface RiddleReward {
+  title: string;
+  description?: string | null;
+  image?: string | null;
+}
+
 export type RiddleContent =
   | {
       type: "text";
       title: string;
       body: string;
       solution: string;
+      post?: string;
+      reward?: RiddleReward;
     }
   | {
       type: "single-choice";
@@ -36,6 +44,8 @@ export type RiddleContent =
       body: string;
       solution: string;
       options: RiddleOption[];
+      post?: string;
+      reward?: RiddleReward;
     }
   | {
       type: "multi-choice";
@@ -44,6 +54,8 @@ export type RiddleContent =
       solution: string[];
       options: RiddleOption[];
       minSelections: number;
+      post?: string;
+      reward?: RiddleReward;
     }
   | {
       type: "sort";
@@ -51,6 +63,8 @@ export type RiddleContent =
       body: string;
       solution: string[];
       options: RiddleOption[];
+      post?: string;
+      reward?: RiddleReward;
     }
   | {
       type: "group";
@@ -59,6 +73,8 @@ export type RiddleContent =
       solution: Record<string, string[]>;
       options: RiddleOption[];
       groups: RiddleGroup[];
+      post?: string;
+      reward?: RiddleReward;
     };
 
 export class RiddleNotFoundError extends Error {
@@ -183,18 +199,73 @@ export async function loadRiddle(day: number, locale: Locale, mode: Mode): Promi
     const raw = await fs.readFile(filePath, "utf8");
     const parsed = matter(raw);
 
-    const title = String(parsed.data.title ?? "").trim();
+    const titleFromFrontmatter = typeof parsed.data.title === "string" ? parsed.data.title.trim() : "";
+    const h1Match = parsed.content.match(/^#\s+(.+)\s*$/m);
+    const derivedTitle = h1Match?.[1]?.trim() ?? "";
+    const title = titleFromFrontmatter || derivedTitle;
     if (!title) {
-      throw new Error("Missing required frontmatter fields");
+      throw new Error("Missing required title");
     }
 
-    const htmlBody = marked.parse(parsed.content);
+    const sections: Record<string, string> = {};
+    const lines = parsed.content ? parsed.content.split(/\r?\n/) : [];
+    let current: string | null = null;
+    const buffer: string[] = [];
+    const flush = () => {
+      if (current) {
+        sections[current] = (sections[current] ? sections[current] + "\n" : "") + buffer.join("\n").trim();
+      }
+      buffer.length = 0;
+    };
+    lines.forEach((line) => {
+      const h2 = line.match(/^##\s+(.+)\s*$/);
+      const h1 = line.match(/^#\s+(.+)\s*$/);
+      if (h1) {
+        return; // skip the title line from body aggregation
+      }
+      if (h2) {
+        flush();
+        current = (h2[1] ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+        return;
+      }
+      buffer.push(line);
+    });
+    flush();
+
+    const story = sections["story"] ?? "";
+    const puzzle = sections["puzzle"] ?? "";
+    const postSection = sections["post"] ?? null;
+    const baseBody = `${story}\n\n${puzzle}`.trim() || parsed.content.trim();
+
+    const htmlBody = marked.parse(baseBody);
     const body = typeof htmlBody === "string" ? htmlBody : String(htmlBody);
+
+    const postFromFrontmatter = typeof parsed.data.post === "string" ? parsed.data.post : null;
+    const postSource = postFromFrontmatter ?? postSection;
+    const post = postSource ? marked.parse(postSource) : null;
+
+    const rewardData = parsed.data.reward as { title?: unknown; description?: unknown; image?: unknown } | undefined;
+    const reward: RiddleReward | undefined =
+      rewardData && typeof rewardData === "object" && rewardData.title
+        ? {
+            title: String(rewardData.title),
+            description: rewardData.description ? String(rewardData.description) : null,
+            image: rewardData.image ? String(rewardData.image) : null,
+          }
+        : undefined;
+
     const type = resolveType(typeof parsed.data.type === "string" ? parsed.data.type : undefined);
 
     if (type === "text") {
       const solution = normalizeId(parsed.data.solution, "Solution is required for text riddles");
-      return { type, title, solution, body };
+      return {
+        type,
+        title,
+        solution,
+        body,
+        ...(post ? { post: typeof post === "string" ? post : String(post) } : {}),
+        ...(reward ? { reward } : {}),
+      };
     }
 
     if (type === "single-choice") {
@@ -204,7 +275,15 @@ export async function loadRiddle(day: number, locale: Locale, mode: Mode): Promi
       if (!optionIds.has(solution)) {
         throw new Error("Solution must reference one of the provided options");
       }
-      return { type, title, body, solution, options };
+      return {
+        type,
+        title,
+        body,
+        solution,
+        options,
+        ...(post ? { post: typeof post === "string" ? post : String(post) } : {}),
+        ...(reward ? { reward } : {}),
+      };
     }
 
     if (type === "multi-choice") {
@@ -222,7 +301,16 @@ export async function loadRiddle(day: number, locale: Locale, mode: Mode): Promi
       const desiredMin =
         typeof parsed.data.minSelections === "number" ? parsed.data.minSelections : solution.length || 1;
       const minSelections = Math.min(Math.max(desiredMin, 1), options.length);
-      return { type, title, body, solution, options, minSelections };
+      return {
+        type,
+        title,
+        body,
+        solution,
+        options,
+        minSelections,
+        ...(post ? { post: typeof post === "string" ? post : String(post) } : {}),
+        ...(reward ? { reward } : {}),
+      };
     }
 
     if (type === "sort") {
@@ -240,7 +328,15 @@ export async function loadRiddle(day: number, locale: Locale, mode: Mode): Promi
           throw new Error("Solution references an unknown option id");
         }
       });
-      return { type, title, body, solution, options };
+      return {
+        type,
+        title,
+        body,
+        solution,
+        options,
+        ...(post ? { post: typeof post === "string" ? post : String(post) } : {}),
+        ...(reward ? { reward } : {}),
+      };
     }
 
     if (!parsed.data.solution || typeof parsed.data.solution !== "object" || Array.isArray(parsed.data.solution)) {
@@ -283,7 +379,16 @@ export async function loadRiddle(day: number, locale: Locale, mode: Mode): Promi
       });
     });
 
-    return { type, title, body, solution: normalizedSolution, options, groups };
+    return {
+      type,
+      title,
+      body,
+      solution: normalizedSolution,
+      options,
+      groups,
+      ...(post ? { post: typeof post === "string" ? post : String(post) } : {}),
+      ...(reward ? { reward } : {}),
+    };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       throw new RiddleNotFoundError("Riddle not found for given parameters");

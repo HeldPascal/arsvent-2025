@@ -62,6 +62,12 @@ export interface DayDetail {
   canPlay: boolean;
   message?: string;
   solvedAnswer?: string | string[] | Record<string, string[]>;
+  post?: string;
+  reward?: {
+    title: string;
+    description?: string | null;
+    image?: string | null;
+  };
 }
 
 export interface IntroPayload {

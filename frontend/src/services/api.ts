@@ -43,7 +43,15 @@ export const fetchDays = () => apiFetch<DaysResponse>("/api/days");
 export const fetchDay = (day: number) => apiFetch<DayDetail>(`/api/days/${day}`);
 
 export const submitAnswer = (day: number, payload: RiddleAnswerPayload) =>
-  apiFetch<{ day: number; isSolved: boolean; correct: boolean; message: string; solution?: unknown }>(
+  apiFetch<{
+    day: number;
+    isSolved: boolean;
+    correct: boolean;
+    message: string;
+    solution?: unknown;
+    post?: string;
+    reward?: { title: string; description?: string; image?: string };
+  }>(
     `/api/days/${day}/submit`,
     {
       method: "POST",

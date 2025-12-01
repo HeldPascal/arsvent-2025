@@ -57,6 +57,8 @@ export default function DayPage({ user, version }: Props) {
               ...current,
               isSolved: resp.isSolved,
               solvedAnswer: resp.correct ? (resp.solution as any) ?? current.solvedAnswer : current.solvedAnswer,
+              post: resp.correct ? resp.post ?? current.post : current.post,
+              reward: resp.correct ? resp.reward ?? current.reward : current.reward,
             }
           : current,
       );
@@ -119,6 +121,18 @@ export default function DayPage({ user, version }: Props) {
             <div className="banner error">
               <div className="banner-title">{t("unsolved")}</div>
               <div className="banner-body">{t("answerIncorrect")}</div>
+            </div>
+          )}
+          {detail.isSolved && detail.post && (
+            <article className="riddle-body" dangerouslySetInnerHTML={{ __html: detail.post }} />
+          )}
+          {detail.isSolved && detail.reward && (
+            <div className="reward-card">
+              {detail.reward.image && <img src={detail.reward.image} alt={detail.reward.title} className="reward-image" />}
+              <div>
+                <div className="reward-title">{detail.reward.title}</div>
+                {detail.reward.description && <div className="reward-desc">{detail.reward.description}</div>}
+              </div>
             </div>
           )}
         </>

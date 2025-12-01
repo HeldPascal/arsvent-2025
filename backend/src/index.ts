@@ -529,6 +529,12 @@ app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, ne
     }
     if (day <= lastSolved) {
       response.solvedAnswer = content.solution;
+      if ("post" in content && content.post) {
+        response.post = content.post;
+      }
+      if ("reward" in content && content.reward) {
+        response.reward = content.reward;
+      }
     }
 
     return res.json(response);
@@ -595,6 +601,8 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
       correct,
       message: correct ? "Correct! Well done." : "Incorrect answer. Try again.",
       solution: correct ? content.solution : undefined,
+      post: correct && "post" in content ? content.post : undefined,
+      reward: correct && "reward" in content ? content.reward : undefined,
     });
   } catch (error) {
     if (error instanceof RiddleNotFoundError) {
