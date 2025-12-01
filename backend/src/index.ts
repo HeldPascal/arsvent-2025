@@ -469,7 +469,7 @@ app.get("/api/days", requireAuth, requireIntroComplete, async (req, res, next) =
       };
     });
 
-    res.json(days);
+    res.json({ days, unlockedDay });
   } catch (error) {
     next(error);
   }

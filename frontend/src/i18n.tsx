@@ -64,7 +64,8 @@ type TranslationKey =
   | "introContinue"
   | "introCompleted"
   | "introRevisitHint"
-  | "introStory";
+  | "introStory"
+  | "dayUnlocked";
 
 const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -131,6 +132,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     introCompleted: "Intro completed",
     introRevisitHint: "You can return here anytime to reread the prologue.",
     introStory: "Begin with the prologue and pick your difficulty.",
+    dayUnlocked: "A new day has been unlocked!",
   },
   de: {
     brand: "Arsvent",
@@ -196,6 +198,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     introCompleted: "Einführung abgeschlossen",
     introRevisitHint: "Du kannst jederzeit hierher zurückkehren, um den Prolog erneut zu lesen.",
     introStory: "Starte mit dem Prolog und wähle deine Schwierigkeit.",
+    dayUnlocked: "Ein neuer Tag wurde freigeschaltet!",
   },
 };
 

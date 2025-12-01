@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchDays } from "../services/api";
 import type { DaySummary, Mode, User } from "../types";
@@ -15,10 +15,29 @@ export default function CalendarPage({ user, version }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { t } = useI18n();
+  const availableRef = useRef<number | null>(null);
+  const unlockedRef = useRef<number | null>(null);
+
+  const applyDays = (payload: { days: DaySummary[]; unlockedDay: number }, allowToast: boolean) => {
+    setDays(payload.days);
+    const available = payload.days.filter((d) => d.isAvailable).length;
+    if (allowToast) {
+      const unlockedIncreased =
+        unlockedRef.current !== null && payload.unlockedDay > (unlockedRef.current ?? payload.unlockedDay);
+      const availableIncreased = availableRef.current !== null && available > (availableRef.current ?? available);
+      if (unlockedIncreased || availableIncreased) {
+        window.dispatchEvent(
+          new CustomEvent("app:toast", { detail: { type: "info", key: "dayUnlocked", durationMs: 10000 } }),
+        );
+      }
+    }
+    availableRef.current = available;
+    unlockedRef.current = payload.unlockedDay;
+  };
 
   useEffect(() => {
     fetchDays()
-      .then(setDays)
+      .then((d) => applyDays(d, false))
       .catch(() => setError(t("dayLoadFailed")))
       .finally(() => setLoading(false));
   }, [t, version]);
@@ -28,7 +47,7 @@ export default function CalendarPage({ user, version }: Props) {
     const refresh = () => {
       fetchDays()
         .then((d) => {
-          if (!cancelled) setDays(d);
+          if (!cancelled) applyDays(d, true);
         })
         .catch(() => {
           if (!cancelled) setError(t("dayLoadFailed"));

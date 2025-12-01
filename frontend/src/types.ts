@@ -44,6 +44,11 @@ export interface DaySummary {
   isSolved: boolean;
 }
 
+export interface DaysResponse {
+  days: DaySummary[];
+  unlockedDay: number;
+}
+
 export interface DayDetail {
   day: number;
   title: string;

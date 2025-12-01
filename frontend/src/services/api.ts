@@ -2,7 +2,7 @@ import type {
   AdminOverview,
   AdminUserSummary,
   DayDetail,
-  DaySummary,
+  DaysResponse,
   IntroPayload,
   Locale,
   Mode,
@@ -38,7 +38,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 
 export const fetchMe = () => apiFetch<User>("/api/auth/me");
 
-export const fetchDays = () => apiFetch<DaySummary[]>("/api/days");
+export const fetchDays = () => apiFetch<DaysResponse>("/api/days");
 
 export const fetchDay = (day: number) => apiFetch<DayDetail>(`/api/days/${day}`);
 
