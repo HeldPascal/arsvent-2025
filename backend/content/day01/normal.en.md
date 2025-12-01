@@ -1,32 +1,35 @@
 ---
 type: single-choice
 options:
-  - id: "public"
+  - id: "1"
+    label: ""
     image: "/assets/25_01_option1.png"
-  - id: "trial"
+  - id: "2"
+    label: ""
     image: "/assets/25_01_option2.png"
-  - id: "dolmen"
+  - id: "3"
+    label: ""
     image: "/assets/25_01_option3.png"
-solution: "trial"
+solution: "1"
 reward:
   title: "Thurwe's Restoration Staff"
-  description: "A Nordic staff, warm and weighty in your hand. A token of gratitude."
+  description: "A staff in the nordic style"
   image: "/assets/25_01_reward.png"
 ---
 
-# Cartographer Of The North
+# 1
 
 ## Story
-A magical wave washes over you. The soul gem pulls you inward. Everything feels dreamlike. You stand on a shore. The voices in your head grow louder and clearer. One steps forward and speaks:
+A magical wave washes over you. The soul gem has pulled you inside of itself! Everything feels almost dreamlike. You stand on a shore. The voices in your head grow louder and clearer. One comes to the forefront and speaks:
 
-> “I traveled the world and mapped what I saw. Was this the last place I visited? Where was I when death found me?”
+> “I traveled the world and mapped out what I saw. Was this the last place I visited? Where was I when death found me?”
 
 ## Puzzle
 Which symbol marks this place on your map?
 
-![Entrance to Kyne’s Aegis](/assets/25_01_background.png)
+![Location](/assets/25_01_background.png)
 
 ## Post
-After making the correct choice, a relieved sigh echoes from the soul gem. The voices soften, and the memory of who Thurwe Hrorikson was flickers into focus for a heartbeat.
+> „Yes, I remember. My name was Thurwe Hrorikson. And this is Kynes Aegis, my home and my final trial. Thank you. Take this restoration staff. May it serve you better than it served me.“
 
-You sense more trapped souls waiting for your aid.
+You sense that more trapped souls are waiting for your aid.
