@@ -5,6 +5,7 @@ export type RiddleType = "text" | "single-choice" | "multi-choice" | "sort" | "g
 export interface RiddleOption {
   id: string;
   label: string;
+  image?: string;
 }
 
 export interface RiddleGroup {

@@ -536,10 +536,32 @@ a {
   display: flex;
   align-items: center;
   gap: 10px;
+  position: relative;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  min-height: 64px;
 }
 
 .choice-item input {
   accent-color: var(--accent);
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.choice-visual {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.choice-image {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #1f2327;
 }
 
 .sort-list {
@@ -597,6 +619,11 @@ a {
   border: 1px solid var(--line);
   background: var(--panel-contrast);
   color: var(--text);
+}
+
+.choice-item.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(212, 77, 63, 0.25);
 }
 
 .feedback {

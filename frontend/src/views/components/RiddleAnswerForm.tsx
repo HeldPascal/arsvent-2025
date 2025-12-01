@@ -153,7 +153,7 @@ export default function RiddleAnswerForm({ detail, submitting, onSubmit }: Props
           <p className="muted small">{t("chooseOne")}</p>
           <div className="choice-list">
             {detail.options.map((opt) => (
-              <label key={opt.id} className="choice-item">
+              <label key={opt.id} className={`choice-item ${singleChoice === opt.id ? "selected" : ""}`}>
                 <input
                   type="radio"
                   name="single-choice"
@@ -161,7 +161,10 @@ export default function RiddleAnswerForm({ detail, submitting, onSubmit }: Props
                   checked={singleChoice === opt.id}
                   onChange={() => setSingleChoice(opt.id)}
                 />
-                <span>{opt.label}</span>
+                <div className="choice-visual">
+                  {opt.image && <img src={opt.image} alt={opt.label || opt.id} className="choice-image" />}
+                  {opt.label && <span>{opt.label}</span>}
+                </div>
               </label>
             ))}
           </div>
@@ -178,14 +181,17 @@ export default function RiddleAnswerForm({ detail, submitting, onSubmit }: Props
           </p>
           <div className="choice-list">
             {detail.options.map((opt) => (
-              <label key={opt.id} className="choice-item">
+              <label key={opt.id} className={`choice-item ${multiChoices.includes(opt.id) ? "selected" : ""}`}>
                 <input
                   type="checkbox"
                   value={opt.id}
                   checked={multiChoices.includes(opt.id)}
                   onChange={() => toggleMultiChoice(opt.id)}
                 />
-                <span>{opt.label}</span>
+                <div className="choice-visual">
+                  {opt.image && <img src={opt.image} alt={opt.label || opt.id} className="choice-image" />}
+                  {opt.label && <span>{opt.label}</span>}
+                </div>
               </label>
             ))}
           </div>

@@ -3,11 +3,14 @@ title: "Karte der Nord"
 type: single-choice
 options:
   - id: "public"
-    label: "Öffentliches Verlies"
+    label: ""
+    image: "https://placehold.co/120x120?text=Public"
   - id: "trial"
-    label: "Prüfung"
+    label: ""
+    image: "https://placehold.co/120x120?text=Trial"
   - id: "dolmen"
-    label: "Dolmen"
+    label: ""
+    image: "https://placehold.co/120x120?text=Dolmen"
 solution: "trial"
 ---
 

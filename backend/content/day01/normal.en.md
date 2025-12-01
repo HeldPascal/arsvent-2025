@@ -3,11 +3,14 @@ title: "Cartographer of the North"
 type: single-choice
 options:
   - id: "public"
-    label: "Public dungeon"
+    label: ""
+    image: "https://placehold.co/120x120?text=Public"
   - id: "trial"
-    label: "Trial"
+    label: ""
+    image: "https://placehold.co/120x120?text=Trial"
   - id: "dolmen"
-    label: "Dolmen"
+    label: ""
+    image: "https://placehold.co/120x120?text=Dolmen"
 solution: "trial"
 ---
 

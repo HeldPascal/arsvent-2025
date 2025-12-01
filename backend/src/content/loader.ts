@@ -15,6 +15,7 @@ export interface IntroContent {
 export interface RiddleOption {
   id: string;
   label: string;
+  image?: string;
 }
 
 export interface RiddleGroup {
@@ -111,7 +112,8 @@ const normalizeOptions = (raw: unknown, fallback?: string[]): RiddleOption[] => 
       const option = entry as Exclude<RawOption, string>;
       const id = normalizeId(option.id ?? option.value, "Option id is missing");
       const label = String(option.label ?? option.name ?? id);
-      return { id, label };
+      const image = typeof (option as { image?: unknown }).image === "string" ? (option as { image: string }).image : undefined;
+      return { id, label, ...(image ? { image } : {}) };
     }
     throw new Error("Invalid option entry");
   });
