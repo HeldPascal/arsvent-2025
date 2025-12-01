@@ -99,7 +99,7 @@ export default function DayPage({ user, version }: Props) {
   const postHtml = detail.post ? rewriteAssets(detail.post) : null;
   const rewardImage =
     detail.reward?.image && detail.reward.image.startsWith("/assets/") && backendBase
-      ? `${backendBase}${detail.reward.image}`
+      ? `${backendBase}/content-${detail.reward.image.slice(1)}`
       : detail.reward?.image ?? null;
 
   return (

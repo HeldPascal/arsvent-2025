@@ -69,7 +69,9 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.json());
-app.use("/content-assets", express.static(path.join(__dirname, "..", "content", "assets")));
+const assetsPath = path.join(__dirname, "..", "content", "assets");
+app.use("/content-assets", express.static(assetsPath));
+app.use("/assets", express.static(assetsPath)); // alias for legacy references
 
 app.use(
   session({
