@@ -9,6 +9,8 @@ import { Strategy as DiscordStrategy } from "passport-discord";
 import type { Profile as DiscordProfile, StrategyOptions } from "passport-discord";
 import type { VerifyCallback } from "passport-oauth2";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import { PrismaClient } from "@prisma/client";
 import type { User as PrismaUser } from "@prisma/client";
 import { loadIntro, loadRiddle, IntroNotFoundError, RiddleNotFoundError } from "./content/loader.js";
@@ -33,6 +35,8 @@ const PORT = Number(process.env.PORT) || 3000;
 const prisma = new PrismaClient();
 const app = express();
 const superAdminId = SUPER_ADMIN_DISCORD_ID?.trim() || null;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 type SessionWithVersion = ExpressSession & Partial<SessionData> & { sessionVersion?: number };
 
@@ -65,6 +69,7 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.json());
+app.use("/assets", express.static(path.join(__dirname, "..", "content", "assets")));
 
 app.use(
   session({

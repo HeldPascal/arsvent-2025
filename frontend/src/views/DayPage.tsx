@@ -24,6 +24,14 @@ export default function DayPage({ user, version }: Props) {
   const [warned, setWarned] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<RiddleAnswerPayload | null>(null);
+  const backendBase =
+    import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ||
+    (window.location.origin.includes("localhost:5173") ? "http://localhost:4000" : window.location.origin);
+
+  const rewriteAssets = (html: string) =>
+    backendBase
+      ? html.replace(/src=(["'])(\/assets\/[^"']+)\1/g, (_m, quote, path) => `src=${quote}${backendBase}${path}${quote}`)
+      : html;
 
   useEffect(() => {
     if (!Number.isInteger(dayNumber) || dayNumber < 1 || dayNumber > 24) {
@@ -84,6 +92,12 @@ export default function DayPage({ user, version }: Props) {
   if (loading) return <div className="panel">{t("loading")}</div>;
   if (error) return <div className="panel error">{error}</div>;
   if (!detail) return null;
+  const bodyHtml = rewriteAssets(detail.body);
+  const postHtml = detail.post ? rewriteAssets(detail.post) : null;
+  const rewardImage =
+    detail.reward?.image && detail.reward.image.startsWith("/assets/") && backendBase
+      ? `${backendBase}${detail.reward.image}`
+      : detail.reward?.image ?? null;
 
   return (
     <div className="panel">
@@ -103,7 +117,7 @@ export default function DayPage({ user, version }: Props) {
 
       {detail.canPlay ? (
         <>
-          <article className="riddle-body" dangerouslySetInnerHTML={{ __html: detail.body }} />
+          <article className="riddle-body" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
           <RiddleAnswerForm detail={detail} submitting={submitting} onSubmit={onSubmit} />
           {detail.isSolved && (
             <div className="banner success">
@@ -123,12 +137,12 @@ export default function DayPage({ user, version }: Props) {
               <div className="banner-body">{t("answerIncorrect")}</div>
             </div>
           )}
-          {detail.isSolved && detail.post && (
-            <article className="riddle-body" dangerouslySetInnerHTML={{ __html: detail.post }} />
+          {detail.isSolved && postHtml && (
+            <article className="riddle-body" dangerouslySetInnerHTML={{ __html: postHtml }} />
           )}
           {detail.isSolved && detail.reward && (
             <div className="reward-card">
-              {detail.reward.image && <img src={detail.reward.image} alt={detail.reward.title} className="reward-image" />}
+              {rewardImage && <img src={rewardImage} alt={detail.reward.title} className="reward-image" />}
               <div>
                 <div className="reward-title">{detail.reward.title}</div>
                 {detail.reward.description && <div className="reward-desc">{detail.reward.description}</div>}

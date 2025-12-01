@@ -8,11 +8,11 @@ Drinks-Your-Blood is a formidable necromancer. Rumor claims she forged a new kin
 
 You must find Drinks-Your-Blood before it is too late. You hoped to corner her here, but she fled. At least she left belongings behind. Search them for clues.
 
-![Empty camp](https://placehold.co/800x360?text=Empty+camp)
+![Empty camp](/assets/empty_camp.png)
 
 You open a chest and gasp. Is that the great soul gem she crafted? Carefully, you reach out and touch it.
 
-![Dark soul gem](https://placehold.co/800x360?text=Dark+Soul+Gem)
+![Dark soul gem](/assets/dark_soul_gem.png)
 
 Voices fill your head—many at once, all different, all aligned.
 

@@ -10,6 +10,11 @@ interface Props {
 
 export default function RiddleAnswerForm({ detail, submitting, onSubmit }: Props) {
   const { t } = useI18n();
+  const backendBase =
+    import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ||
+    (window.location.origin.includes("localhost:5173") ? "http://localhost:4000" : window.location.origin);
+  const resolveImage = (src?: string) =>
+    src && src.startsWith("/assets/") && backendBase ? `${backendBase}${src}` : src ?? "";
   const [textAnswer, setTextAnswer] = useState("");
   const [singleChoice, setSingleChoice] = useState("");
   const [multiChoices, setMultiChoices] = useState<string[]>([]);
@@ -162,7 +167,7 @@ export default function RiddleAnswerForm({ detail, submitting, onSubmit }: Props
                   onChange={() => setSingleChoice(opt.id)}
                 />
                 <div className="choice-visual">
-                  {opt.image && <img src={opt.image} alt={opt.label || opt.id} className="choice-image" />}
+                  {opt.image && <img src={resolveImage(opt.image)} alt={opt.label || opt.id} className="choice-image" />}
                   {opt.label && <span>{opt.label}</span>}
                 </div>
               </label>
@@ -189,7 +194,7 @@ export default function RiddleAnswerForm({ detail, submitting, onSubmit }: Props
                   onChange={() => toggleMultiChoice(opt.id)}
                 />
                 <div className="choice-visual">
-                  {opt.image && <img src={opt.image} alt={opt.label || opt.id} className="choice-image" />}
+                  {opt.image && <img src={resolveImage(opt.image)} alt={opt.label || opt.id} className="choice-image" />}
                   {opt.label && <span>{opt.label}</span>}
                 </div>
               </label>

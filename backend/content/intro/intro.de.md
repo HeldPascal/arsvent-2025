@@ -8,11 +8,11 @@ Trinkt-Dein-Blut ist eine starke Nekromantin. Man hört Gerüchte, dass sie an e
 
 Du musst Trinkt-Dein-Blut finden und aufhalten, bevor es zu spät ist! Du hattest gehofft, sie endlich in diesem Lager stellen zu können. Doch scheinbar ist sie entkommen, bevor du sie erreichen konntest. Immerhin hat sie einige ihrer Besitztümer zurückgelassen. Durchsuche sie nach Hinweisen.
 
-![Leeres Lager](https://placehold.co/800x360?text=Leeres+Lager)
+![Leeres Lager](/assets/empty_camp.png)
 
 Du öffnest die Truhe und es verschlägt dir den Atem. Ist das der große Seelenstein, den Trinkt-Dein-Blut erschaffen hat? Vorsichtig streckst du die Hand aus und berührst ihn.
 
-![Dunkler Seelenstein](https://placehold.co/800x360?text=Dunkler+Seelenstein)
+![Dunkler Seelenstein](/assets/dark_soul_gem.png)
 
 In deinem Kopf erklingen mehrere Stimmen – alle zeitgleich, alle verschieden, alle vereint in ihrem Ziel.
 

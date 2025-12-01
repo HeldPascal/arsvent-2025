@@ -500,6 +500,14 @@ a {
   color: var(--text);
 }
 
+.riddle-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  display: block;
+  margin: 8px 0;
+}
+
 .answer-form {
   display: flex;
   gap: 8px;

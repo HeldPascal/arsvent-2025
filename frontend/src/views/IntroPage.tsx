@@ -20,12 +20,20 @@ export default function IntroPage({ user, onModeChange, onIntroComplete }: Props
   const [body, setBody] = useState("");
   const [introCompleted, setIntroCompleted] = useState(Boolean(user.introCompleted));
   const [saving, setSaving] = useState(false);
+  const backendBase =
+    import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ||
+    (window.location.origin.includes("localhost:5173") ? "http://localhost:4000" : window.location.origin);
+
+  const rewriteAssets = (html: string) =>
+    backendBase
+      ? html.replace(/src=(["'])(\/assets\/[^"']+)\1/g, (_m, quote, path) => `src=${quote}${backendBase}${path}${quote}`)
+      : html;
 
   useEffect(() => {
     fetchIntro()
       .then((data) => {
         setTitle(data.title);
-        setBody(data.body);
+        setBody(rewriteAssets(data.body));
         setIntroCompleted(Boolean(data.introCompleted));
       })
       .catch(() => setError(t("dayLoadFailed")))
