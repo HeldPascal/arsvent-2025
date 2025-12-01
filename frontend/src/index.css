@@ -848,6 +848,7 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  position: relative;
 }
 
 .toast.success {
@@ -872,6 +873,38 @@ a {
   color: inherit;
   font-size: 18px;
   cursor: pointer;
+}
+
+.toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 0 0 10px 10px;
+  transition: width 0.1s linear;
+}
+
+.banner {
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel-contrast);
+}
+
+.banner.success {
+  border-color: #4aa96c;
+  background: #1f3f2d;
+  color: #c6f7d1;
+}
+
+.banner-title {
+  font-weight: 800;
+}
+
+.banner-body {
+  color: var(--muted);
+  font-size: 14px;
 }
 
 .statbar {

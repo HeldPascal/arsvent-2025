@@ -21,7 +21,7 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
   const location = useLocation();
   const handledAuthRef = useRef<string | null>(null);
   const [toasts, setToasts] = useState<
-    Array<{ id: number; type: "success" | "error" | "info"; message?: string; key?: string }>
+    Array<{ id: number; type: "success" | "error" | "info"; message?: string; key?: string; durationMs?: number }>
   >([]);
 
   useEffect(() => {
@@ -40,7 +40,7 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
     cb();
   };
 
-  const addToast = (toast: { type: "success" | "error" | "info"; message?: string; key?: string }) => {
+  const addToast = (toast: { type: "success" | "error" | "info"; message?: string; key?: string; durationMs?: number }) => {
     const id = Date.now() + Math.random();
     setToasts((prev) => [...prev, { id, ...toast }]);
   };
@@ -131,6 +131,7 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
               key={toast.id}
               type={toast.type}
               message={toast.message ?? (toast.key ? t(toast.key as any) : "")}
+              durationMs={toast.durationMs}
               onClose={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
             />
           ))}

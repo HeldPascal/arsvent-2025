@@ -10,6 +10,7 @@ import { fetchMe } from "./services/api";
 import type { Locale, User } from "./types";
 import Layout from "./views/Layout";
 import { I18nProvider } from "./i18n";
+import IntroPage from "./views/IntroPage";
 
 export default function AppRouter() {
   const [user, setUser] = useState<User | null>(null);
@@ -50,6 +51,9 @@ export default function AppRouter() {
         }
         setStateVersion(u.stateVersion ?? 0);
         hadUserRef.current = true;
+        if (!u.introCompleted) {
+          navigate("/intro", { replace: true });
+        }
       })
       .catch(() => {
         setUser(null);
@@ -62,6 +66,10 @@ export default function AppRouter() {
 
   const handleUserPatch = (patch: Partial<User>) => {
     setUser((prev) => (prev ? { ...prev, ...patch } : prev));
+  };
+
+  const handleIntroComplete = () => {
+    setUser((prev) => (prev ? { ...prev, introCompleted: true } : prev));
   };
 
   const handleLogout = () => {
@@ -85,6 +93,9 @@ export default function AppRouter() {
           setLocale(u.locale);
           setStateVersion(u.stateVersion ?? 0);
           hadUserRef.current = true;
+          if (!u.introCompleted) {
+            navigate("/intro", { replace: true });
+          }
         })
         .catch(() => {
           if (cancelled) return;
@@ -130,14 +141,30 @@ export default function AppRouter() {
         <Routes>
           <Route path="/" element={<HomePage user={user} loading={loading} />} />
           <Route
+            path="/intro"
+            element={
+              user ? (
+                <IntroPage user={user} onModeChange={(mode) => handleUserPatch({ mode })} onIntroComplete={handleIntroComplete} />
+              ) : loading ? (
+                <div className="panel">Loading…</div>
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
             path="/calendar"
             element={
               user ? (
-                <CalendarPage
-                  user={user}
-                  version={stateVersion}
-                  onModeChange={(mode) => handleUserPatch({ mode })}
-                />
+                user.introCompleted ? (
+                  <CalendarPage
+                    user={user}
+                    version={stateVersion}
+                    onModeChange={(mode) => handleUserPatch({ mode })}
+                  />
+                ) : (
+                  <Navigate to="/intro" replace />
+                )
               ) : loading ? (
                 <div className="panel">Loading…</div>
               ) : (
@@ -149,8 +176,12 @@ export default function AppRouter() {
             path="/day/:day"
             element={
               user ? (
-                <DayPage user={user} version={stateVersion} />
-            ) : loading ? (
+                user.introCompleted ? (
+                  <DayPage user={user} version={stateVersion} />
+                ) : (
+                  <Navigate to="/intro" replace />
+                )
+              ) : loading ? (
                 <div className="panel">Loading…</div>
               ) : (
                 <Navigate to="/" replace />
@@ -161,7 +192,11 @@ export default function AppRouter() {
             path="/settings"
             element={
               user ? (
-                <SettingsPage user={user} onModeChange={(mode) => handleUserPatch({ mode })} />
+                user.introCompleted ? (
+                  <SettingsPage user={user} onModeChange={(mode) => handleUserPatch({ mode })} />
+                ) : (
+                  <Navigate to="/intro" replace />
+                )
               ) : loading ? (
                 <div className="panel">Loading…</div>
               ) : (

@@ -3,6 +3,7 @@ import type {
   AdminUserSummary,
   DayDetail,
   DaySummary,
+  IntroPayload,
   Locale,
   Mode,
   RiddleAnswerPayload,
@@ -102,3 +103,7 @@ export const fetchAudit = (limit?: number) =>
 
 export const deleteAuditEntry = (id: number) =>
   apiFetch<{ success: boolean }>(`/api/admin/audit/${id}`, { method: "DELETE" });
+
+export const fetchIntro = () => apiFetch<IntroPayload>("/api/intro");
+
+export const completeIntro = () => apiFetch<{ introCompleted: boolean }>("/api/intro/complete", { method: "POST" });

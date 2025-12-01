@@ -11,7 +11,7 @@ import type { VerifyCallback } from "passport-oauth2";
 import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
 import type { User as PrismaUser } from "@prisma/client";
-import { loadRiddle, RiddleNotFoundError } from "./content/loader.js";
+import { loadIntro, loadRiddle, IntroNotFoundError, RiddleNotFoundError } from "./content/loader.js";
 import type { Locale, Mode, RiddleContent } from "./content/loader.js";
 
 dotenv.config();
@@ -128,6 +128,7 @@ passport.use(
             isSuperAdmin,
             sessionVersion: 1,
             stateVersion: 1,
+            introCompleted: false,
             lastLoginAt: now,
           },
         });
@@ -214,6 +215,13 @@ const logAdminAction = async (action: string, actorId?: string | null, details?:
 
 const getUserLocale = (user?: PrismaUser): Locale => (user?.locale === "de" ? "de" : "en");
 const getUserMode = (user?: PrismaUser): Mode => (user?.mode === "VET" ? "VET" : "NORMAL");
+
+const requireIntroComplete: RequestHandler = (req, res, next) => {
+  if (req.user?.introCompleted || req.user?.isAdmin || req.user?.isSuperAdmin) {
+    return next();
+  }
+  return res.status(403).json({ error: "Intro not completed" });
+};
 
 const normalizeAnswerId = (value: unknown, message: string) => {
   if (typeof value !== "string") {
@@ -409,7 +417,44 @@ app.post("/api/user/mode", requireAuth, async (req: Request, res: Response, next
   }
 });
 
-app.get("/api/days", requireAuth, async (req, res, next) => {
+app.get("/api/intro", requireAuth, async (req, res, next) => {
+  try {
+    const locale = normalizeLocale(getUserLocale(req.user as PrismaUser));
+    const content = await loadIntro(locale);
+    return res.json({
+      title: content.title,
+      body: content.body,
+      introCompleted: Boolean(req.user?.introCompleted),
+      mode: req.user?.mode ?? "NORMAL",
+    });
+  } catch (error) {
+    if (error instanceof IntroNotFoundError) {
+      return res.status(404).json({ error: "Intro not found" });
+    }
+    return next(error);
+  }
+});
+
+app.post("/api/intro/complete", requireAuth, async (req, res, next) => {
+  try {
+    if (req.user?.introCompleted) {
+      return res.json({ introCompleted: true });
+    }
+    const updated = await prisma.user.update({
+      where: { id: req.user!.id },
+      data: { introCompleted: true, stateVersion: { increment: 1 } },
+    });
+    req.login(updated, (err) => {
+      if (err) return next(err);
+      storeSessionVersion(req, updated);
+      return res.json({ introCompleted: true });
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.get("/api/days", requireAuth, requireIntroComplete, async (req, res, next) => {
   try {
     const unlockedDay = await getUnlockedDay();
     const lastSolved = req.user!.lastSolvedDay ?? 0;
@@ -430,7 +475,7 @@ app.get("/api/days", requireAuth, async (req, res, next) => {
   }
 });
 
-app.get("/api/days/:day", requireAuth, async (req, res, next) => {
+app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, next) => {
   const day = Number(req.params.day);
   if (!Number.isInteger(day) || day < 1 || day > MAX_DAY) {
     return res.status(400).json({ error: "Day must be between 1 and 24" });
@@ -492,7 +537,7 @@ app.get("/api/days/:day", requireAuth, async (req, res, next) => {
   }
 });
 
-app.post("/api/days/:day/submit", requireAuth, async (req, res, next) => {
+app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req, res, next) => {
   const day = Number(req.params.day);
   if (!Number.isInteger(day) || day < 1 || day > MAX_DAY) {
     return res.status(400).json({ error: "Day must be between 1 and 24" });

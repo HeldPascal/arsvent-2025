@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { fetchDays } from "../services/api";
 import type { DaySummary, Mode, User } from "../types";
 import { useI18n } from "../i18n";
-import ModeSelector from "./components/ModeSelector";
 
 interface Props {
   user: User;
@@ -11,7 +10,7 @@ interface Props {
   onModeChange?: (mode: Mode) => void;
 }
 
-export default function CalendarPage({ user, version, onModeChange }: Props) {
+export default function CalendarPage({ user, version }: Props) {
   const [days, setDays] = useState<DaySummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,24 +61,11 @@ export default function CalendarPage({ user, version, onModeChange }: Props) {
         </div>
       </header>
 
-      {user.lastSolvedDay === 0 && (
-        <div className="welcome-box">
-          <h3>{t("welcomeTitle")}</h3>
-          <p className="muted">{t("welcomeBody")}</p>
-          <ModeSelector
-            mode={user.mode}
-            lastSolvedDay={user.lastSolvedDay}
-            onUpdated={(mode) => {
-              onModeChange?.(mode);
-            }}
-          />
-        </div>
-      )}
-
       {loading && <p>{t("loading")}</p>}
       {error && <p className="error">{error}</p>}
 
       <div className="grid">
+        <IntroCard title={t("introLabel")} />
         {days.map((item) => (
           <DayCard
             key={item.day}
@@ -97,6 +83,19 @@ export default function CalendarPage({ user, version, onModeChange }: Props) {
           />
         ))}
       </div>
+    </div>
+  );
+}
+
+function IntroCard({ title }: { title: string }) {
+  const { t } = useI18n();
+  return (
+    <div className="day-card solved">
+      <div className="day-number">0</div>
+      <div className="day-status">{title}</div>
+      <Link className="small-btn" to="/intro">
+        {t("open")}
+      </Link>
     </div>
   );
 }

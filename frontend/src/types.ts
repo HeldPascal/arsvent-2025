@@ -26,6 +26,7 @@ export interface User {
   avatar?: string | null;
   locale: Locale;
   mode: Mode;
+  introCompleted?: boolean;
   createdAt: string;
   updatedAt: string;
   lastLoginAt?: string | null;
@@ -54,6 +55,13 @@ export interface DayDetail {
   isSolved: boolean;
   canPlay: boolean;
   message?: string;
+}
+
+export interface IntroPayload {
+  title: string;
+  body: string;
+  introCompleted: boolean;
+  mode: Mode;
 }
 
 export interface AdminOverview {

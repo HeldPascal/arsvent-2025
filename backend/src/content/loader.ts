@@ -7,6 +7,10 @@ import { marked } from "marked";
 export type Locale = "en" | "de";
 export type Mode = "NORMAL" | "VET";
 export type RiddleType = "text" | "single-choice" | "multi-choice" | "sort" | "group";
+export interface IntroContent {
+  title: string;
+  body: string;
+}
 
 export interface RiddleOption {
   id: string;
@@ -63,6 +67,13 @@ export class RiddleNotFoundError extends Error {
   }
 }
 
+export class IntroNotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "IntroNotFoundError";
+  }
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CONTENT_ROOT = path.join(__dirname, "..", "..", "content");
@@ -72,6 +83,8 @@ function buildFilePath(day: number, locale: Locale, mode: Mode) {
   const difficulty = mode === "VET" ? "vet" : "normal";
   return path.join(CONTENT_ROOT, `day${paddedDay}`, `${difficulty}.${locale}.md`);
 }
+
+const buildIntroPath = (locale: Locale) => path.join(CONTENT_ROOT, "intro", `intro.${locale}.md`);
 
 type RawOption = string | { id?: string; value?: string; label?: string; name?: string };
 type RawGroup = string | { id?: string; label?: string; name?: string };
@@ -272,6 +285,28 @@ export async function loadRiddle(day: number, locale: Locale, mode: Mode): Promi
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       throw new RiddleNotFoundError("Riddle not found for given parameters");
+    }
+    throw error;
+  }
+}
+
+export async function loadIntro(locale: Locale): Promise<IntroContent> {
+  const filePath = buildIntroPath(locale);
+  try {
+    const raw = await fs.readFile(filePath, "utf8");
+    const parsed = matter(raw);
+    const title = String(parsed.data.title ?? "").trim();
+    if (!title) {
+      throw new Error("Missing intro title");
+    }
+    const htmlBody = marked.parse(parsed.content);
+    return {
+      title,
+      body: typeof htmlBody === "string" ? htmlBody : String(htmlBody),
+    };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new IntroNotFoundError("Intro not found for locale");
     }
     throw error;
   }

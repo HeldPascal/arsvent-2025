@@ -59,7 +59,12 @@ type TranslationKey =
   | "loginSuccess"
   | "loginFailed"
   | "logoutSuccess"
-  | "sessionEnded";
+  | "sessionEnded"
+  | "introLabel"
+  | "introContinue"
+  | "introCompleted"
+  | "introRevisitHint"
+  | "introStory";
 
 const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -121,6 +126,11 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     loginFailed: "Login failed. Please try again.",
     logoutSuccess: "You have been logged out.",
     sessionEnded: "Your session ended. Please log in again.",
+    introLabel: "Prologue",
+    introContinue: "Continue to calendar",
+    introCompleted: "Intro completed",
+    introRevisitHint: "You can return here anytime to reread the prologue.",
+    introStory: "Begin with the prologue and pick your difficulty.",
   },
   de: {
     brand: "Arsvent",
@@ -181,6 +191,11 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     loginFailed: "Login fehlgeschlagen. Bitte versuche es erneut.",
     logoutSuccess: "Du wurdest abgemeldet.",
     sessionEnded: "Deine Sitzung ist beendet. Bitte erneut einloggen.",
+    introLabel: "Prolog",
+    introContinue: "Weiter zum Kalender",
+    introCompleted: "Einführung abgeschlossen",
+    introRevisitHint: "Du kannst jederzeit hierher zurückkehren, um den Prolog erneut zu lesen.",
+    introStory: "Starte mit dem Prolog und wähle deine Schwierigkeit.",
   },
 };
 

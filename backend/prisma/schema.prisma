@@ -25,6 +25,7 @@ model User {
   lastSolvedAt   DateTime?
   lastDowngradedAt DateTime?
   lastDowngradedFromDay Int    @default(0)
+  introCompleted Boolean       @default(false)
   lastLoginAt    DateTime?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
