@@ -61,6 +61,8 @@ const discordOptions: StrategyOptions = {
   scope: ["identify"],
 };
 
+app.set("trust proxy", 1);
+
 app.use(
   cors({
     origin: FRONTEND_ORIGIN,
@@ -73,14 +75,17 @@ const assetsPath = path.join(__dirname, "..", "content", "assets");
 app.use("/content-assets", express.static(assetsPath));
 app.use("/assets", express.static(assetsPath)); // alias for legacy references
 
+const isProd = process.env.NODE_ENV === "production";
+
 app.use(
   session({
     secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    proxy: isProd,
     cookie: {
       httpOnly: true,
-      secure: false,
+      secure: isProd,
       sameSite: "lax",
     },
   }),
