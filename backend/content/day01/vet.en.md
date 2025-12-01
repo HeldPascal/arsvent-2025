@@ -1,17 +1,17 @@
 ---
 type: single-choice
 options:
-  - id: "public"
+  - id: "1"
     image: "/assets/25_01_option1.png"
-  - id: "dungeon"
+  - id: "4"
     image: "/assets/25_01_option4.png"
-  - id: "archive"
+  - id: "5"
     image: "/assets/25_01_option5.png"
-  - id: "trial"
+  - id: "2"
     image: "/assets/25_01_option2.png"
-  - id: "dolmen"
+  - id: "3"
     image: "/assets/25_01_option3.png"
-  - id: "shrine"
+  - id: "6"
     image: "/assets/25_01_option6.png"
 solution: "1"
 reward:
