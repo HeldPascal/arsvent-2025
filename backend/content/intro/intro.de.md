@@ -6,7 +6,7 @@ Du kannst stolz auf dich sein: Ein weiteres Lager des Wurmkults wurde erfolgreic
 
 Trinkt-Dein-Blut ist eine starke Nekromantin. Man hört Gerüchte, dass sie an einer neuen Art von Seelenstein forscht – einem Seelenstein, der mehr als nur eine einzelne Seele fassen kann. Wenn sie einen solchen Seelenstein besitzt und ihn vollständig auflädt, könnte sie mit dieser Macht das Loch in der Sich Windenden Mauer wieder versiegeln und all die harte Arbeit der Gefolgschaft zunichtemachen.
 
-Du musst Trinkt-Dein-Blut finden und aufhalten, bevor es zu spät ist! Du hattest gehofft, sie endlich in diesem Lager stellen zu können. Doch scheinbar ist sie entkommen, bevor du sie erreichen konntest. Immerhin hat sie einige ihrer Besitztümer zurückgelassen. Durchsuche sie nach Hinweisen.
+Du musst Trinkt-Dein-Blut finden und aufhalten, bevor es zu spät ist! Du hattest gehofft, sie endlich in diesem Lager stellen zu können. Doch scheinbar ist sie entkommen, bevor du sie erreichen konntest. Immerhin hat sie einige ihrer Besitztümer zurückgelassen.
 
 ![Leeres Lager](/assets/empty_camp.png)
 
