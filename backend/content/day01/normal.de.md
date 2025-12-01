@@ -1,17 +1,19 @@
 ---
 type: single-choice
 options:
-  - id: "public"
+  - id: "1"
     label: ""
     image: "/assets/25_01_option1.png"
-  - id: "trial"
+  - id: "2"
+    label: ""
     image: "/assets/25_01_option2.png"
-  - id: "dolmen"
+  - id: "3"
+    label: ""
     image: "/assets/25_01_option3.png"
-solution: "trial"
+solution: "1"
 reward:
   title: "Heilungsstab von Thurwe"
-  description: "Ein nordischer Stab, warm und schwer in deiner Hand. Ein Dank der Seele."
+  description: "Ein Stab im Stil der Nord"
   image: "/assets/25_01_reward.png"
 ---
 
