@@ -69,7 +69,7 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.json());
-app.use("/assets", express.static(path.join(__dirname, "..", "content", "assets")));
+app.use("/content-assets", express.static(path.join(__dirname, "..", "content", "assets")));
 
 app.use(
   session({

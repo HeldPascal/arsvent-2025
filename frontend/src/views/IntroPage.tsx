@@ -26,7 +26,10 @@ export default function IntroPage({ user, onModeChange, onIntroComplete }: Props
 
   const rewriteAssets = (html: string) =>
     backendBase
-      ? html.replace(/src=(["'])(\/assets\/[^"']+)\1/g, (_m, quote, path) => `src=${quote}${backendBase}${path}${quote}`)
+      ? html.replace(
+          /src=(["'])(\/assets\/[^"']+)\1/g,
+          (_m, quote, path) => `src=${quote}${backendBase}/content-${path.slice(1)}${quote}`,
+        )
       : html;
 
   useEffect(() => {

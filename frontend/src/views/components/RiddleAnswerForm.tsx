@@ -14,7 +14,7 @@ export default function RiddleAnswerForm({ detail, submitting, onSubmit }: Props
     import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ||
     (window.location.origin.includes("localhost:5173") ? "http://localhost:4000" : window.location.origin);
   const resolveImage = (src?: string) =>
-    src && src.startsWith("/assets/") && backendBase ? `${backendBase}${src}` : src ?? "";
+    src && src.startsWith("/assets/") && backendBase ? `${backendBase}/content-${src.slice(1)}` : src ?? "";
   const [textAnswer, setTextAnswer] = useState("");
   const [singleChoice, setSingleChoice] = useState("");
   const [multiChoices, setMultiChoices] = useState<string[]>([]);

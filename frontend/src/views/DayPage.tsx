@@ -30,7 +30,10 @@ export default function DayPage({ user, version }: Props) {
 
   const rewriteAssets = (html: string) =>
     backendBase
-      ? html.replace(/src=(["'])(\/assets\/[^"']+)\1/g, (_m, quote, path) => `src=${quote}${backendBase}${path}${quote}`)
+      ? html.replace(
+          /src=(["'])(\/assets\/[^"']+)\1/g,
+          (_m, quote, path) => `src=${quote}${backendBase}/content-${path.slice(1)}${quote}`,
+        )
       : html;
 
   useEffect(() => {
