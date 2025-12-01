@@ -51,7 +51,15 @@ export default function DayPage({ user, version }: Props) {
     setPendingPayload(null);
     try {
       const resp = await submitAnswer(detail.day, payload);
-      setDetail((current) => (current ? { ...current, isSolved: resp.isSolved } : current));
+      setDetail((current) =>
+        current
+          ? {
+              ...current,
+              isSolved: resp.isSolved,
+              solvedAnswer: resp.correct ? (resp.solution as any) ?? current.solvedAnswer : current.solvedAnswer,
+            }
+          : current,
+      );
       setFeedback({ message: resp.message, correct: resp.correct });
     } catch (err) {
       const message = err instanceof Error ? err.message : t("submissionFailed");
@@ -94,18 +102,24 @@ export default function DayPage({ user, version }: Props) {
       {detail.canPlay ? (
         <>
           <article className="riddle-body" dangerouslySetInnerHTML={{ __html: detail.body }} />
-          {detail.isSolved ? (
-            <>
-              <span className="pill success">{t("solved")}</span>
-              {feedback && <div className={`feedback ${feedback.correct ? "success" : "error"}`}>{feedback.message}</div>}
-            </>
-          ) : (
-            <>
-              <RiddleAnswerForm detail={detail} submitting={submitting} onSubmit={onSubmit} />
-              {feedback && (
-                <div className={`feedback ${feedback.correct ? "success" : "error"}`}>{feedback.message}</div>
-              )}
-            </>
+          <RiddleAnswerForm detail={detail} submitting={submitting} onSubmit={onSubmit} />
+          {detail.isSolved && (
+            <div className="banner success">
+              <div className="banner-title">{t("solved")}</div>
+              <div className="banner-body">{t("answerCorrect")}</div>
+            </div>
+          )}
+          {!detail.isSolved && feedback && feedback.correct && (
+            <div className="banner success">
+              <div className="banner-title">{t("solved")}</div>
+              <div className="banner-body">{t("answerCorrect")}</div>
+            </div>
+          )}
+          {!detail.isSolved && feedback && !feedback.correct && (
+            <div className="banner error">
+              <div className="banner-title">{t("unsolved")}</div>
+              <div className="banner-body">{t("answerIncorrect")}</div>
+            </div>
           )}
         </>
       ) : (

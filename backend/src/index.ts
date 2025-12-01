@@ -527,6 +527,9 @@ app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, ne
     if ("minSelections" in content) {
       response.minSelections = content.minSelections;
     }
+    if (day <= lastSolved) {
+      response.solvedAnswer = content.solution;
+    }
 
     return res.json(response);
   } catch (error) {
@@ -591,6 +594,7 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
       isSolved: correct ? true : false,
       correct,
       message: correct ? "Correct! Well done." : "Incorrect answer. Try again.",
+      solution: correct ? content.solution : undefined,
     });
   } catch (error) {
     if (error instanceof RiddleNotFoundError) {

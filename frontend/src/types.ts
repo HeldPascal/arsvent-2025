@@ -60,6 +60,7 @@ export interface DayDetail {
   isSolved: boolean;
   canPlay: boolean;
   message?: string;
+  solvedAnswer?: string | string[] | Record<string, string[]>;
 }
 
 export interface IntroPayload {

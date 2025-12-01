@@ -43,10 +43,13 @@ export const fetchDays = () => apiFetch<DaysResponse>("/api/days");
 export const fetchDay = (day: number) => apiFetch<DayDetail>(`/api/days/${day}`);
 
 export const submitAnswer = (day: number, payload: RiddleAnswerPayload) =>
-  apiFetch<{ day: number; isSolved: boolean; correct: boolean; message: string }>(`/api/days/${day}/submit`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  apiFetch<{ day: number; isSolved: boolean; correct: boolean; message: string; solution?: unknown }>(
+    `/api/days/${day}/submit`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
 
 export const updateLocale = (locale: Locale) =>
   apiFetch<{ id: string; locale: Locale }>("/api/user/locale", {

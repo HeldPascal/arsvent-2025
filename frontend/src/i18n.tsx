@@ -65,7 +65,9 @@ type TranslationKey =
   | "introCompleted"
   | "introRevisitHint"
   | "introStory"
-  | "dayUnlocked";
+  | "dayUnlocked"
+  | "answerCorrect"
+  | "answerIncorrect";
 
 const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -133,6 +135,8 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     introRevisitHint: "You can return here anytime to reread the prologue.",
     introStory: "Begin with the prologue and pick your difficulty.",
     dayUnlocked: "A new day has been unlocked!",
+    answerCorrect: "Correct! Well done.",
+    answerIncorrect: "Incorrect answer. Try again.",
   },
   de: {
     brand: "Arsvent",
@@ -199,6 +203,8 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     introRevisitHint: "Du kannst jederzeit hierher zurückkehren, um den Prolog erneut zu lesen.",
     introStory: "Starte mit dem Prolog und wähle deine Schwierigkeit.",
     dayUnlocked: "Ein neuer Tag wurde freigeschaltet!",
+    answerCorrect: "Richtig! Gut gemacht.",
+    answerIncorrect: "Falsche Antwort. Versuche es erneut.",
   },
 };
 

@@ -24,15 +24,46 @@ export default function RiddleAnswerForm({ detail, submitting, onSubmit }: Props
   }, [detail.options]);
 
   useEffect(() => {
-    setTextAnswer("");
-    setSingleChoice("");
-    setMultiChoices([]);
-    setSortOrder(detail.options?.map((opt) => opt.id) ?? []);
+    const solved = detail.solvedAnswer;
     const assignments: Record<string, string> = {};
-    (detail.options ?? []).forEach((opt) => {
-      assignments[opt.id] = "";
-    });
-    setGroupAssignments(assignments);
+
+    if (typeof solved === "string") {
+      setTextAnswer(solved);
+      setSingleChoice(solved);
+      setMultiChoices([]);
+      setSortOrder(detail.options?.map((opt) => opt.id) ?? []);
+    } else if (Array.isArray(solved)) {
+      setTextAnswer("");
+      setSingleChoice("");
+      setMultiChoices(solved);
+      setSortOrder(solved);
+    } else if (solved && typeof solved === "object") {
+      setTextAnswer("");
+      setSingleChoice("");
+      setMultiChoices([]);
+      setSortOrder(detail.options?.map((opt) => opt.id) ?? []);
+      Object.entries(solved).forEach(([groupId, ids]) => {
+        ids.forEach((id) => {
+          assignments[id] = groupId;
+        });
+      });
+    } else {
+      setTextAnswer("");
+      setSingleChoice("");
+      setMultiChoices([]);
+      setSortOrder(detail.options?.map((opt) => opt.id) ?? []);
+    }
+
+    if (detail.type === "group") {
+      const base: Record<string, string> = {};
+      (detail.options ?? []).forEach((opt) => {
+        base[opt.id] = assignments[opt.id] ?? "";
+      });
+      setGroupAssignments(base);
+    } else {
+      setGroupAssignments({});
+    }
+
     setLocalError(null);
   }, [detail]);
 
@@ -59,6 +90,7 @@ export default function RiddleAnswerForm({ detail, submitting, onSubmit }: Props
   const handleSubmit = (evt: React.FormEvent) => {
     evt.preventDefault();
     setLocalError(null);
+    if (submitting || detail.isSolved) return;
 
     if (detail.type === "text") {
       const trimmed = textAnswer.trim();
@@ -128,7 +160,6 @@ export default function RiddleAnswerForm({ detail, submitting, onSubmit }: Props
                   value={opt.id}
                   checked={singleChoice === opt.id}
                   onChange={() => setSingleChoice(opt.id)}
-                  disabled={submitting}
                 />
                 <span>{opt.label}</span>
               </label>
@@ -153,7 +184,6 @@ export default function RiddleAnswerForm({ detail, submitting, onSubmit }: Props
                   value={opt.id}
                   checked={multiChoices.includes(opt.id)}
                   onChange={() => toggleMultiChoice(opt.id)}
-                  disabled={submitting}
                 />
                 <span>{opt.label}</span>
               </label>
@@ -172,22 +202,22 @@ export default function RiddleAnswerForm({ detail, submitting, onSubmit }: Props
               <div key={id} className="sort-item">
                 <span className="sort-label">{optionLabel.get(id) ?? id}</span>
                 <div className="sort-actions">
-                  <button
-                    type="button"
-                    className="ghost icon-btn small"
-                    aria-label={t("moveUp")}
-                    onClick={() => moveSort(id, -1)}
-                    disabled={submitting || index === 0}
-                  >
+                <button
+                  type="button"
+                  className="ghost icon-btn small"
+                  aria-label={t("moveUp")}
+                  onClick={() => moveSort(id, -1)}
+                  disabled={submitting || index === 0}
+                >
                     ↑
                   </button>
                   <button
                     type="button"
                     className="ghost icon-btn small"
-                    aria-label={t("moveDown")}
-                    onClick={() => moveSort(id, 1)}
-                    disabled={submitting || index === sortOrder.length - 1}
-                  >
+                  aria-label={t("moveDown")}
+                  onClick={() => moveSort(id, 1)}
+                  disabled={submitting || index === sortOrder.length - 1}
+                >
                     ↓
                   </button>
                 </div>
@@ -208,7 +238,6 @@ export default function RiddleAnswerForm({ detail, submitting, onSubmit }: Props
               <select
                 value={groupAssignments[opt.id] ?? ""}
                 onChange={(e) => handleGroupChange(opt.id, e.target.value)}
-                disabled={submitting}
               >
                 <option value="">{t("selectGroup")}</option>
                 {(detail.groups ?? []).map((group) => (
@@ -227,18 +256,20 @@ export default function RiddleAnswerForm({ detail, submitting, onSubmit }: Props
   if (detail.type === "text") {
     return (
       <>
-        <form className="answer-form" onSubmit={handleSubmit}>
+        <form className={`answer-form ${detail.isSolved ? "locked-form" : ""}`} onSubmit={handleSubmit}>
           <input
             type="text"
             placeholder={t("yourAnswer")}
             value={textAnswer}
             onChange={(e) => setTextAnswer(e.target.value)}
             required
-            disabled={submitting}
+            readOnly={detail.isSolved}
           />
-          <button className="primary" type="submit" disabled={submitting}>
-            {submitting ? t("checking") : t("submit")}
-          </button>
+          {!detail.isSolved && (
+            <button className="primary" type="submit" disabled={submitting}>
+              {submitting ? t("checking") : t("submit")}
+            </button>
+          )}
         </form>
         {localError && <div className="feedback error">{localError}</div>}
       </>
@@ -247,11 +278,13 @@ export default function RiddleAnswerForm({ detail, submitting, onSubmit }: Props
 
   return (
     <>
-      <form className="answer-stack" onSubmit={handleSubmit}>
+      <form className={`answer-stack ${detail.isSolved ? "locked-form" : ""}`} onSubmit={handleSubmit}>
         {renderChoices()}
-        <button className="primary" type="submit" disabled={submitting}>
-          {submitting ? t("checking") : t("submit")}
-        </button>
+        {!detail.isSolved && (
+          <button className="primary" type="submit" disabled={submitting}>
+            {submitting ? t("checking") : t("submit")}
+          </button>
+        )}
       </form>
       {localError && <div className="feedback error">{localError}</div>}
     </>

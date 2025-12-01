@@ -898,6 +898,12 @@ a {
   color: #c6f7d1;
 }
 
+.banner.error {
+  border-color: #b91c1c;
+  background: #3b0a0a;
+  color: #fecaca;
+}
+
 .banner-title {
   font-weight: 800;
 }
@@ -905,6 +911,11 @@ a {
 .banner-body {
   color: var(--muted);
   font-size: 14px;
+}
+
+.locked-form {
+  pointer-events: none;
+  opacity: 0.95;
 }
 
 .statbar {
