@@ -2,22 +2,22 @@
 type: single-choice
 options:
   - id: "public"
-    image: "https://placehold.co/120x120?text=Public"
+    image: "/assets/25_01_option1.png"
   - id: "dungeon"
-    image: "https://placehold.co/120x120?text=Dungeon"
+    image: "/assets/25_01_option4.png"
   - id: "archive"
-    image: "https://placehold.co/120x120?text=Archive"
+    image: "/assets/25_01_option5.png"
   - id: "trial"
-    image: "https://placehold.co/120x120?text=Trial"
+    image: "/assets/25_01_option2.png"
   - id: "dolmen"
-    image: "https://placehold.co/120x120?text=Dolmen"
+    image: "/assets/25_01_option3.png"
   - id: "shrine"
-    image: "https://placehold.co/120x120?text=Wayshrine"
+    image: "/assets/25_01_option6.png"
 solution: "trial"
 reward:
   title: "Thurwe's Restoration Staff"
   description: "A Nordic staff, warm and weighty in your hand. A token of gratitude."
-  image: "https://placehold.co/200x200?text=Staff"
+  image: "/assets/25_01_reward.png"
 ---
 
 # Cartographer Of The North · Veteran
@@ -30,7 +30,7 @@ A magical wave washes over you. The soul gem pulls you inward. Everything feels 
 ## Puzzle
 Which symbol marks this place on your map?
 
-![Entrance to Kyne’s Aegis](https://placehold.co/800x360?text=Kyne%27s+Aegis)
+![Entrance to Kyne’s Aegis](/assets/25_01_background.png)
 
 ## Post
 After making the correct choice, a relieved sigh echoes from the soul gem. The voices soften, and the memory of who Thurwe Hrorikson was flickers into focus for a heartbeat.

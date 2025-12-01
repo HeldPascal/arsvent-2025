@@ -2,22 +2,22 @@
 type: single-choice
 options:
   - id: "public"
-    image: "https://placehold.co/120x120?text=Public"
+    image: "/assets/25_01_option1.png"
   - id: "dungeon"
-    image: "https://placehold.co/120x120?text=Dungeon"
+    image: "/assets/25_01_option4.png"
   - id: "archive"
-    image: "https://placehold.co/120x120?text=Archiv"
+    image: "/assets/25_01_option5.png"
   - id: "trial"
-    image: "https://placehold.co/120x120?text=Trial"
+    image: "/assets/25_01_option2.png"
   - id: "dolmen"
-    image: "https://placehold.co/120x120?text=Dolmen"
+    image: "/assets/25_01_option3.png"
   - id: "shrine"
-    image: "https://placehold.co/120x120?text=Wegschrein"
+    image: "/assets/25_01_option6.png"
 solution: "trial"
 reward:
   title: "Heilungsstab von Thurwe"
   description: "Ein nordischer Stab, warm und schwer in deiner Hand. Ein Dank der Seele."
-  image: "https://placehold.co/200x200?text=Stab"
+  image: "/assets/25_01_reward.png"
 ---
 
 # Karte Der Nord · Veteran
@@ -30,7 +30,7 @@ Du spürst eine magische Welle um dich herum. Der Seelenstein hat dich in sich h
 ## Puzzle
 Mit welchem Symbol wird dieser Ort auf deiner Karte markiert?
 
-![Eingang zu Kynes Ägis](https://placehold.co/800x360?text=Kynes+%C3%84gis)
+![Eingang zu Kynes Ägis](/assets/25_01_background.png)
 
 ## Post
 Nachdem du die richtige Wahl getroffen hast, hörst du einen erleichterten Seufzer aus dem Seelenstein. Die Stimmen werden leiser, und die Erinnerung daran, wer Thurwe Hrorikson war, scheint kurz aufzublitzen.
