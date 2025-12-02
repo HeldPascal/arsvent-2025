@@ -48,9 +48,7 @@ export const submitAnswer = (day: number, payload: RiddleAnswerPayload) =>
     isSolved: boolean;
     correct: boolean;
     message: string;
-    solution?: unknown;
-    post?: string;
-    reward?: { title: string; description?: string; image?: string };
+    blocks: DayDetail["blocks"];
   }>(
     `/api/days/${day}/submit`,
     {

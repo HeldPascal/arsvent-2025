@@ -13,8 +13,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { PrismaClient } from "@prisma/client";
 import type { User as PrismaUser } from "@prisma/client";
-import { loadIntro, loadRiddle, IntroNotFoundError, RiddleNotFoundError } from "./content/loader.js";
-import type { Locale, Mode, RiddleContent } from "./content/loader.js";
+import { loadIntro, loadDayContent, IntroNotFoundError, RiddleNotFoundError } from "./content/loader.js";
+import type { Locale, Mode, DayContent, DayBlock, RiddleOption } from "./content/loader.js";
+import { evaluateCondition } from "./content/v1-loader.js";
 
 dotenv.config();
 
@@ -38,7 +39,11 @@ const superAdminId = SUPER_ADMIN_DISCORD_ID?.trim() || null;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-type SessionWithVersion = ExpressSession & Partial<SessionData> & { sessionVersion?: number };
+type SessionWithVersion = ExpressSession &
+  Partial<SessionData> & {
+    sessionVersion?: number;
+    puzzleProgress?: Record<string, string[]>;
+  };
 
 const isSuperAdminUser = (user?: PrismaUser | null) => Boolean(user?.isSuperAdmin);
 const isAdminUser = (user?: PrismaUser | null) => Boolean(user?.isSuperAdmin || user?.isAdmin);
@@ -197,6 +202,17 @@ const ensureAppState = async () =>
     create: { id: 1, unlockedDay: 0 },
   });
 
+const getSessionPuzzleProgress = (req: Request, day: number) => {
+  const store = (req.session as SessionWithVersion | undefined)?.puzzleProgress ?? {};
+  return new Set(store[String(day)] ?? []);
+};
+
+const setSessionPuzzleProgress = (req: Request, day: number, ids: Set<string>) => {
+  const sess = req.session as SessionWithVersion;
+  if (!sess.puzzleProgress) sess.puzzleProgress = {};
+  sess.puzzleProgress[String(day)] = Array.from(ids);
+};
+
 const getUnlockedDay = async () => {
   const state = await ensureAppState();
   return Math.min(Math.max(state.unlockedDay ?? 0, 0), MAX_DAY);
@@ -253,92 +269,34 @@ const ensureStringArrayAnswer = (value: unknown, message: string) => {
   return value.map((entry) => normalizeAnswerId(entry, "Each answer entry must be a string"));
 };
 
-const evaluateAnswer = (content: RiddleContent, answer: unknown) => {
-  switch (content.type) {
+const evaluatePuzzleAnswer = (block: Extract<DayBlock, { kind: "puzzle" }>, answer: unknown) => {
+  switch (block.type) {
     case "text": {
       const normalizedAnswer = normalizeAnswerId(answer, "Answer must be a string").toLowerCase();
-      const normalizedSolution = content.solution.trim().toLowerCase();
+      const normalizedSolution = String(block.solution).trim().toLowerCase();
       return normalizedAnswer === normalizedSolution;
     }
     case "single-choice": {
       const choice = normalizeAnswerId(answer, "Answer must be a single choice id");
-      const validOptions = new Set(content.options.map((opt) => opt.id));
-      if (!validOptions.has(choice)) {
-        throw new Error("Unknown choice");
-      }
-      return choice === content.solution;
+      const validOptions = new Set((block.options ?? []).map((opt) => opt.id));
+      if (!validOptions.has(choice)) throw new Error("Unknown choice");
+      return choice === block.solution;
     }
     case "multi-choice": {
       const choices = ensureStringArrayAnswer(answer, "Answer must be an array of choices");
-      if (choices.length === 0) {
-        throw new Error("Select at least one option");
-      }
-      const validOptions = new Set(content.options.map((opt) => opt.id));
+      if (choices.length === 0) throw new Error("Select at least one option");
+      const validOptions = new Set((block.options ?? []).map((opt) => opt.id));
       const uniqueChoices = new Set<string>();
       choices.forEach((choice) => {
-        if (!validOptions.has(choice)) {
-          throw new Error("Unknown choice");
-        }
-        if (uniqueChoices.has(choice)) {
-          throw new Error("Duplicate choices are not allowed");
-        }
+        if (!validOptions.has(choice)) throw new Error("Unknown choice");
+        if (uniqueChoices.has(choice)) throw new Error("Duplicate choices are not allowed");
         uniqueChoices.add(choice);
       });
-      const expected = new Set(content.solution);
+      const expected = new Set(block.solution as string[]);
       return uniqueChoices.size === expected.size && choices.every((choice) => expected.has(choice));
     }
-    case "sort": {
-      const order = ensureStringArrayAnswer(answer, "Answer must list the options in order");
-      const validOptions = new Set(content.options.map((opt) => opt.id));
-      if (order.length !== content.options.length) {
-        throw new Error("Answer must include all options in an order");
-      }
-      const seen = new Set<string>();
-      order.forEach((entry) => {
-        if (!validOptions.has(entry)) {
-          throw new Error("Unknown choice");
-        }
-        if (seen.has(entry)) {
-          throw new Error("Each option can only appear once");
-        }
-        seen.add(entry);
-      });
-      return order.every((entry, index) => entry === content.solution[index]);
-    }
-    case "group": {
-      if (!answer || typeof answer !== "object" || Array.isArray(answer)) {
-        throw new Error("Answer must map groups to option ids");
-      }
-      const payload = answer as Record<string, unknown>;
-      const validGroups = new Set(content.groups.map((g) => g.id));
-      const validOptions = new Set(content.options.map((opt) => opt.id));
-      const assignments = new Map<string, string>();
-      Object.entries(payload).forEach(([groupId, value]) => {
-        if (!validGroups.has(groupId)) {
-          throw new Error("Unknown group");
-        }
-        const ids = ensureStringArrayAnswer(value, "Group answers must be arrays of option ids");
-        ids.forEach((id) => {
-          if (!validOptions.has(id)) {
-            throw new Error("Unknown choice");
-          }
-          if (assignments.has(id)) {
-            throw new Error("Each option can only be assigned once");
-          }
-          assignments.set(id, groupId);
-        });
-      });
-      if (assignments.size !== validOptions.size) {
-        throw new Error("All options must be assigned to a group");
-      }
-      const expectedGroup = new Map<string, string>();
-      Object.entries(content.solution).forEach(([groupId, ids]) => {
-        ids.forEach((id) => expectedGroup.set(id, groupId));
-      });
-      return content.options.every((opt) => assignments.get(opt.id) === expectedGroup.get(opt.id));
-    }
     default:
-      return false;
+      throw new Error("Unsupported puzzle type for answer evaluation");
   }
 };
 
@@ -519,37 +477,22 @@ app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, ne
       });
     }
 
-    const content = await loadRiddle(day, locale, mode);
+    const sessionSolved = getSessionPuzzleProgress(req, day);
+    let content = await loadDayContent(day, locale, mode, sessionSolved, false);
 
-    const response: Record<string, unknown> = {
+    const daySolvedInDb = day <= lastSolved;
+    if (daySolvedInDb) {
+      const solvedAll = new Set(content.puzzleIds);
+      content = await loadDayContent(day, locale, mode, solvedAll, false);
+    }
+
+    return res.json({
       day,
       title: content.title,
-      body: content.body,
-      type: content.type,
-      isSolved: day <= lastSolved,
+      blocks: content.blocks,
+      isSolved: daySolvedInDb,
       canPlay: true,
-    };
-
-    if ("options" in content) {
-      response.options = content.options;
-    }
-    if ("groups" in content) {
-      response.groups = content.groups;
-    }
-    if ("minSelections" in content) {
-      response.minSelections = content.minSelections;
-    }
-    if (day <= lastSolved) {
-      response.solvedAnswer = content.solution;
-      if ("post" in content && content.post) {
-        response.post = content.post;
-      }
-      if ("reward" in content && content.reward) {
-        response.reward = content.reward;
-      }
-    }
-
-    return res.json(response);
+    });
   } catch (error) {
     if (error instanceof RiddleNotFoundError) {
       return res.status(404).json({ error: "Riddle not found" });
@@ -564,7 +507,7 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
     return res.status(400).json({ error: "Day must be between 1 and 24" });
   }
 
-  const { answer, type: submittedType } = req.body as { answer?: unknown; type?: string };
+  const { answer, puzzleId, type: submittedType } = req.body as { answer?: unknown; puzzleId?: string; type?: string };
 
   try {
     const unlockedDay = await getUnlockedDay();
@@ -574,12 +517,7 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
 
     const lastSolved = req.user!.lastSolvedDay ?? 0;
     if (day <= lastSolved) {
-      return res.json({
-        day,
-        isSolved: true,
-        correct: true,
-        message: "Already solved.",
-      });
+      return res.json({ day, isSolved: true, correct: true, message: "Already solved." });
     }
     if (day !== lastSolved + 1) {
       return res.status(400).json({ error: "Solve previous days first." });
@@ -587,34 +525,62 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
 
     const locale = getUserLocale(req.user as PrismaUser);
     const mode = getUserMode(req.user as PrismaUser);
-    const content = await loadRiddle(day, locale, mode);
+    const sessionSolved = getSessionPuzzleProgress(req, day);
+    const content = await loadDayContent(day, locale, mode, sessionSolved, false);
 
-    if (submittedType && submittedType !== content.type) {
-      return res.status(400).json({ error: "Answer type does not match riddle" });
+    if (!puzzleId) {
+      return res.status(400).json({ error: "Missing puzzleId" });
+    }
+
+    const puzzleBlock = content.blocks.find(
+      (block): block is Extract<DayBlock, { kind: "puzzle" }> => block.kind === "puzzle" && block.id === puzzleId,
+    );
+    if (!puzzleBlock) {
+      return res.status(400).json({ error: "Puzzle not found or not available yet" });
+    }
+    if (puzzleBlock.visible === false) {
+      return res.status(400).json({ error: "Puzzle is not available yet" });
+    }
+    if (puzzleBlock.solved) {
+      return res.json({ day, isSolved: false, correct: true, message: "Already solved." });
+    }
+    if (submittedType && submittedType !== puzzleBlock.type) {
+      return res.status(400).json({ error: "Answer type does not match puzzle" });
     }
 
     let correct = false;
     try {
-      correct = evaluateAnswer(content, answer);
+      correct = evaluatePuzzleAnswer(puzzleBlock, answer);
     } catch (err) {
       return res.status(400).json({ error: (err as Error).message });
     }
 
+    const updatedSolved = new Set(sessionSolved);
     if (correct) {
+      updatedSolved.add(puzzleBlock.id);
+      setSessionPuzzleProgress(req, day, updatedSolved);
+    }
+
+    let nextContent = await loadDayContent(day, locale, mode, updatedSolved, false);
+    const solvedCondition = nextContent.solvedCondition ?? { kind: "all" as const };
+    const allPuzzleIds = new Set(nextContent.puzzleIds);
+    const daySolved = evaluateCondition(solvedCondition, updatedSolved, allPuzzleIds);
+
+    if (correct && daySolved) {
       await prisma.user.update({
         where: { id: req.user!.id },
         data: { lastSolvedDay: day, lastSolvedAt: new Date(), stateVersion: { increment: 1 } },
       });
+      const solvedAll = new Set(nextContent.puzzleIds);
+      nextContent = await loadDayContent(day, locale, mode, solvedAll, false);
     }
 
     return res.json({
       day,
-      isSolved: correct ? true : false,
+      isSolved: daySolved,
       correct,
       message: correct ? "Correct! Well done." : "Incorrect answer. Try again.",
-      solution: correct ? content.solution : undefined,
-      post: correct && "post" in content ? content.post : undefined,
-      reward: correct && "reward" in content ? content.reward : undefined,
+      blocks: nextContent.blocks,
     });
   } catch (error) {
     if (error instanceof RiddleNotFoundError) {
@@ -807,7 +773,7 @@ app.post("/api/admin/users/:id/progress", requireAuth, requireAdmin, async (req,
 
     const updated = await prisma.user.update({
       where: { id: target.id },
-      data: { lastSolvedDay, lastSolvedAt: solvedAt, stateVersion: { increment: 1 } },
+      data: { lastSolvedDay, lastSolvedAt: solvedAt, stateVersion: { increment: 1 }, sessionVersion: { increment: 1 } },
     });
 
     await logAdminAction("admin:set-progress", req.user?.id, { targetId: target.id, lastSolvedDay, lastSolvedAt: solvedAt });

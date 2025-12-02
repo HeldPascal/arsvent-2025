@@ -14,11 +14,11 @@ export interface RiddleGroup {
 }
 
 export type RiddleAnswerPayload =
-  | { type: "text"; answer: string }
-  | { type: "single-choice"; answer: string }
-  | { type: "multi-choice"; answer: string[] }
-  | { type: "sort"; answer: string[] }
-  | { type: "group"; answer: Record<string, string[]> };
+  | { puzzleId: string; type: "text"; answer: string }
+  | { puzzleId: string; type: "single-choice"; answer: string }
+  | { puzzleId: string; type: "multi-choice"; answer: string[] }
+  | { puzzleId: string; type: "sort"; answer: string[] }
+  | { puzzleId: string; type: "group"; answer: Record<string, string[]> };
 
 export interface User {
   id: string;
@@ -50,24 +50,28 @@ export interface DaysResponse {
   unlockedDay: number;
 }
 
+export type DayBlock =
+  | { kind: "story"; id?: string; title?: string; html: string; visible: boolean }
+  | {
+      kind: "puzzle";
+      id: string;
+      title?: string;
+      html: string;
+      visible: boolean;
+      type: RiddleType;
+      solution: unknown;
+      solved: boolean;
+      options?: RiddleOption[];
+      minSelections?: number;
+    };
+
 export interface DayDetail {
   day: number;
   title: string;
-  body: string;
-  type: RiddleType;
-  options?: RiddleOption[];
-  groups?: RiddleGroup[];
-  minSelections?: number;
+  blocks: DayBlock[];
   isSolved: boolean;
   canPlay: boolean;
   message?: string;
-  solvedAnswer?: string | string[] | Record<string, string[]>;
-  post?: string;
-  reward?: {
-    title: string;
-    description?: string | null;
-    image?: string | null;
-  };
 }
 
 export interface IntroPayload {

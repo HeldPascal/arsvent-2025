@@ -1,0 +1,449 @@
+import matter, { type GrayMatterFile } from "gray-matter";
+import { marked } from "marked";
+import type { RiddleOption, RiddleType } from "./loader.js";
+
+export type DayBlock =
+  | { kind: "story"; id?: string; title?: string; html: string; visible: boolean }
+  | {
+      kind: "puzzle";
+      id: string;
+      title?: string;
+      html: string;
+      visible: boolean;
+      type: RiddleType;
+      solution: unknown;
+      solved: boolean;
+      options?: RiddleOption[];
+      minSelections?: number;
+    };
+
+export type WhenCondition =
+  | { kind: "all" }
+  | { kind: "any" }
+  | { kind: "puzzle"; id: string }
+  | { kind: "and"; conditions: WhenCondition[] }
+  | { kind: "or"; conditions: WhenCondition[] };
+
+interface PuzzleDefinition {
+  type: string;
+  options?: unknown;
+  solution?: unknown;
+  raw: Record<string, unknown>;
+}
+
+interface StoryBlockRaw {
+  kind: "story";
+  heading: string;
+  title?: string;
+  id?: string;
+  markdown: string;
+  html: string;
+}
+
+interface PuzzleBlockRaw {
+  kind: "puzzle";
+  heading: string;
+  title?: string;
+  id: string;
+  markdown: string;
+  html: string;
+  definition: PuzzleDefinition;
+}
+
+interface ContinueWhenBlock {
+  kind: "continue-when";
+  heading: string;
+  title?: string;
+  id?: string;
+  condition: WhenCondition;
+  source: "continue-when" | "wait-for";
+}
+
+type StructuredBlock = StoryBlockRaw | PuzzleBlockRaw | ContinueWhenBlock;
+
+export interface VersionedMeta {
+  id: string;
+  version: number;
+  release: string;
+  language: string;
+  mode: string;
+  inventory: string[];
+  tags: string[];
+  solvedWhen?: WhenCondition;
+}
+
+export interface LoadedVersionedContent {
+  title: string;
+  blocks: DayBlock[];
+  puzzleIds: string[];
+  solvedCondition: WhenCondition | null;
+}
+
+const normalizeId = (value: unknown, message: string) => {
+  const id = String(value ?? "").trim();
+  if (!id) throw new Error(message);
+  return id;
+};
+
+const normalizeOptions = (raw: unknown): RiddleOption[] => {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw new Error("Options are required for this puzzle type");
+  }
+  const options = raw.map((entry) => {
+    if (typeof entry === "string") {
+      const id = normalizeId(entry, "Option id cannot be empty");
+      return { id, label: entry };
+    }
+    if (entry && typeof entry === "object" && !Array.isArray(entry)) {
+      const option = entry as { id?: unknown; value?: unknown; label?: unknown; name?: unknown; image?: unknown };
+      const id = normalizeId(option.id ?? option.value, "Option id is missing");
+      const label = String(option.label ?? option.name ?? id);
+      const image = typeof option.image === "string" ? option.image : undefined;
+      return { id, label, ...(image ? { image } : {}) };
+    }
+    throw new Error("Invalid option entry");
+  });
+  const seen = new Set<string>();
+  options.forEach((opt) => {
+    if (seen.has(opt.id)) throw new Error(`Duplicate option id: ${opt.id}`);
+    seen.add(opt.id);
+  });
+  return options;
+};
+
+const ensureStringArray = (value: unknown, message: string) => {
+  if (!Array.isArray(value)) {
+    throw new Error(message);
+  }
+  const result = value.map((entry) => normalizeId(entry, "Entries must be strings"));
+  const unique = new Set(result);
+  if (unique.size !== result.length) {
+    throw new Error("Entries must be unique");
+  }
+  return result;
+};
+
+const resolveType = (input?: string): RiddleType => {
+  const normalized = (input ?? "text").toLowerCase();
+  if (["single-choice", "single", "choice"].includes(normalized)) return "single-choice";
+  if (["multi-choice", "multiple", "multi"].includes(normalized)) return "multi-choice";
+  if (["sort", "ordering", "order"].includes(normalized)) return "sort";
+  if (["group", "grouping"].includes(normalized)) return "group";
+  return "text";
+};
+
+const stripQuotes = (value: string) => value.replace(/^['"]|['"]$/g, "").trim();
+
+const parseWhenCondition = (value: unknown): WhenCondition => {
+  if (value === "all") return { kind: "all" };
+  if (value === "any") return { kind: "any" };
+  if (typeof value === "string") return { kind: "puzzle", id: value };
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const { and, or } = value as { and?: unknown; or?: unknown };
+    if (and) {
+      const list = Array.isArray(and) ? and : [and];
+      return { kind: "and", conditions: list.map((entry) => parseWhenCondition(entry)) };
+    }
+    if (or) {
+      const list = Array.isArray(or) ? or : [or];
+      return { kind: "or", conditions: list.map((entry) => parseWhenCondition(entry)) };
+    }
+  }
+  throw new Error("Invalid when condition");
+};
+
+const extractBlockId = (lines: string[]) => {
+  let index = 0;
+  while (index < lines.length && !(lines[index]?.trim())) {
+    index += 1;
+  }
+  const first = lines[index]?.trim();
+  if (!first) return { id: undefined, rest: lines };
+  const match = first.match(/^id:\s*(.+)$/i);
+  if (!match) return { id: undefined, rest: lines };
+  return { id: stripQuotes(match[1] ?? ""), rest: lines.slice(index + 1) };
+};
+
+const splitBlocks = (content: string) => {
+  const lines = content.split(/\r?\n/);
+  const blocks: Array<{ heading: string; lines: string[] }> = [];
+  let current: { heading: string; lines: string[] } | null = null;
+  lines.forEach((line) => {
+    const h2 = line.match(/^##\s+(.+)\s*$/);
+    if (h2) {
+      if (current) blocks.push(current);
+      current = { heading: h2[1]?.trim() ?? "", lines: [] };
+    } else if (current) {
+      current.lines.push(line);
+    }
+  });
+  if (current) blocks.push(current);
+  return blocks;
+};
+
+const parsePuzzleDefinition = (yaml: string): PuzzleDefinition => {
+  const parsed = matter(`---\n${yaml}\n---\n`).data as Record<string, unknown>;
+  return {
+    type: typeof parsed.type === "string" ? parsed.type : "text",
+    options: parsed.options,
+    solution: parsed.solution,
+    raw: parsed,
+  };
+};
+
+const removeCodeBlocks = (markdown: string) =>
+  markdown.replace(/```yaml\s+(puzzle|when)[\s\S]*?```/gi, "").trim();
+
+const toHtml = (markdown: string) => {
+  const rendered = marked.parse(markdown);
+  return typeof rendered === "string" ? rendered : String(rendered);
+};
+
+const parseBlocks = (parsed: GrayMatterFile<string>) => {
+  const { data } = parsed;
+  const meta: VersionedMeta = {
+    id: normalizeId(data.id, "Missing frontmatter id"),
+    version: Number(data.version ?? 0),
+    release: normalizeId(data.release, "Missing release timestamp"),
+    language: normalizeId(data.language, "Missing language"),
+    mode: normalizeId(data.mode, "Missing mode"),
+    inventory: Array.isArray(data.inventory) ? data.inventory.map((entry) => String(entry)) : [],
+    tags: Array.isArray(data.tags) ? data.tags.map((entry) => String(entry)) : [],
+  };
+  if (data.solved?.when !== undefined) {
+    meta.solvedWhen = parseWhenCondition(data.solved.when);
+  }
+
+  const normalizedLanguage = meta.language.toLowerCase();
+  if (!["en", "de"].includes(normalizedLanguage)) throw new Error(`Unsupported language: ${meta.language}`);
+  meta.language = normalizedLanguage;
+
+  const normalizedMode = meta.mode.toLowerCase();
+  if (!["normal", "veteran"].includes(normalizedMode)) throw new Error(`Unsupported mode: ${meta.mode}`);
+  meta.mode = normalizedMode;
+
+  const blocks: StructuredBlock[] = [];
+
+  splitBlocks(parsed.content || "").forEach(({ heading, lines }) => {
+    const lowerHeading = heading.toLowerCase();
+    const isStory = lowerHeading.startsWith("story");
+    const isPuzzle = lowerHeading.startsWith("puzzle");
+    const isContinue = lowerHeading.startsWith("continue when");
+    const waitMatch = lowerHeading.match(/^wait for:\s*(.+)$/);
+    const title = heading.includes(":") ? heading.split(":").slice(1).join(":").trim() : undefined;
+    if (!isStory && !isPuzzle && !isContinue && !waitMatch) return;
+
+    const { id, rest } = extractBlockId(lines);
+    const blockMarkdown = rest.join("\n").trim();
+    const markdownWithoutCode = removeCodeBlocks(blockMarkdown);
+
+    if (isStory) {
+      blocks.push({
+        kind: "story",
+        heading,
+        markdown: markdownWithoutCode,
+        html: toHtml(markdownWithoutCode),
+        ...(title ? { title } : {}),
+        ...(id ? { id } : {}),
+      });
+      return;
+    }
+
+    if (isPuzzle) {
+      const puzzleMatch = blockMarkdown.match(/```yaml\s+puzzle\s*\n([\s\S]*?)```/i);
+      if (!puzzleMatch) throw new Error("Puzzle block is missing a puzzle definition");
+      const definition = parsePuzzleDefinition(puzzleMatch[1] ?? "");
+      const puzzleId = id || normalizeId((definition.raw as { id?: unknown }).id, "Puzzle id is required");
+      blocks.push({
+        kind: "puzzle",
+        heading,
+        id: puzzleId,
+        markdown: markdownWithoutCode,
+        html: toHtml(markdownWithoutCode),
+        definition,
+        ...(title ? { title } : {}),
+      });
+      return;
+    }
+
+    const conditionValue = waitMatch ? waitMatch[1]?.trim() : undefined;
+    const whenMatch = blockMarkdown.match(/```yaml\s+when\s*\n([\s\S]*?)```/i);
+    const condition = conditionValue
+      ? parseWhenCondition(conditionValue)
+      : whenMatch
+        ? parseWhenCondition(parsePuzzleDefinition(whenMatch[1] ?? "").raw)
+        : null;
+    if (!condition) throw new Error("Continue/Wait block requires a condition");
+    blocks.push({
+      kind: "continue-when",
+      heading,
+      condition,
+      source: waitMatch ? "wait-for" : "continue-when",
+      ...(title ? { title } : {}),
+      ...(id ? { id } : {}),
+    });
+  });
+
+  return { meta, blocks };
+};
+
+export const evaluateCondition = (condition: WhenCondition, solvedIds: Set<string>, allPuzzleIds: Set<string>): boolean => {
+  switch (condition.kind) {
+    case "all":
+      return Array.from(allPuzzleIds).every((id) => solvedIds.has(id));
+    case "any":
+      return solvedIds.size > 0;
+    case "puzzle":
+      return solvedIds.has(condition.id);
+    case "and":
+      return condition.conditions.every((sub) => evaluateCondition(sub, solvedIds, allPuzzleIds));
+    case "or":
+      return condition.conditions.some((sub) => evaluateCondition(sub, solvedIds, allPuzzleIds));
+    default:
+      return false;
+  }
+};
+
+const segmentBlocks = (blocks: StructuredBlock[]) => {
+  const segments: Array<{ required: WhenCondition | null; blocks: StructuredBlock[] }> = [
+    { required: null, blocks: [] },
+  ];
+  blocks.forEach((block) => {
+    if (block.kind === "continue-when") {
+      segments.push({ required: block.condition, blocks: [] });
+      return;
+    }
+    segments[segments.length - 1]?.blocks.push(block);
+  });
+  return segments;
+};
+
+const mapToDayBlocks = (blocks: StructuredBlock[], solvedIds: Set<string>, includeHidden: boolean): DayBlock[] => {
+  const segments = segmentBlocks(blocks);
+  const puzzleIds = new Set(blocks.filter((b) => b.kind === "puzzle").map((b) => (b as PuzzleBlockRaw).id));
+  const visibleStoryPuzzle: StructuredBlock[] = [];
+  const postSegments: StructuredBlock[] = [];
+  let gateSeen = false;
+  for (const segment of segments) {
+    if (segment.required) {
+      gateSeen = true;
+      if (!evaluateCondition(segment.required, solvedIds, puzzleIds)) break;
+      postSegments.push(...segment.blocks);
+      continue;
+    }
+    if (gateSeen) {
+      postSegments.push(...segment.blocks);
+    } else {
+      visibleStoryPuzzle.push(...segment.blocks);
+    }
+  }
+  const visibleSet = new Set([...visibleStoryPuzzle, ...postSegments]);
+
+  const mapped: DayBlock[] = [];
+  const convert = (block: StructuredBlock): DayBlock | null => {
+    if (block.kind === "story") {
+      return {
+        kind: "story",
+        html: block.html,
+        visible: visibleSet.has(block),
+        ...(block.id ? { id: block.id } : {}),
+        ...(block.title ? { title: block.title } : {}),
+      };
+    }
+    if (block.kind === "puzzle") {
+      const type = resolveType(block.definition.type);
+      const solved = solvedIds.has(block.id);
+
+      if (type === "text") {
+        const solution = normalizeId(block.definition.solution, "Text puzzles require a solution");
+        return {
+          kind: "puzzle",
+          id: block.id,
+          html: block.html,
+          visible: visibleSet.has(block) || includeHidden,
+          type,
+          solution,
+          solved,
+          ...(block.title ? { title: block.title } : {}),
+        };
+      }
+
+      if (type === "single-choice") {
+        const options = normalizeOptions(block.definition.options);
+        const solution = normalizeId(block.definition.solution, "Solution must match a single option id");
+        const optionIds = new Set(options.map((opt) => opt.id));
+        if (!optionIds.has(solution)) throw new Error("Solution must reference one of the provided options");
+        return {
+          kind: "puzzle",
+          id: block.id,
+          html: block.html,
+          visible: visibleSet.has(block) || includeHidden,
+          type,
+          solution,
+          options,
+          solved,
+          ...(block.title ? { title: block.title } : {}),
+        };
+      }
+
+      if (type === "multi-choice") {
+        const options = normalizeOptions(block.definition.options);
+        const solution = ensureStringArray(block.definition.solution, "Solution must list the correct options");
+        if (solution.length === 0) throw new Error("Solution must include at least one correct option");
+        const optionIds = new Set(options.map((opt) => opt.id));
+        solution.forEach((id) => {
+          if (!optionIds.has(id)) {
+            throw new Error("Solution references an unknown option id");
+          }
+        });
+        const minSelections = Math.min(Math.max(solution.length, 1), options.length);
+        return {
+          kind: "puzzle",
+          id: block.id,
+          html: block.html,
+          visible: visibleSet.has(block) || includeHidden,
+          type,
+          solution,
+          options,
+          minSelections,
+          solved,
+          ...(block.title ? { title: block.title } : {}),
+        };
+      }
+
+      throw new Error(`Unsupported puzzle type for versioned content: ${type}`);
+    }
+    return null;
+  };
+
+  blocks.forEach((block) => {
+    const converted = convert(block);
+    if (converted && (converted.visible || includeHidden)) {
+      mapped.push(converted);
+    }
+  });
+
+  return mapped;
+};
+
+export const loadVersionedContent = (
+  parsed: GrayMatterFile<string>,
+  options: { solvedPuzzleIds: Set<string>; includeHidden: boolean },
+): LoadedVersionedContent => {
+  const { meta, blocks } = parseBlocks(parsed);
+  if (!meta.version || Number.isNaN(meta.version)) throw new Error("Invalid content version");
+
+  const h1Match = parsed.content.match(/^#\s+(.+)\s*$/m);
+  const derivedTitle = h1Match?.[1]?.trim() ?? "";
+  const title = derivedTitle || meta.id;
+
+  const puzzleIds = blocks.filter((block) => block.kind === "puzzle").map((block) => (block as PuzzleBlockRaw).id);
+  const dayBlocks = mapToDayBlocks(blocks, options.solvedPuzzleIds, options.includeHidden);
+
+  return {
+    title,
+    blocks: dayBlocks,
+    puzzleIds,
+    solvedCondition: meta.solvedWhen ?? null,
+  };
+};

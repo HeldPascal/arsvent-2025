@@ -1,170 +1,106 @@
-import { useEffect, useMemo, useState } from "react";
-import type { DayDetail, RiddleAnswerPayload } from "../../types";
+import { useEffect, useState } from "react";
+import type { DayBlock, RiddleAnswerPayload } from "../../types";
 import { useI18n } from "../../i18n";
 
 interface Props {
-  detail: DayDetail;
+  block: Extract<DayBlock, { kind: "puzzle" }>;
   submitting: boolean;
+  status?: "correct" | "incorrect" | "idle";
+  onInteract?: () => void;
   onSubmit: (payload: RiddleAnswerPayload) => void;
 }
 
-export default function RiddleAnswerForm({ detail, submitting, onSubmit }: Props) {
+export default function RiddleAnswerForm({ block, submitting, status = "idle", onInteract, onSubmit }: Props) {
   const { t } = useI18n();
   const backendBase =
     import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ||
     (window.location.origin.includes("localhost:5173") ? "http://localhost:4000" : window.location.origin);
   const resolveImage = (src?: string) =>
     src && src.startsWith("/assets/") && backendBase ? `${backendBase}/content-${src.slice(1)}` : src ?? "";
+
   const [textAnswer, setTextAnswer] = useState("");
   const [singleChoice, setSingleChoice] = useState("");
   const [multiChoices, setMultiChoices] = useState<string[]>([]);
-  const [sortOrder, setSortOrder] = useState<string[]>([]);
-  const [groupAssignments, setGroupAssignments] = useState<Record<string, string>>({});
   const [localError, setLocalError] = useState<string | null>(null);
 
-  const optionLabel = useMemo(() => {
-    const map = new Map<string, string>();
-    (detail.options ?? []).forEach((opt) => map.set(opt.id, opt.label));
-    return map;
-  }, [detail.options]);
-
   useEffect(() => {
-    const solved = detail.solvedAnswer;
-    const assignments: Record<string, string> = {};
-
-    if (typeof solved === "string") {
-      setTextAnswer(solved);
-      setSingleChoice(solved);
-      setMultiChoices([]);
-      setSortOrder(detail.options?.map((opt) => opt.id) ?? []);
-    } else if (Array.isArray(solved)) {
-      setTextAnswer("");
-      setSingleChoice("");
-      setMultiChoices(solved);
-      setSortOrder(solved);
-    } else if (solved && typeof solved === "object") {
-      setTextAnswer("");
-      setSingleChoice("");
-      setMultiChoices([]);
-      setSortOrder(detail.options?.map((opt) => opt.id) ?? []);
-      Object.entries(solved).forEach(([groupId, ids]) => {
-        ids.forEach((id) => {
-          assignments[id] = groupId;
-        });
-      });
-    } else {
-      setTextAnswer("");
-      setSingleChoice("");
-      setMultiChoices([]);
-      setSortOrder(detail.options?.map((opt) => opt.id) ?? []);
+    // Preserve selections while unsolved; only hydrate from solution when solved
+    if (block.solved) {
+      if (typeof block.solution === "string") {
+        setTextAnswer(String(block.solution));
+        setSingleChoice(String(block.solution));
+        setMultiChoices([]);
+      } else if (Array.isArray(block.solution)) {
+        setTextAnswer("");
+        setSingleChoice("");
+        setMultiChoices(block.solution as string[]);
+      }
     }
-
-    if (detail.type === "group") {
-      const base: Record<string, string> = {};
-      (detail.options ?? []).forEach((opt) => {
-        base[opt.id] = assignments[opt.id] ?? "";
-      });
-      setGroupAssignments(base);
-    } else {
-      setGroupAssignments({});
-    }
-
     setLocalError(null);
-  }, [detail]);
-
-  const toggleMultiChoice = (id: string) => {
-    setMultiChoices((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
-  };
-
-  const moveSort = (id: string, direction: -1 | 1) => {
-    setSortOrder((prev) => {
-      const index = prev.indexOf(id);
-      if (index === -1) return prev;
-      const targetIndex = index + direction;
-      if (targetIndex < 0 || targetIndex >= prev.length) return prev;
-      const next = [...prev];
-      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
-      return next;
-    });
-  };
-
-  const handleGroupChange = (optionId: string, groupId: string) => {
-    setGroupAssignments((prev) => ({ ...prev, [optionId]: groupId }));
-  };
+  }, [block.id, block.solved, block.solution]);
 
   const handleSubmit = (evt: React.FormEvent) => {
     evt.preventDefault();
     setLocalError(null);
-    if (submitting || detail.isSolved) return;
+    if (submitting || block.solved) return;
 
-    if (detail.type === "text") {
+    if (block.type === "text") {
       const trimmed = textAnswer.trim();
       if (!trimmed) {
         setLocalError(t("enterAnswer"));
         return;
       }
-      onSubmit({ type: "text", answer: trimmed });
+      onInteract?.();
+      onSubmit({ puzzleId: block.id, type: "text", answer: trimmed });
       return;
     }
 
-    if (detail.type === "single-choice") {
+    if (block.type === "single-choice") {
       if (!singleChoice) {
         setLocalError(t("chooseOne"));
         return;
       }
-      onSubmit({ type: "single-choice", answer: singleChoice });
+      onInteract?.();
+      onSubmit({ puzzleId: block.id, type: "single-choice", answer: singleChoice });
       return;
     }
 
-    if (detail.type === "multi-choice") {
-      const minSelections = detail.minSelections ?? 1;
+    if (block.type === "multi-choice") {
+      const minSelections = block.minSelections ?? 1;
       if (multiChoices.length < minSelections) {
         setLocalError(minSelections > 1 ? `${t("chooseMany")} (${minSelections}+)` : t("chooseMany"));
         return;
       }
-      onSubmit({ type: "multi-choice", answer: multiChoices });
+      onInteract?.();
+      onSubmit({ puzzleId: block.id, type: "multi-choice", answer: multiChoices });
       return;
     }
 
-    if (detail.type === "sort") {
-      if (!sortOrder.length) {
-        setLocalError(t("sortInstruction"));
-        return;
-      }
-      onSubmit({ type: "sort", answer: sortOrder });
-      return;
-    }
-
-    // group
-    const missingGroup = (detail.options ?? []).find((opt) => !groupAssignments[opt.id]);
-    if (missingGroup) {
-      setLocalError(t("assignAllOptions"));
-      return;
-    }
-    const groupedAnswer = (detail.options ?? []).reduce<Record<string, string[]>>((acc, opt) => {
-      const groupId = groupAssignments[opt.id];
-      acc[groupId] = acc[groupId] ?? [];
-      acc[groupId].push(opt.id);
-      return acc;
-    }, {});
-    onSubmit({ type: "group", answer: groupedAnswer });
+    setLocalError("Unsupported puzzle type");
   };
 
+  const statusClass =
+    status === "correct" ? "choice-correct" : status === "incorrect" ? "choice-error" : submitting ? "choice-pending" : "";
+
   const renderChoices = () => {
-    if (!detail.options) return null;
-    if (detail.type === "single-choice") {
+    if (!block.options) return null;
+    if (block.type === "single-choice") {
       return (
         <>
           <p className="muted small">{t("chooseOne")}</p>
           <div className="choice-list">
-            {detail.options.map((opt) => (
-              <label key={opt.id} className={`choice-item ${singleChoice === opt.id ? "selected" : ""}`}>
+            {(block.options ?? []).map((opt) => (
+              <label key={opt.id} className={`choice-item ${singleChoice === opt.id ? "selected" : ""} ${statusClass}`}>
                 <input
                   type="radio"
-                  name="single-choice"
+                  name={`single-choice-${block.id}`}
                   value={opt.id}
                   checked={singleChoice === opt.id}
-                  onChange={() => setSingleChoice(opt.id)}
+                  onChange={() => {
+                    setSingleChoice(opt.id);
+                    onInteract?.();
+                  }}
+                  disabled={submitting || block.solved}
                 />
                 <div className="choice-visual">
                   {opt.image && <img src={resolveImage(opt.image)} alt={opt.label || opt.id} className="choice-image" />}
@@ -177,21 +113,25 @@ export default function RiddleAnswerForm({ detail, submitting, onSubmit }: Props
       );
     }
 
-    if (detail.type === "multi-choice") {
+    if (block.type === "multi-choice") {
       return (
         <>
           <p className="muted small">
             {t("chooseMany")}
-            {detail.minSelections && detail.minSelections > 1 ? ` (${detail.minSelections}+)` : ""}
+            {block.minSelections && block.minSelections > 1 ? ` (${block.minSelections}+)` : ""}
           </p>
           <div className="choice-list">
-            {detail.options.map((opt) => (
-              <label key={opt.id} className={`choice-item ${multiChoices.includes(opt.id) ? "selected" : ""}`}>
+            {(block.options ?? []).map((opt) => (
+              <label key={opt.id} className={`choice-item ${multiChoices.includes(opt.id) ? "selected" : ""} ${statusClass}`}>
                 <input
                   type="checkbox"
                   value={opt.id}
                   checked={multiChoices.includes(opt.id)}
-                  onChange={() => toggleMultiChoice(opt.id)}
+                  onChange={() => {
+                    setMultiChoices((prev) => (prev.includes(opt.id) ? prev.filter((item) => item !== opt.id) : [...prev, opt.id]));
+                    onInteract?.();
+                  }}
+                  disabled={submitting || block.solved}
                 />
                 <div className="choice-visual">
                   {opt.image && <img src={resolveImage(opt.image)} alt={opt.label || opt.id} className="choice-image" />}
@@ -203,101 +143,35 @@ export default function RiddleAnswerForm({ detail, submitting, onSubmit }: Props
         </>
       );
     }
-
-    if (detail.type === "sort") {
-      return (
-        <>
-          <p className="muted small">{t("sortInstruction")}</p>
-          <div className="sort-list">
-            {sortOrder.map((id, index) => (
-              <div key={id} className="sort-item">
-                <span className="sort-label">{optionLabel.get(id) ?? id}</span>
-                <div className="sort-actions">
-                <button
-                  type="button"
-                  className="ghost icon-btn small"
-                  aria-label={t("moveUp")}
-                  onClick={() => moveSort(id, -1)}
-                  disabled={submitting || index === 0}
-                >
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    className="ghost icon-btn small"
-                  aria-label={t("moveDown")}
-                  onClick={() => moveSort(id, 1)}
-                  disabled={submitting || index === sortOrder.length - 1}
-                >
-                    ↓
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      );
-    }
-
-    return (
-      <>
-        <p className="muted small">{t("groupInstruction")}</p>
-        <div className="group-grid">
-          {(detail.options ?? []).map((opt) => (
-            <div key={opt.id} className="group-row">
-              <div className="group-option">{opt.label}</div>
-              <select
-                value={groupAssignments[opt.id] ?? ""}
-                onChange={(e) => handleGroupChange(opt.id, e.target.value)}
-              >
-                <option value="">{t("selectGroup")}</option>
-                {(detail.groups ?? []).map((group) => (
-                  <option key={group.id} value={group.id}>
-                    {group.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ))}
-        </div>
-      </>
-    );
+    return null;
   };
 
-  if (detail.type === "text") {
-    return (
-      <>
-        <form className={`answer-form ${detail.isSolved ? "locked-form" : ""}`} onSubmit={handleSubmit}>
+  return (
+    <form className="riddle-answer" onSubmit={handleSubmit}>
+      {localError && <div className="banner error">{localError}</div>}
+
+      {block.type === "text" && (
+        <div className="field">
+          <label htmlFor={`answer-${block.id}`}>{t("yourAnswer")}</label>
           <input
+            id={`answer-${block.id}`}
             type="text"
-            placeholder={t("yourAnswer")}
             value={textAnswer}
             onChange={(e) => setTextAnswer(e.target.value)}
-            required
-            readOnly={detail.isSolved}
+            disabled={submitting || block.solved}
           />
-          {!detail.isSolved && (
-            <button className="primary" type="submit" disabled={submitting}>
-              {submitting ? t("checking") : t("submit")}
-            </button>
-          )}
-        </form>
-        {localError && <div className="feedback error">{localError}</div>}
-      </>
-    );
-  }
+        </div>
+      )}
 
-  return (
-    <>
-      <form className={`answer-stack ${detail.isSolved ? "locked-form" : ""}`} onSubmit={handleSubmit}>
-        {renderChoices()}
-        {!detail.isSolved && (
-          <button className="primary" type="submit" disabled={submitting}>
-            {submitting ? t("checking") : t("submit")}
+      {(block.type === "single-choice" || block.type === "multi-choice") && renderChoices()}
+
+      {!block.solved && (
+        <div className="actions">
+          <button type="submit" className="primary" disabled={submitting}>
+            {submitting ? "…" : t("submit")}
           </button>
-        )}
-      </form>
-      {localError && <div className="feedback error">{localError}</div>}
-    </>
+        </div>
+      )}
+    </form>
   );
 }

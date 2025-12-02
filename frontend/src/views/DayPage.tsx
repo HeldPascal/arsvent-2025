@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { fetchDay, submitAnswer } from "../services/api";
-import type { DayDetail, RiddleAnswerPayload, User } from "../types";
+import type { DayDetail, DayBlock, RiddleAnswerPayload, User } from "../types";
 import { useI18n } from "../i18n";
 import ConfirmDialog from "./components/ConfirmDialog";
 import RiddleAnswerForm from "./components/RiddleAnswerForm";
@@ -19,11 +19,11 @@ export default function DayPage({ user, version }: Props) {
   const [detail, setDetail] = useState<DayDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{ message: string; correct: boolean } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [warned, setWarned] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [pendingPayload, setPendingPayload] = useState<RiddleAnswerPayload | null>(null);
+  const [pendingPayload, setPendingPayload] = useState<{ block: Extract<DayBlock, { kind: "puzzle" }>; payload: RiddleAnswerPayload } | null>(null);
+  const [lastResult, setLastResult] = useState<{ puzzleId: string; correct: boolean } | null>(null);
   const backendBase =
     import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ||
     (window.location.origin.includes("localhost:5173") ? "http://localhost:4000" : window.location.origin);
@@ -44,10 +44,10 @@ export default function DayPage({ user, version }: Props) {
 
     setLoading(true);
     setError(null);
-    setFeedback(null);
     setPendingPayload(null);
     setWarned(false);
     setShowConfirm(false);
+    setLastResult(null);
 
     fetchDay(dayNumber)
       .then((data) => setDetail(data))
@@ -55,52 +55,81 @@ export default function DayPage({ user, version }: Props) {
       .finally(() => setLoading(false));
   }, [dayNumber, navigate, t, version]);
 
-  const performSubmit = async (payload: RiddleAnswerPayload) => {
+  const performSubmit = async (block: Extract<DayBlock, { kind: "puzzle" }>, payload: RiddleAnswerPayload) => {
     if (!detail) return;
     setSubmitting(true);
-    setFeedback(null);
     setPendingPayload(null);
     try {
       const resp = await submitAnswer(detail.day, payload);
+      setLastResult({ puzzleId: block.id, correct: resp.correct });
       setDetail((current) =>
         current
           ? {
               ...current,
               isSolved: resp.isSolved,
-              solvedAnswer: resp.correct ? (resp.solution as any) ?? current.solvedAnswer : current.solvedAnswer,
-              post: resp.correct ? resp.post ?? current.post : current.post,
-              reward: resp.correct ? resp.reward ?? current.reward : current.reward,
+              blocks: resp.blocks,
             }
           : current,
       );
-      setFeedback({ message: resp.message, correct: resp.correct });
+      if (!resp.correct) {
+        window.dispatchEvent(
+          new CustomEvent("app:toast", {
+            detail: { type: "error", message: resp.message, durationMs: 3000 },
+          }),
+        );
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : t("submissionFailed");
-      setFeedback({ message, correct: false });
+      window.dispatchEvent(
+        new CustomEvent("app:toast", {
+          detail: { type: "error", message, durationMs: 3000 },
+        }),
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  const onSubmit = (payload: RiddleAnswerPayload) => {
+  const onSubmit = (block: Extract<DayBlock, { kind: "puzzle" }>, payload: RiddleAnswerPayload) => {
     if (!detail) return;
     if (user.mode === "NORMAL" && detail.day === 1 && !warned) {
-      setPendingPayload(payload);
+      setPendingPayload({ block, payload });
       setShowConfirm(true);
       return;
     }
-    void performSubmit(payload);
+    void performSubmit(block, payload);
   };
 
   if (loading) return <div className="panel">{t("loading")}</div>;
   if (error) return <div className="panel error">{error}</div>;
   if (!detail) return null;
-  const bodyHtml = rewriteAssets(detail.body);
-  const postHtml = detail.post ? rewriteAssets(detail.post) : null;
-  const rewardImage =
-    detail.reward?.image && detail.reward.image.startsWith("/assets/") && backendBase
-      ? `${backendBase}/content-${detail.reward.image.slice(1)}`
-      : detail.reward?.image ?? null;
+  const renderBlock = (block: DayBlock, idx: number) => {
+    if (!block.visible) return null;
+    if (block.kind === "story") {
+      return (
+        <article key={`story-${idx}`} className="riddle-body" dangerouslySetInnerHTML={{ __html: rewriteAssets(block.html) }} />
+      );
+    }
+    const status =
+      block.solved || (lastResult && lastResult.puzzleId === block.id && lastResult.correct)
+        ? "correct"
+        : lastResult && lastResult.puzzleId === block.id && !lastResult.correct
+          ? "incorrect"
+          : "idle";
+    return (
+      <div className="puzzle-card" key={`puzzle-${block.id}`}>
+        {block.title && <h3 className="puzzle-title">{block.title}</h3>}
+        <article className="riddle-body" dangerouslySetInnerHTML={{ __html: rewriteAssets(block.html) }} />
+        <RiddleAnswerForm
+          block={block}
+          submitting={submitting}
+          status={status}
+          onInteract={() => setLastResult(null)}
+          onSubmit={(payload) => onSubmit(block, payload)}
+        />
+      </div>
+    );
+  };
 
   return (
     <div className="panel">
@@ -120,36 +149,11 @@ export default function DayPage({ user, version }: Props) {
 
       {detail.canPlay ? (
         <>
-          <article className="riddle-body" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
-          <RiddleAnswerForm detail={detail} submitting={submitting} onSubmit={onSubmit} />
+          {detail.blocks.map((block, idx) => renderBlock(block, idx))}
           {detail.isSolved && (
             <div className="banner success">
               <div className="banner-title">{t("solved")}</div>
               <div className="banner-body">{t("answerCorrect")}</div>
-            </div>
-          )}
-          {!detail.isSolved && feedback && feedback.correct && (
-            <div className="banner success">
-              <div className="banner-title">{t("solved")}</div>
-              <div className="banner-body">{t("answerCorrect")}</div>
-            </div>
-          )}
-          {!detail.isSolved && feedback && !feedback.correct && (
-            <div className="banner error">
-              <div className="banner-title">{t("unsolved")}</div>
-              <div className="banner-body">{t("answerIncorrect")}</div>
-            </div>
-          )}
-          {detail.isSolved && postHtml && (
-            <article className="riddle-body" dangerouslySetInnerHTML={{ __html: postHtml }} />
-          )}
-          {detail.isSolved && detail.reward && (
-            <div className="reward-card">
-              {rewardImage && <img src={rewardImage} alt={detail.reward.title} className="reward-image" />}
-              <div>
-                <div className="reward-title">{detail.reward.title}</div>
-                {detail.reward.description && <div className="reward-desc">{detail.reward.description}</div>}
-              </div>
             </div>
           )}
         </>
@@ -166,7 +170,7 @@ export default function DayPage({ user, version }: Props) {
             setWarned(true);
             setShowConfirm(false);
             if (pendingPayload) {
-              void performSubmit(pendingPayload);
+              void performSubmit(pendingPayload.block, pendingPayload.payload);
             }
           }}
           onCancel={() => setShowConfirm(false)}

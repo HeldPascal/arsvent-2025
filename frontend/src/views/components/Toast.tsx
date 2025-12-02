@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 interface Props {
   type: "success" | "error" | "info";
@@ -8,28 +8,17 @@ interface Props {
 }
 
 export default function Toast({ type, message, onClose, durationMs }: Props) {
-  const [progress, setProgress] = useState(0);
-  const startRef = useRef<number | null>(null);
-  const rafRef = useRef<number | null>(null);
+  const closeRef = useRef(onClose);
 
   useEffect(() => {
-    if (!durationMs || !onClose) return;
-    const step = (timestamp: number) => {
-      if (startRef.current === null) startRef.current = timestamp;
-      const elapsed = timestamp - startRef.current;
-      const pct = Math.min(elapsed / durationMs, 1);
-      setProgress(pct);
-      if (pct >= 1) {
-        onClose();
-        return;
-      }
-      rafRef.current = requestAnimationFrame(step);
-    };
-    rafRef.current = requestAnimationFrame(step);
-    return () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-    };
-  }, [durationMs, onClose]);
+    closeRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!durationMs || !closeRef.current) return;
+    const timeout = setTimeout(() => closeRef.current?.(), durationMs);
+    return () => clearTimeout(timeout);
+  }, [durationMs]);
 
   return (
     <div className={`toast ${type}`}>
@@ -39,7 +28,7 @@ export default function Toast({ type, message, onClose, durationMs }: Props) {
           ×
         </button>
       )}
-      {durationMs ? <div className="toast-progress" style={{ width: `${(1 - progress) * 100}%` }} /> : null}
+      {durationMs ? <div className="toast-progress" style={{ animationDuration: `${durationMs}ms` }} /> : null}
     </div>
   );
 }
