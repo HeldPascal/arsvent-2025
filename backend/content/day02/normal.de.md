@@ -1,5 +1,5 @@
 ---
-id: "day02-normal-de"
+id: "25-day02-normal-de"
 version: 1
 release: "2025-12-02T00:00:00Z"
 language: "de"
@@ -8,57 +8,84 @@ solved:
   when: "all"
 ---
 
-# Lichter am Himmel
+# 2
 
 ## Story
-Du trittst hinaus und siehst den Winterhimmel farbig schimmern.
-
-## Puzzle: Lichter am Himmel
-id: "sky-lights"
-Welches Schauspiel färbt nachts den Himmel nahe der Pole?
-
-```yaml puzzle
-type: "single-choice"
-difficulty: "easy"
-options:
-  - id: "aurora"
-    label: "Aurora borealis"
-  - id: "rainbow"
-    label: "Regenbogen"
-  - id: "lighthouse"
-    label: "Lichtstrahl eines Leuchtturms"
-  - id: "candle"
-    label: "Kerzenschimmer"
-solution: "aurora"
-```
-
-## Wait for: sky-lights
-
-## Story: Test title
-id: "test-id"
-Testcontent
+Plötzlich stehst du nicht mehr draußen, sondern im Inneren eines Hauses. Es scheint das Haus eines Alchemisten zu sein. Du befindest dich in einem großen Labor und eine neue Stimme spricht zu dir:
+> „Ein Leben lang studierte ich Pflanzen, Tiere und Mineralien. Doch nun kenne ich nicht einmal mehr meinen eigenen Namen. Alles vermischt sich in meinem Kopf, wie ein Trank, der zu sehr gerührt wurde. Bitte hilf mir zu sehen, was zu mir gehört und was nicht.“
 
 ## Puzzle
-id: "sky-lights2"
-Welches Schauspiel färbt nachts den Himmel nahe der Pole?
+id: "alchemy1"
+Finde die Ausnahme bei diesen Alchemiezutaten.
 
 ```yaml puzzle
 type: "single-choice"
 difficulty: "easy"
 options:
-  - id: "aurora"
-    label: "Aurora borealis"
-  - id: "rainbow"
-    label: "Regenbogen"
-  - id: "lighthouse"
-    label: "Lichtstrahl eines Leuchtturms"
-  - id: "candle"
-    label: "Kerzenschimmer"
-solution: "aurora"
+  - id: "1"
+    label: ""
+    image: "/assets/25_02_round1_option1.png"
+  - id: "2"
+    label: ""
+    image: "/assets/25_02_round1_option2.png"
+  - id: "3"
+    label: ""
+    image: "/assets/25_02_round1_option3.png"
+  - id: "4"
+    label: ""
+    image: "/assets/25_02_round1_option4.png"
+solution: "2"
 ```
 
-## Wait for: sky-lights2
+## Wait for: alchemy1
 
-## Story: Test title 2
-id: "test-id2"
-Testcontent2
+## Puzzle
+id: "alchemy2"
+Finde die Ausnahme bei diesen Alchemiezutaten.
+
+```yaml puzzle
+type: "single-choice"
+difficulty: "easy"
+options:
+  - id: "1"
+    label: ""
+    image: "/assets/25_02_round2_option1.png"
+  - id: "2"
+    label: ""
+    image: "/assets/25_02_round2_option2.png"
+  - id: "3"
+    label: ""
+    image: "/assets/25_02_round2_option3.png"
+  - id: "4"
+    label: ""
+    image: "/assets/25_02_round2_option4.png"
+solution: "4"
+```
+
+## Wait for: alchemy2
+
+## Puzzle
+id: "alchemy3"
+Finde die Ausnahme bei diesen Alchemiezutaten.
+
+```yaml puzzle
+type: "single-choice"
+difficulty: "easy"
+options:
+  - id: "1"
+    label: ""
+    image: "/assets/25_02_round3_option1.png"
+  - id: "2"
+    label: ""
+    image: "/assets/25_02_round3_option2.png"
+  - id: "3"
+    label: ""
+    image: "/assets/25_02_round3_option3.png"
+  - id: "4"
+    label: ""
+    image: "/assets/25_02_round3_option4.png"
+solution: "3"
+```
+
+## Reward
+inventoryId: "craftingtable"
