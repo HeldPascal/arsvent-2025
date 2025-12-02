@@ -87,6 +87,8 @@ options:
 solution: "3"
 ```
 
+## Wait for: alchemy3
+
 ## Story
 > „Oh, endlich etwas Ruhe und Ordnung. Danke für diese Klarheit. Nun erinnere ich mich, mein Name war Ursalette Metrane. An diesem Alchemietisch machte ich all meine großen Entdeckungen. Er gehört nun Euch.“
 
