@@ -76,7 +76,7 @@ export default function DayPage({ user, version }: Props) {
       if (!resp.correct) {
         window.dispatchEvent(
           new CustomEvent("app:toast", {
-            detail: { type: "error", message: resp.message, durationMs: 3000 },
+            detail: { type: "error", message: t("answerIncorrect"), durationMs: 3000 },
           }),
         );
       }
