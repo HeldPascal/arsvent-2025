@@ -11,12 +11,12 @@ solved:
 # 2
 
 ## Story
-Plötzlich stehst du nicht mehr draußen, sondern im Inneren eines Hauses. Es scheint das Haus eines Alchemisten zu sein. Du befindest dich in einem großen Labor und eine neue Stimme spricht zu dir:
-> „Ein Leben lang studierte ich Pflanzen, Tiere und Mineralien. Doch nun kenne ich nicht einmal mehr meinen eigenen Namen. Alles vermischt sich in meinem Kopf, wie ein Trank, der zu sehr gerührt wurde. Bitte hilf mir zu sehen, was zu mir gehört und was nicht.“
+Suddenly you're no longer outside, but inside a house. It appears to be the house of an alchemist. You find yourself in a large laboratory, and a new voice speaks to you:
+> „I spent my whole life studying plants, animals, and minerals. But now I don't even know my own name. Everything is jumbled together in my head, like a potion that's been stirred too much. Please help me see what belongs to me and what doesn't.“
 
 ## Puzzle
 id: "alchemy1"
-Finde die Ausnahme bei diesen Alchemiezutaten.
+Find the exception among these alchemy ingredients.
 
 ```yaml puzzle
 type: "single-choice"
@@ -41,7 +41,7 @@ solution: "2"
 
 ## Puzzle
 id: "alchemy2"
-Finde die Ausnahme bei diesen Alchemiezutaten.
+Find the exception among these alchemy ingredients.
 
 ```yaml puzzle
 type: "single-choice"
@@ -66,7 +66,7 @@ solution: "4"
 
 ## Puzzle
 id: "alchemy3"
-Finde die Ausnahme bei diesen Alchemiezutaten.
+Find the exception among these alchemy ingredients.
 
 ```yaml puzzle
 type: "single-choice"
@@ -90,7 +90,9 @@ solution: "3"
 ## Wait for: alchemy3
 
 ## Story
-> „Oh, endlich etwas Ruhe und Ordnung. Danke für diese Klarheit. Nun erinnere ich mich, mein Name war Ursalette Metrane. An diesem Alchemietisch machte ich all meine großen Entdeckungen. Er gehört nun Euch.“
+> „Oh, finally some peace and order. Thank you for this clarity. Now I remember, my name was Ursalette Metrane. At this alchemy table, I made all my great discoveries. It now belongs to you.“
+
+You sense that more trapped souls are waiting for your aid.
 
 ## Reward
 inventoryId: "craftingtable"
