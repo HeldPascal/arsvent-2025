@@ -1,5 +1,5 @@
 ---
-id: "25-day02-vet-de"
+id: "25-day02-veteran-de"
 version: 1
 release: "2025-12-02T00:00:00Z"
 language: "de"
@@ -86,7 +86,8 @@ options:
     image: "/assets/25_02_round3_option4.png"
 solution: "3"
 ```
-## Wait for: alchemy2
+
+## Wait for: alchemy3
 
 ## Puzzle
 id: "alchemy4"

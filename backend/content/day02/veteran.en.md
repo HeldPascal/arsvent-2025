@@ -1,5 +1,5 @@
 ---
-id: "day02-vet-en"
+id: "25-day02-veteran-en"
 version: 1
 release: "2025-12-02T00:00:00Z"
 language: "en"
@@ -90,7 +90,7 @@ solution: "3"
 ## Wait for: alchemy3
 
 ## Puzzle
-id: "alchemy3"
+id: "alchemy4"
 Find the exception among these alchemy ingredients.
 
 ```yaml puzzle
