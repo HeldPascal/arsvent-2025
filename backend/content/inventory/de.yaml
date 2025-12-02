@@ -4,7 +4,7 @@
   image: "/assets/25_01_reward.png"
   rarity: "common"
 - id: "craftingtable"
-  title: "Alchemietisch"
+  title: "Alchemietisch von Ursalette"
   description: "Ein robuster Tisch, gezeichnet von Jahren voller Tinkturen und Experimente."
   image: "/assets/25_02_reward.png"
   rarity: "epic"

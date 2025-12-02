@@ -4,7 +4,7 @@
   image: "/assets/25_01_reward.png"
   rarity: "common"
 - id: "craftingtable"
-  title: "Alchemist's Workbench"
+  title: "Ursalette's Alchemy Workbench"
   description: "A sturdy table stained with years of tinctures and experiments."
   image: "/assets/25_02_reward.png"
   rarity: "epic"

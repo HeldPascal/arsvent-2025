@@ -1,9 +1,9 @@
 ---
-id: "25-day01-normal-de"
+id: "25-day01-vet-de"
 version: 1
 release: "2025-12-01T00:00:00Z"
 language: "de"
-mode: "normal"
+mode: "veteran"
 solved:
   when: "all"
 ---
@@ -27,12 +27,21 @@ options:
   - id: "1"
     label: ""
     image: "/assets/25_01_option1.png"
+  - id: "4"
+    label: ""
+    image: "/assets/25_01_option4.png"
+  - id: "5"
+    label: ""
+    image: "/assets/25_01_option5.png"
   - id: "2"
     label: ""
     image: "/assets/25_01_option2.png"
   - id: "3"
     label: ""
     image: "/assets/25_01_option3.png"
+  - id: "6"
+    label: ""
+    image: "/assets/25_01_option6.png"
 solution: "1"
 ```
 
