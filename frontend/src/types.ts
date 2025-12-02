@@ -63,6 +63,19 @@ export type DayBlock =
       solved: boolean;
       options?: RiddleOption[];
       minSelections?: number;
+    }
+  | {
+      kind: "reward";
+      id?: string;
+      title?: string;
+      visible: boolean;
+      item?: {
+        id: string;
+        title: string;
+        description: string;
+        image: string;
+        rarity: string;
+      };
     };
 
 export interface DayDetail {

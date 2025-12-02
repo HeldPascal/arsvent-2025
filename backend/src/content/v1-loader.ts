@@ -1,21 +1,6 @@
 import matter, { type GrayMatterFile } from "gray-matter";
 import { marked } from "marked";
-import type { RiddleOption, RiddleType } from "./loader.js";
-
-export type DayBlock =
-  | { kind: "story"; id?: string; title?: string; html: string; visible: boolean }
-  | {
-      kind: "puzzle";
-      id: string;
-      title?: string;
-      html: string;
-      visible: boolean;
-      type: RiddleType;
-      solution: unknown;
-      solved: boolean;
-      options?: RiddleOption[];
-      minSelections?: number;
-    };
+import type { InventoryItem, RiddleOption, RiddleType, DayBlock } from "./loader.js";
 
 export type WhenCondition =
   | { kind: "all" }
@@ -50,6 +35,17 @@ interface PuzzleBlockRaw {
   definition: PuzzleDefinition;
 }
 
+interface RewardBlockRaw {
+  kind: "reward";
+  heading: string;
+  title?: string;
+  id?: string;
+  markdown: string;
+  html: string;
+  inventoryId?: string | null;
+  condition?: WhenCondition | null;
+}
+
 interface ContinueWhenBlock {
   kind: "continue-when";
   heading: string;
@@ -59,7 +55,7 @@ interface ContinueWhenBlock {
   source: "continue-when" | "wait-for";
 }
 
-type StructuredBlock = StoryBlockRaw | PuzzleBlockRaw | ContinueWhenBlock;
+type StructuredBlock = StoryBlockRaw | PuzzleBlockRaw | RewardBlockRaw | ContinueWhenBlock;
 
 export interface VersionedMeta {
   id: string;
@@ -228,10 +224,11 @@ const parseBlocks = (parsed: GrayMatterFile<string>) => {
     const lowerHeading = heading.toLowerCase();
     const isStory = lowerHeading.startsWith("story");
     const isPuzzle = lowerHeading.startsWith("puzzle");
+    const isReward = lowerHeading.startsWith("reward");
     const isContinue = lowerHeading.startsWith("continue when");
     const waitMatch = lowerHeading.match(/^wait for:\s*(.+)$/);
     const title = heading.includes(":") ? heading.split(":").slice(1).join(":").trim() : undefined;
-    if (!isStory && !isPuzzle && !isContinue && !waitMatch) return;
+    if (!isStory && !isPuzzle && !isReward && !isContinue && !waitMatch) return;
 
     const { id, rest } = extractBlockId(lines);
     const blockMarkdown = rest.join("\n").trim();
@@ -262,6 +259,23 @@ const parseBlocks = (parsed: GrayMatterFile<string>) => {
         html: toHtml(markdownWithoutCode),
         definition,
         ...(title ? { title } : {}),
+      });
+      return;
+    }
+
+    if (isReward) {
+      const whenMatch = blockMarkdown.match(/```yaml\s+when\s*\n([\s\S]*?)```/i);
+      blocks.push({
+        kind: "reward",
+        heading,
+        markdown: markdownWithoutCode,
+        html: toHtml(markdownWithoutCode),
+        inventoryId: markdownWithoutCode.match(/inventoryId:\s*(.+)/i)
+          ? stripQuotes(markdownWithoutCode.match(/inventoryId:\s*(.+)/i)![1] ?? "")
+          : null,
+        condition: whenMatch ? parseWhenCondition(parsePuzzleDefinition(whenMatch[1] ?? "").raw) : null,
+        ...(title ? { title } : {}),
+        ...(id ? { id } : {}),
       });
       return;
     }
@@ -318,7 +332,12 @@ const segmentBlocks = (blocks: StructuredBlock[]) => {
   return segments;
 };
 
-const mapToDayBlocks = (blocks: StructuredBlock[], solvedIds: Set<string>, includeHidden: boolean): DayBlock[] => {
+const mapToDayBlocks = (
+  blocks: StructuredBlock[],
+  solvedIds: Set<string>,
+  includeHidden: boolean,
+  inventory: Map<string, InventoryItem>,
+): DayBlock[] => {
   const segments = segmentBlocks(blocks);
   const puzzleIds = new Set(blocks.filter((b) => b.kind === "puzzle").map((b) => (b as PuzzleBlockRaw).id));
   const visibleStoryPuzzle: StructuredBlock[] = [];
@@ -413,6 +432,18 @@ const mapToDayBlocks = (blocks: StructuredBlock[], solvedIds: Set<string>, inclu
 
       throw new Error(`Unsupported puzzle type for versioned content: ${type}`);
     }
+    if (block.kind === "reward") {
+      const unlocked = block.condition ? evaluateCondition(block.condition, solvedIds, puzzleIds) : true;
+      const item = block.inventoryId ? inventory.get(block.inventoryId) : undefined;
+      if (!item) return null;
+      return {
+        kind: "reward",
+        visible: (visibleSet.has(block) || includeHidden) && unlocked,
+        item,
+        ...(block.id ? { id: block.id } : {}),
+        ...(block.title ? { title: block.title } : {}),
+      };
+    }
     return null;
   };
 
@@ -428,7 +459,7 @@ const mapToDayBlocks = (blocks: StructuredBlock[], solvedIds: Set<string>, inclu
 
 export const loadVersionedContent = (
   parsed: GrayMatterFile<string>,
-  options: { solvedPuzzleIds: Set<string>; includeHidden: boolean },
+  options: { solvedPuzzleIds: Set<string>; includeHidden: boolean; inventory: Map<string, InventoryItem> },
 ): LoadedVersionedContent => {
   const { meta, blocks } = parseBlocks(parsed);
   if (!meta.version || Number.isNaN(meta.version)) throw new Error("Invalid content version");
@@ -438,7 +469,7 @@ export const loadVersionedContent = (
   const title = derivedTitle || meta.id;
 
   const puzzleIds = blocks.filter((block) => block.kind === "puzzle").map((block) => (block as PuzzleBlockRaw).id);
-  const dayBlocks = mapToDayBlocks(blocks, options.solvedPuzzleIds, options.includeHidden);
+  const dayBlocks = mapToDayBlocks(blocks, options.solvedPuzzleIds, options.includeHidden, options.inventory);
 
   return {
     title,

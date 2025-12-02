@@ -1007,6 +1007,7 @@ a {
 
 .reward-card {
   margin-top: 12px;
+  margin-bottom: 12px;
   border: 1px solid rgba(255, 215, 128, 0.4);
   border-radius: 14px;
   padding: 14px;
@@ -1022,8 +1023,28 @@ a {
   height: 80px;
   object-fit: cover;
   border-radius: 12px;
-  border: 1px solid rgba(255, 215, 128, 0.4);
+  border: 2px solid rgba(255, 215, 128, 0.7);
   background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1), transparent 50%), #1f2327;
+}
+
+.reward-image[data-rarity="common"] {
+  border-color: #9aa0a6;
+}
+
+.reward-image[data-rarity="uncommon"] {
+  border-color: #5bd18a;
+}
+
+.reward-image[data-rarity="rare"] {
+  border-color: #4f8af7;
+}
+
+.reward-image[data-rarity="epic"] {
+  border-color: #b46bff;
+}
+
+.reward-image[data-rarity="legendary"] {
+  border-color: #f7d046;
 }
 
 .reward-title {

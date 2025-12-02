@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import matter from "gray-matter";
 import { marked } from "marked";
 import { loadVersionedContent, type LoadedVersionedContent } from "./v1-loader.js";
+import { loadInventory } from "./inventory.js";
 
 export type Locale = "en" | "de";
 export type Mode = "NORMAL" | "VET";
@@ -31,6 +32,14 @@ export interface RiddleReward {
   image?: string | null;
 }
 
+export interface InventoryItem {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  rarity: string;
+}
+
 export interface StoryBlock {
   kind: "story";
   id?: string;
@@ -53,7 +62,15 @@ export interface PuzzleBlock {
   solution: unknown;
 }
 
-export type DayBlock = StoryBlock | PuzzleBlock;
+export interface RewardBlock {
+  kind: "reward";
+  id?: string;
+  title?: string;
+  item?: InventoryItem;
+  visible: boolean;
+}
+
+export type DayBlock = StoryBlock | PuzzleBlock | RewardBlock;
 
 export interface DayContent {
   schemaVersion: number;
@@ -112,7 +129,8 @@ export async function loadDayContent(
     if (version !== 1) {
       throw new Error(`Unsupported content version: ${version ?? "none"}`);
     }
-    const loaded = loadVersionedContent(parsed, { solvedPuzzleIds, includeHidden });
+    const inventory = await loadInventory(locale);
+    const loaded = loadVersionedContent(parsed, { solvedPuzzleIds, includeHidden, inventory });
     const title =
       loaded.title ||
       stripLeadingH1(parsed.content) ||

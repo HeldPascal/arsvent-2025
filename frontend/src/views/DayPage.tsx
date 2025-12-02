@@ -35,6 +35,8 @@ export default function DayPage({ user, version }: Props) {
           (_m, quote, path) => `src=${quote}${backendBase}/content-${path.slice(1)}${quote}`,
         )
       : html;
+  const resolveAsset = (src?: string) =>
+    src && src.startsWith("/assets/") && backendBase ? `${backendBase}/content-${src.slice(1)}` : src ?? "";
 
   useEffect(() => {
     if (!Number.isInteger(dayNumber) || dayNumber < 1 || dayNumber > 24) {
@@ -110,6 +112,25 @@ export default function DayPage({ user, version }: Props) {
         <article key={`story-${idx}`} className="riddle-body" dangerouslySetInnerHTML={{ __html: rewriteAssets(block.html) }} />
       );
     }
+    if (block.kind === "reward" && block.item && block.visible) {
+      return (
+        <div className="reward-card" key={`reward-${block.id ?? idx}`} data-rarity={block.item.rarity}>
+          {block.item.image && (
+            <img
+              src={resolveAsset(block.item.image)}
+              alt={block.item.title}
+              className="reward-image"
+              data-rarity={block.item.rarity}
+            />
+          )}
+          <div>
+            <div className="reward-title">{block.item.title}</div>
+            {block.item.description && <div className="reward-desc">{block.item.description}</div>}
+          </div>
+        </div>
+      );
+    }
+    if (block.kind !== "puzzle") return null;
     const status =
       block.solved || (lastResult && lastResult.puzzleId === block.id && lastResult.correct)
         ? "correct"
