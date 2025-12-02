@@ -1,18 +1,64 @@
 ---
-title: "Lichter am Himmel"
-type: single-choice
+id: "day02-normal-de"
+version: 1
+release: "2025-12-02T00:00:00Z"
+language: "de"
+mode: "normal"
+solved:
+  when: "all"
+---
+
+# Lichter am Himmel
+
+## Story
+Du trittst hinaus und siehst den Winterhimmel farbig schimmern.
+
+## Puzzle: Lichter am Himmel
+id: "sky-lights"
+Welches Schauspiel färbt nachts den Himmel nahe der Pole?
+
+```yaml puzzle
+type: "single-choice"
+difficulty: "easy"
 options:
   - id: "aurora"
     label: "Aurora borealis"
   - id: "rainbow"
-    label: "Rainbow"
+    label: "Regenbogen"
   - id: "lighthouse"
-    label: "Lighthouse beam"
+    label: "Lichtstrahl eines Leuchtturms"
   - id: "candle"
-    label: "Candle glow"
+    label: "Kerzenschimmer"
 solution: "aurora"
----
+```
 
-Wähle das Naturlicht, das oft an den Polen zu sehen ist.
+## Wait for: sky-lights
 
-Day 2 sample riddle.
+## Story: Test title
+id: "test-id"
+Testcontent
+
+## Puzzle
+id: "sky-lights2"
+Welches Schauspiel färbt nachts den Himmel nahe der Pole?
+
+```yaml puzzle
+type: "single-choice"
+difficulty: "easy"
+options:
+  - id: "aurora"
+    label: "Aurora borealis"
+  - id: "rainbow"
+    label: "Regenbogen"
+  - id: "lighthouse"
+    label: "Lichtstrahl eines Leuchtturms"
+  - id: "candle"
+    label: "Kerzenschimmer"
+solution: "aurora"
+```
+
+## Wait for: sky-lights2
+
+## Story: Test title 2
+id: "test-id2"
+Testcontent2

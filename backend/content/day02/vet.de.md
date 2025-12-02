@@ -1,18 +1,33 @@
 ---
-title: "Lichter am Himmel"
-type: single-choice
+id: "day02-vet-de"
+version: 1
+release: "2025-12-02T00:00:00Z"
+language: "de"
+mode: "veteran"
+solved:
+  when: "all"
+---
+
+# Lichter am Himmel (Vet)
+
+## Story
+Die klirrende Luft knistert, während Farbschleier über dir tanzen.
+
+## Puzzle: Lichter am Himmel
+id: "sky-lights"
+Welches Phänomen lässt die Hochbreiten in bewegten Lichtvorhängen erstrahlen?
+
+```yaml puzzle
+type: "single-choice"
+difficulty: "normal"
 options:
   - id: "aurora"
     label: "Aurora borealis"
   - id: "rainbow"
-    label: "Rainbow"
+    label: "Regenbogen"
   - id: "lighthouse"
-    label: "Lighthouse beam"
+    label: "Lichtstrahl eines Leuchtturms"
   - id: "candle"
-    label: "Candle glow"
+    label: "Kerzenschimmer"
 solution: "aurora"
----
-
-Wähle das Naturlicht, das oft an den Polen zu sehen ist.
-
-Day 2 sample riddle.
+```
