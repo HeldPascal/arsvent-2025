@@ -8,7 +8,8 @@ import { loadInventory } from "./inventory.js";
 
 export type Locale = "en" | "de";
 export type Mode = "NORMAL" | "VET";
-export type RiddleType = "text" | "single-choice" | "multi-choice" | "sort" | "group";
+export type RiddleType = "text" | "single-choice" | "multi-choice" | "sort" | "group" | "drag-sockets";
+export type DragShape = "circle" | "square" | "hex";
 
 export interface IntroContent {
   title: string;
@@ -24,6 +25,21 @@ export interface RiddleOption {
 export interface RiddleGroup {
   id: string;
   label: string;
+}
+
+export interface DragSocketItem {
+  id: string;
+  label?: string;
+  image?: string;
+  shape?: DragShape;
+}
+
+export interface DragSocketSlot {
+  id: string;
+  position: { x: number; y: number };
+  accepts: string[];
+  shape?: DragShape;
+  label?: string;
 }
 
 export interface RiddleReward {
@@ -58,6 +74,9 @@ export interface PuzzleBlock {
   options?: RiddleOption[];
   groups?: RiddleGroup[];
   minSelections?: number;
+  backgroundImage?: string;
+  items?: DragSocketItem[];
+  sockets?: DragSocketSlot[];
   solved: boolean;
   solution: unknown;
 }

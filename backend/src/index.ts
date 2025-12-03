@@ -296,6 +296,22 @@ const ensureStringArrayAnswer = (value: unknown, message: string) => {
   return value.map((entry) => normalizeAnswerId(entry, "Each answer entry must be a string"));
 };
 
+const ensureDragSocketAnswer = (value: unknown) => {
+  if (!Array.isArray(value)) {
+    throw new Error("Invalid placement format");
+  }
+  return value.map((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      throw new Error("Invalid placement format");
+    }
+    const { socketId, itemId } = entry as { socketId?: unknown; itemId?: unknown };
+    return {
+      socketId: normalizeAnswerId(socketId, "socketId is required"),
+      itemId: normalizeAnswerId(itemId, "itemId is required"),
+    };
+  });
+};
+
 const evaluatePuzzleAnswer = (block: Extract<DayBlock, { kind: "puzzle" }>, answer: unknown) => {
   switch (block.type) {
     case "text": {
@@ -321,6 +337,42 @@ const evaluatePuzzleAnswer = (block: Extract<DayBlock, { kind: "puzzle" }>, answ
       });
       const expected = new Set(block.solution as string[]);
       return uniqueChoices.size === expected.size && choices.every((choice) => expected.has(choice));
+    }
+    case "drag-sockets": {
+      const placements = ensureDragSocketAnswer(answer);
+      const sockets = block.sockets ?? [];
+      const items = block.items ?? [];
+      if (!sockets.length || !items.length) {
+        throw new Error("Puzzle is misconfigured");
+      }
+      const socketIds = new Set(sockets.map((socket) => socket.id));
+      const itemIds = new Set(items.map((item) => item.id));
+      const assignment = new Map<string, string>();
+      const usedItems = new Set<string>();
+      placements.forEach(({ socketId, itemId }) => {
+        if (!socketIds.has(socketId)) throw new Error("Unknown socket");
+        if (!itemIds.has(itemId)) throw new Error("Unknown item");
+        const socket = sockets.find((s) => s.id === socketId);
+        const item = items.find((itm) => itm.id === itemId);
+        if (socket && socket.accepts.length > 0 && !socket.accepts.includes(itemId)) {
+          throw new Error("Item does not fit this socket");
+        }
+        if (socket?.shape && item?.shape && socket.shape !== item.shape) {
+          throw new Error("Item shape does not match socket");
+        }
+        if (assignment.has(socketId)) throw new Error("Each socket can hold only one item");
+        if (usedItems.has(itemId)) throw new Error("Each item can be used only once");
+        assignment.set(socketId, itemId);
+        usedItems.add(itemId);
+      });
+      const expected = Array.isArray(block.solution)
+        ? (block.solution as Array<{ socketId: string; itemId: string }>)
+        : [];
+      if (!expected.length) {
+        throw new Error("Puzzle is misconfigured");
+      }
+      const expectedMap = new Map(expected.map(({ socketId, itemId }) => [socketId, itemId]));
+      return Array.from(expectedMap.entries()).every(([socketId, itemId]) => assignment.get(socketId) === itemId);
     }
     default:
       throw new Error("Unsupported puzzle type for answer evaluation");

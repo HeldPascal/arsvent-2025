@@ -1,6 +1,14 @@
 import matter, { type GrayMatterFile } from "gray-matter";
 import { marked } from "marked";
-import type { InventoryItem, RiddleOption, RiddleType, DayBlock } from "./loader.js";
+import type {
+  InventoryItem,
+  RiddleOption,
+  RiddleType,
+  DayBlock,
+  DragSocketItem,
+  DragSocketSlot,
+  DragShape,
+} from "./loader.js";
 
 export type WhenCondition =
   | { kind: "all" }
@@ -125,7 +133,16 @@ const resolveType = (input?: string): RiddleType => {
   if (["multi-choice", "multiple", "multi"].includes(normalized)) return "multi-choice";
   if (["sort", "ordering", "order"].includes(normalized)) return "sort";
   if (["group", "grouping"].includes(normalized)) return "group";
+  if (["drag-sockets", "drag", "sockets"].includes(normalized)) return "drag-sockets";
   return "text";
+};
+
+const resolveShape = (input: unknown): DragShape => {
+  const normalized = String(input ?? "circle").toLowerCase();
+  if (normalized === "circle" || normalized === "round") return "circle";
+  if (normalized === "square" || normalized === "box") return "square";
+  if (normalized === "hex" || normalized === "hexagon") return "hex";
+  throw new Error(`Unsupported shape: ${input}`);
 };
 
 const stripQuotes = (value: string) => value.replace(/^['"]|['"]$/g, "").trim();
@@ -318,6 +335,124 @@ export const evaluateCondition = (condition: WhenCondition, solvedIds: Set<strin
   }
 };
 
+const normalizeDragItems = (raw: unknown, defaultShape: DragShape): DragSocketItem[] => {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw new Error("Drag-sockets puzzles require at least one item");
+  }
+  const items = raw.map((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      throw new Error("Invalid drag-sockets item definition");
+    }
+    const { id, label, image, shape } = entry as { id?: unknown; label?: unknown; image?: unknown; shape?: unknown };
+    const itemId = normalizeId(id, "Drag-sockets items require an id");
+    const itemLabel = typeof label === "string" ? label : undefined;
+    const itemImage = typeof image === "string" ? image : undefined;
+    const itemShape = shape ? resolveShape(shape) : defaultShape;
+    return { id: itemId, ...(itemLabel !== undefined ? { label: itemLabel } : {}), ...(itemImage ? { image: itemImage } : {}), shape: itemShape };
+  });
+  const seen = new Set<string>();
+  items.forEach((item) => {
+    if (seen.has(item.id)) throw new Error(`Duplicate drag-sockets item id: ${item.id}`);
+    seen.add(item.id);
+  });
+  return items;
+};
+
+const normalizePosition = (value: unknown) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Socket position must be an object with x and y");
+  }
+  const { x, y } = value as { x?: unknown; y?: unknown };
+  const toRatio = (val: unknown, axis: "x" | "y") => {
+    const num = Number(val);
+    if (!Number.isFinite(num)) throw new Error(`Socket ${axis} must be a number`);
+    return Math.min(Math.max(num, 0), 1);
+  };
+  return { x: toRatio(x, "x"), y: toRatio(y, "y") };
+};
+
+const normalizeDragSockets = (raw: unknown, items: DragSocketItem[], defaultShape: DragShape): DragSocketSlot[] => {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw new Error("Drag-sockets puzzles require sockets");
+  }
+  const itemIds = new Set(items.map((item) => item.id));
+  const sockets = raw.map((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      throw new Error("Invalid socket definition");
+    }
+    const { id, position, accepts, shape, label } = entry as {
+      id?: unknown;
+      position?: unknown;
+      accepts?: unknown;
+      shape?: unknown;
+      label?: unknown;
+    };
+    const socketId = normalizeId(id, "Sockets require an id");
+    const socketShape = shape ? resolveShape(shape) : defaultShape;
+    const socketLabel = typeof label === "string" ? label : undefined;
+    const shapeScopedItems =
+      socketShape && items.some((item) => item.shape === socketShape)
+        ? items.filter((item) => item.shape === socketShape).map((item) => item.id)
+        : Array.from(itemIds);
+    const normalizedAccepts =
+      accepts === undefined ? shapeScopedItems : ensureStringArray(accepts, "Sockets require accepted item ids");
+    normalizedAccepts.forEach((acc) => {
+      if (!itemIds.has(acc)) {
+        throw new Error(`Socket accepts unknown item id: ${acc}`);
+      }
+    });
+    return {
+      id: socketId,
+      position: normalizePosition(position),
+      accepts: normalizedAccepts,
+      shape: socketShape,
+      ...(socketLabel !== undefined ? { label: socketLabel } : {}),
+    };
+  });
+  const seen = new Set<string>();
+  sockets.forEach((socket) => {
+    if (seen.has(socket.id)) throw new Error(`Duplicate socket id: ${socket.id}`);
+    seen.add(socket.id);
+  });
+  return sockets;
+};
+
+const normalizeDragSolution = (
+  raw: unknown,
+  sockets: DragSocketSlot[],
+  items: DragSocketItem[],
+): Array<{ socketId: string; itemId: string }> => {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw new Error("Drag-sockets puzzles require a solution");
+  }
+  const socketIds = new Set(sockets.map((socket) => socket.id));
+  const itemIds = new Set(items.map((item) => item.id));
+  const solution = raw.map((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      throw new Error("Invalid drag-sockets solution entry");
+    }
+    const { socketId, itemId } = entry as { socketId?: unknown; itemId?: unknown };
+    const normalizedSocketId = normalizeId(socketId, "Solution entries require a socketId");
+    const normalizedItemId = normalizeId(itemId, "Solution entries require an itemId");
+    if (!socketIds.has(normalizedSocketId)) throw new Error(`Solution references unknown socket: ${normalizedSocketId}`);
+    if (!itemIds.has(normalizedItemId)) throw new Error(`Solution references unknown item: ${normalizedItemId}`);
+    const socket = sockets.find((s) => s.id === normalizedSocketId);
+    if (socket && socket.accepts.length > 0 && !socket.accepts.includes(normalizedItemId)) {
+      throw new Error(`Solution assigns an item that the socket does not accept: ${normalizedSocketId}`);
+    }
+    return { socketId: normalizedSocketId, itemId: normalizedItemId };
+  });
+  const seenSockets = new Set<string>();
+  const seenItems = new Set<string>();
+  solution.forEach(({ socketId, itemId }) => {
+    if (seenSockets.has(socketId)) throw new Error(`Solution lists socket multiple times: ${socketId}`);
+    if (seenItems.has(itemId)) throw new Error(`Solution uses item multiple times: ${itemId}`);
+    seenSockets.add(socketId);
+    seenItems.add(itemId);
+  });
+  return solution;
+};
+
 const segmentBlocks = (blocks: StructuredBlock[]) => {
   const segments: Array<{ required: WhenCondition | null; blocks: StructuredBlock[] }> = [
     { required: null, blocks: [] },
@@ -425,6 +560,34 @@ const mapToDayBlocks = (
           solution,
           options,
           minSelections,
+          solved,
+          ...(block.title ? { title: block.title } : {}),
+        };
+      }
+
+      if (type === "drag-sockets") {
+        const rawDef = block.definition.raw as Record<string, unknown>;
+        const backgroundImageCandidate = rawDef.backgroundImage ?? rawDef["background-image"];
+        const backgroundImage =
+          typeof backgroundImageCandidate === "string" ? backgroundImageCandidate : undefined;
+        if (!backgroundImage) {
+          throw new Error("Drag-sockets puzzles require a background image");
+        }
+        const shape = rawDef.shape ? resolveShape(rawDef.shape) : "circle";
+        const items = normalizeDragItems(rawDef.items, shape);
+        const sockets = normalizeDragSockets(rawDef.sockets, items, shape);
+        const solution = normalizeDragSolution(block.definition.solution, sockets, items);
+        return {
+          kind: "puzzle",
+          id: block.id,
+          html: block.html,
+          visible: visibleSet.has(block) || includeHidden,
+          type,
+          solution,
+          backgroundImage,
+          items,
+          sockets,
+          shape,
           solved,
           ...(block.title ? { title: block.title } : {}),
         };

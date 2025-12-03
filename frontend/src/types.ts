@@ -1,6 +1,6 @@
 export type Locale = "en" | "de";
 export type Mode = "NORMAL" | "VET";
-export type RiddleType = "text" | "single-choice" | "multi-choice" | "sort" | "group";
+export type RiddleType = "text" | "single-choice" | "multi-choice" | "sort" | "group" | "drag-sockets";
 
 export interface RiddleOption {
   id: string;
@@ -13,12 +13,27 @@ export interface RiddleGroup {
   label: string;
 }
 
+export interface DragSocketItem {
+  id: string;
+  label?: string;
+  image?: string;
+  shape?: "circle" | "square" | "hex";
+}
+
+export interface DragSocketSlot {
+  id: string;
+  position: { x: number; y: number };
+  accepts: string[];
+  shape?: "circle" | "square" | "hex";
+}
+
 export type RiddleAnswerPayload =
   | { puzzleId: string; type: "text"; answer: string }
   | { puzzleId: string; type: "single-choice"; answer: string }
   | { puzzleId: string; type: "multi-choice"; answer: string[] }
   | { puzzleId: string; type: "sort"; answer: string[] }
-  | { puzzleId: string; type: "group"; answer: Record<string, string[]> };
+  | { puzzleId: string; type: "group"; answer: Record<string, string[]> }
+  | { puzzleId: string; type: "drag-sockets"; answer: Array<{ socketId: string; itemId: string }> };
 
 export interface User {
   id: string;
@@ -63,6 +78,10 @@ export type DayBlock =
       solved: boolean;
       options?: RiddleOption[];
       minSelections?: number;
+      backgroundImage?: string;
+      items?: DragSocketItem[];
+      sockets?: DragSocketSlot[];
+      shape?: "circle" | "square" | "hex";
     }
   | {
       kind: "reward";

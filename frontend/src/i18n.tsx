@@ -67,7 +67,11 @@ type TranslationKey =
   | "introStory"
   | "dayUnlocked"
   | "answerCorrect"
-  | "answerIncorrect";
+  | "answerIncorrect"
+  | "placeAllItems"
+  | "dragHint"
+  | "socketPlaceholder"
+  | "allItemsPlaced";
 
 const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -137,6 +141,10 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     dayUnlocked: "A new day has been unlocked!",
     answerCorrect: "Correct! Well done.",
     answerIncorrect: "Incorrect answer. Try again.",
+    placeAllItems: "Place every item onto a marked socket.",
+    dragHint: "Select or drag an item, then click or drop on a matching socket to place or swap it.",
+    allItemsPlaced: "All items are placed. Select or drag one to a socket to adjust.",
+    socketPlaceholder: "?",
   },
   de: {
     brand: "Arsvent",
@@ -205,6 +213,10 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     dayUnlocked: "Ein neuer Tag wurde freigeschaltet!",
     answerCorrect: "Richtig! Gut gemacht.",
     answerIncorrect: "Falsche Antwort. Versuche es erneut.",
+    placeAllItems: "Platziere alle Teile auf den markierten Stellen.",
+    dragHint: "Wähle oder ziehe ein Teil und klicke bzw. lasse es auf einem passenden Feld los, um es zu platzieren oder zu tauschen.",
+    allItemsPlaced: "Alle Teile sind platziert. Wähle oder ziehe eines auf ein Feld, um es anzupassen.",
+    socketPlaceholder: "?",
   },
 };
 
@@ -230,7 +242,11 @@ export function I18nProvider({
   children: React.ReactNode;
 }) {
   const value = useMemo<I18nContextValue>(() => {
-    const t = (key: TranslationKey) => translations[locale]?.[key] ?? translations.en[key];
+    const t = (key: TranslationKey, vars?: Record<string, string | number>) => {
+      const template = translations[locale]?.[key] ?? translations.en[key];
+      if (!vars) return template;
+      return Object.entries(vars).reduce((acc, [name, value]) => acc.replace(new RegExp(`{${name}}`, "g"), String(value)), template);
+    };
     return { locale, t, setLocale };
   }, [locale, setLocale]);
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { DayBlock, RiddleAnswerPayload } from "../../types";
 import { useI18n } from "../../i18n";
+import DragSocketsPuzzle from "./drag/DragSocketsPuzzle";
 
 interface Props {
   block: Extract<DayBlock, { kind: "puzzle" }>;
@@ -21,6 +22,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
   const [textAnswer, setTextAnswer] = useState("");
   const [singleChoice, setSingleChoice] = useState("");
   const [multiChoices, setMultiChoices] = useState<string[]>([]);
+  const [dragAssignments, setDragAssignments] = useState<Record<string, string | undefined>>({});
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,14 +32,26 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
         setTextAnswer(String(block.solution));
         setSingleChoice(String(block.solution));
         setMultiChoices([]);
+        setDragAssignments({});
       } else if (Array.isArray(block.solution)) {
         setTextAnswer("");
         setSingleChoice("");
         setMultiChoices(block.solution as string[]);
+        if (block.type === "drag-sockets") {
+          const solvedPlacements: Record<string, string> = {};
+          (block.solution as Array<{ socketId?: string; itemId?: string }>).forEach((entry) => {
+            if (entry?.socketId && entry?.itemId) {
+              solvedPlacements[entry.socketId] = entry.itemId;
+            }
+          });
+          setDragAssignments(solvedPlacements);
+        }
+      } else {
+        setDragAssignments({});
       }
     }
     setLocalError(null);
-  }, [block.id, block.solved, block.solution]);
+  }, [block.id, block.solved, block.solution, block.type]);
 
   const handleSubmit = (evt: React.FormEvent) => {
     evt.preventDefault();
@@ -76,6 +90,36 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
       return;
     }
 
+    if (block.type === "drag-sockets") {
+      const sockets = block.sockets ?? [];
+      if (!sockets.length) {
+        setLocalError(t("submissionFailed"));
+        return;
+      }
+      const requiredSockets = Array.isArray(block.solution)
+        ? new Set(
+            (block.solution as Array<{ socketId?: string }>).map((entry) => entry?.socketId).filter((id): id is string => Boolean(id)),
+          )
+        : new Set<string>();
+      if (requiredSockets.size === 0) {
+        sockets.forEach((socket) => requiredSockets.add(socket.id));
+      }
+      const missing = Array.from(requiredSockets).filter((id) => !dragAssignments[id]);
+      if (missing.length > 0) {
+        setLocalError(t("placeAllItems"));
+        return;
+      }
+      const answer = sockets
+        .map((socket) => ({
+          socketId: socket.id,
+          itemId: dragAssignments[socket.id],
+        }))
+        .filter((entry): entry is { socketId: string; itemId: string } => Boolean(entry.itemId));
+      onInteract?.();
+      onSubmit({ puzzleId: block.id, type: "drag-sockets", answer });
+      return;
+    }
+
     setLocalError("Unsupported puzzle type");
   };
 
@@ -87,7 +131,8 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
     if (block.type === "single-choice") {
       return (
         <>
-          <p className="muted small">{t("chooseOne")}</p>
+          <div className="puzzle-hint">{t("chooseOne")}</div>
+          <div style={{ height: "8px" }} />
           <div className="choice-list">
             {(block.options ?? []).map((opt) => (
               <label key={opt.id} className={`choice-item ${singleChoice === opt.id ? "selected" : ""} ${statusClass}`}>
@@ -116,10 +161,11 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
     if (block.type === "multi-choice") {
       return (
         <>
-          <p className="muted small">
+          <div className="puzzle-hint">
             {t("chooseMany")}
             {block.minSelections && block.minSelections > 1 ? ` (${block.minSelections}+)` : ""}
-          </p>
+          </div>
+          <div style={{ height: "8px" }} />
           <div className="choice-list">
             {(block.options ?? []).map((opt) => (
               <label key={opt.id} className={`choice-item ${multiChoices.includes(opt.id) ? "selected" : ""} ${statusClass}`}>
@@ -164,6 +210,20 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
       )}
 
       {(block.type === "single-choice" || block.type === "multi-choice") && renderChoices()}
+
+      {block.type === "drag-sockets" && (
+        <DragSocketsPuzzle
+          block={block}
+          assignments={dragAssignments}
+          onChange={(next) => {
+            setDragAssignments(next);
+            onInteract?.();
+          }}
+          resolveAsset={resolveImage}
+          status={status}
+          disabled={submitting || block.solved}
+        />
+      )}
 
       {!block.solved && (
         <div className="actions">
