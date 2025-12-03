@@ -8,3 +8,8 @@
   description: "Ein robuster Tisch, gezeichnet von Jahren voller Tinkturen und Experimente."
   image: "/assets/25_02_reward.png"
   rarity: "epic"
+- id: "stardew"
+  title: "Sternentau von K’ren-Da"
+  description: "Eine Flasche Wasser, die leicht schimmert."
+  image: "/assets/25_03_reward.png"
+  rarity: "epic"
