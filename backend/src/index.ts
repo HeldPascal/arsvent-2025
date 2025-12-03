@@ -1,6 +1,8 @@
 import express from "express";
 import type { Request, Response, NextFunction, RequestHandler } from "express";
 import session from "express-session";
+import RedisStore from "connect-redis";
+import { createClient as createRedisClient } from "redis";
 import type { Session as ExpressSession, SessionData } from "express-session";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -25,6 +27,7 @@ const {
   DISCORD_CALLBACK_URL,
   SESSION_SECRET = "dev-secret",
   FRONTEND_ORIGIN = "http://localhost:5173",
+  REDIS_URL = "redis://localhost:6379",
   SUPER_ADMIN_DISCORD_ID = "",
 } = process.env;
 
@@ -39,9 +42,26 @@ const superAdminId = SUPER_ADMIN_DISCORD_ID?.trim() || null;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const createSessionStore = async (): Promise<session.Store | undefined> => {
+  try {
+    const redisClient = createRedisClient({ url: REDIS_URL });
+    redisClient.on("error", (err: unknown) => {
+      console.error("Redis client error", err);
+    });
+    await redisClient.connect();
+    console.log("[session] Using Redis store at", REDIS_URL);
+    return new RedisStore({ client: redisClient, prefix: "arsvent:sess:" });
+  } catch (err) {
+    console.warn("[session] Redis unavailable, using in-memory store. Error:", err);
+    return undefined;
+  }
+};
+const sessionStore = await createSessionStore();
+
 type SessionWithVersion = ExpressSession &
   Partial<SessionData> & {
     sessionVersion?: number;
+    stateVersion?: number;
     puzzleProgress?: Record<string, string[]>;
   };
 
@@ -50,7 +70,9 @@ const isAdminUser = (user?: PrismaUser | null) => Boolean(user?.isSuperAdmin || 
 
 const storeSessionVersion = (req: Request, user: PrismaUser) => {
   if (req.session) {
-    (req.session as SessionWithVersion).sessionVersion = user.sessionVersion;
+    const sess = req.session as SessionWithVersion;
+    sess.sessionVersion = user.sessionVersion;
+    sess.stateVersion = user.stateVersion;
   }
 };
 
@@ -88,6 +110,7 @@ app.use(
     resave: false,
     saveUninitialized: false,
     proxy: isProd,
+    store: sessionStore,
     cookie: {
       httpOnly: true,
       secure: isProd,
@@ -166,13 +189,17 @@ passport.use(
 
 const requireAuth: RequestHandler = (req, res, next) => {
   if (req.isAuthenticated && req.isAuthenticated() && req.user) {
-    const sessionVersion = (req.session as SessionWithVersion | undefined)?.sessionVersion;
-    if (sessionVersion !== req.user.sessionVersion) {
+    const sess = req.session as SessionWithVersion | undefined;
+    if (!sess || sess.sessionVersion !== req.user.sessionVersion) {
       return req.logout(() => {
         req.session?.destroy(() => {
           res.status(401).json({ error: "Session expired" });
         });
       });
+    }
+    if (sess.stateVersion !== req.user.stateVersion) {
+      sess.stateVersion = req.user.stateVersion;
+      sess.puzzleProgress = {};
     }
     return next();
   }
@@ -773,7 +800,7 @@ app.post("/api/admin/users/:id/progress", requireAuth, requireAdmin, async (req,
 
     const updated = await prisma.user.update({
       where: { id: target.id },
-      data: { lastSolvedDay, lastSolvedAt: solvedAt, stateVersion: { increment: 1 }, sessionVersion: { increment: 1 } },
+      data: { lastSolvedDay, lastSolvedAt: solvedAt, stateVersion: { increment: 1 } },
     });
 
     await logAdminAction("admin:set-progress", req.user?.id, { targetId: target.id, lastSolvedDay, lastSolvedAt: solvedAt });

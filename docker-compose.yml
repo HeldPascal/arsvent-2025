@@ -13,6 +13,14 @@ services:
     ports:
       - "127.0.0.1:4000:4000"
 
+  redis:
+    image: redis:7-alpine
+    container_name: arsvent-redis
+    restart: unless-stopped
+    volumes:
+      - /opt/arsvent-2025/data/redis:/data
+    command: ["redis-server", "--appendonly", "yes"]
+
   frontend:
     build:
       context: ./frontend
