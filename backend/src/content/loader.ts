@@ -77,6 +77,7 @@ export interface PuzzleBlock {
   backgroundImage?: string;
   items?: DragSocketItem[];
   sockets?: DragSocketSlot[];
+   shape?: DragShape;
   solved: boolean;
   solution: unknown;
 }
