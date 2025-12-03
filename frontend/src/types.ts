@@ -25,6 +25,7 @@ export interface DragSocketSlot {
   position: { x: number; y: number };
   accepts: string[];
   shape?: "circle" | "square" | "hex";
+  label?: string;
 }
 
 export type RiddleAnswerPayload =

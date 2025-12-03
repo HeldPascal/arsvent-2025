@@ -124,7 +124,7 @@ export default function DragSocketsPuzzle({
     status === "correct" ? "status-correct" : status === "incorrect" ? "status-incorrect" : "status-idle";
   const shapeClass = (shape?: string) => `shape-${shape ?? block.shape ?? "circle"}`;
 
-  const renderSocket = (socket: DragSocketSlot, index: number) => {
+  const renderSocket = (socket: DragSocketSlot) => {
     const assignedId = assignments[socket.id];
     const assignedItem = items.find((item) => item.id === assignedId);
     const isActive = hoverSocket === socket.id;
@@ -287,7 +287,7 @@ export default function DragSocketsPuzzle({
           backgroundSize: "contain",
         }}
       >
-        {sockets.map((socket: DragSocketSlot, idx: number) => renderSocket(socket, idx))}
+        {sockets.map((socket: DragSocketSlot) => renderSocket(socket))}
       </div>
       <div className="drag-items-grid">
         {availableItems.length === 0 && items.length > 0 && <div className="muted small">{t("allItemsPlaced")}</div>}
