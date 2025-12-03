@@ -29,8 +29,8 @@ export default function DragSocketsPuzzle({
   disabled = false,
 }: Props) {
   const { t } = useI18n();
-  const sockets = block.sockets ?? [];
-  const items = block.items ?? [];
+  const sockets: DragSocketSlot[] = block.sockets ?? [];
+  const items: DragSocketItem[] = block.items ?? [];
   const [hoverSocket, setHoverSocket] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState<number>(4 / 3);
   const [previewItem, setPreviewItem] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export default function DragSocketsPuzzle({
     return map;
   }, [assignments]);
 
-  const availableItems = items.filter((item) => !assignedSocketByItem[item.id]);
+  const availableItems = items.filter((item: DragSocketItem) => !assignedSocketByItem[item.id]);
   const resolvedBackground = resolveAsset(block.backgroundImage);
 
   useEffect(() => {
@@ -124,13 +124,13 @@ export default function DragSocketsPuzzle({
     status === "correct" ? "status-correct" : status === "incorrect" ? "status-incorrect" : "status-idle";
   const shapeClass = (shape?: string) => `shape-${shape ?? block.shape ?? "circle"}`;
 
-  const renderSocket = (socket: DragSocketsBlock["sockets"][number], index: number) => {
+  const renderSocket = (socket: DragSocketSlot, index: number) => {
     const assignedId = assignments[socket.id];
     const assignedItem = items.find((item) => item.id === assignedId);
     const isActive = hoverSocket === socket.id;
     const isDropCandidate = draggingItem ? canDrop(socket.id, draggingItem) : false;
     const isMuted = Boolean(draggingItem && !isDropCandidate);
-    const socketLabel = socket.label && socket.label.trim().length > 0 ? socket.label : t("socketPlaceholder", { index: index + 1 });
+    const socketLabel = socket.label && socket.label.trim().length > 0 ? socket.label : t("socketPlaceholder");
 
     return (
       <div
@@ -224,7 +224,7 @@ export default function DragSocketsPuzzle({
     );
   };
 
-  const renderItemCard = (item: DragSocketsBlock["items"][number]) => (
+  const renderItemCard = (item: DragSocketItem) => (
     <div
       key={item.id}
       className={`drag-item-card ${shapeClass(item.shape)} ${draggingItem === item.id ? "dragging" : ""}`}
@@ -287,11 +287,11 @@ export default function DragSocketsPuzzle({
           backgroundSize: "contain",
         }}
       >
-        {sockets.map((socket, idx) => renderSocket(socket, idx))}
+        {sockets.map((socket: DragSocketSlot, idx: number) => renderSocket(socket, idx))}
       </div>
       <div className="drag-items-grid">
         {availableItems.length === 0 && items.length > 0 && <div className="muted small">{t("allItemsPlaced")}</div>}
-        {availableItems.map((item) => renderItemCard(item))}
+        {availableItems.map((item: DragSocketItem) => renderItemCard(item))}
       </div>
     </div>
   );

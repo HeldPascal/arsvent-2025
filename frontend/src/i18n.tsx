@@ -222,7 +222,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
 
 interface I18nContextValue {
   locale: Locale;
-  t: (key: TranslationKey) => string;
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
   setLocale: (locale: Locale) => void;
 }
 
