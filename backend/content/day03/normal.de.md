@@ -61,4 +61,5 @@ solution:
 ## Story
 > „Ah, dieser erinnert sich. Dieser war K’ren-Dar, der Wanderer. Hier, dieses Wasser wurde vom Licht jedes Sterns berührt. Es war der wertvollste Besitz von diesem, und nun gehört es Euch.“
 
-<!-- Reward: [nach Abschluss aller Fragen: Bild von Sternentau] -->
+## Reward
+inventoryId: "stardew"
