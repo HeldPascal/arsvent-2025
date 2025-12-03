@@ -213,7 +213,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
 
       {block.type === "drag-sockets" && (
         <DragSocketsPuzzle
-          block={block}
+          block={block as Extract<typeof block, { type: "drag-sockets" }>}
           assignments={dragAssignments}
           onChange={(next) => {
             setDragAssignments(next);

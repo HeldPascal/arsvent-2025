@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import type { DragEvent } from "react";
-import type { DayBlock } from "../../../types";
+import type { DayBlock, DragSocketItem, DragSocketSlot } from "../../../types";
 import { useI18n } from "../../../i18n";
 
-type DragSocketsBlock = Extract<DayBlock, { kind: "puzzle"; type: "drag-sockets" }>;
+type DragSocketsBlock = Extract<DayBlock, { kind: "puzzle" }> & {
+  type: "drag-sockets";
+  items?: DragSocketItem[];
+  sockets?: DragSocketSlot[];
+  backgroundImage?: string;
+  shape?: "circle" | "square" | "hex";
+};
 
 interface Props {
   block: DragSocketsBlock;
