@@ -36,7 +36,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             cd /opt/arsvent-2025
-            ./deploy.sh
+            BRANCH="${{ github.ref_name }}" ./deploy.sh
 
       - name: Disable maintenance mode (if enabled)
         if: ${{ github.event.inputs.with_maintenance == 'yes' }}
