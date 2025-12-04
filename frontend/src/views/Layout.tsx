@@ -17,6 +17,7 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
   const { t } = useI18n();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const handledAuthRef = useRef<string | null>(null);
@@ -34,6 +35,18 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
       window.removeEventListener("scroll", handleScroll);
     };
   }, [t]);
+
+  useEffect(() => {
+    const handleClickAway = (event: MouseEvent) => {
+      if (!menuOpen) return;
+      const target = event.target as Node | null;
+      if (menuRef.current && target && !menuRef.current.contains(target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickAway);
+    return () => document.removeEventListener("mousedown", handleClickAway);
+  }, [menuOpen]);
 
   const closeMenuAnd = (cb: () => void) => {
     setMenuOpen(false);
@@ -84,7 +97,7 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
         <div className="spacer" />
         {user ? (
           <>
-            <div className="topbar-actions row menu-container">
+            <div className="topbar-actions row menu-container" ref={menuRef}>
               <Link className="ghost icon-btn" to="/settings" title={t("settingsTitle")}>
                 ⚙️
               </Link>
@@ -112,7 +125,7 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
         ) : loadingUser ? (
           <span className="muted">{t("loading")}</span>
         ) : (
-          <div className="topbar-actions row menu-container">
+          <div className="topbar-actions row menu-container" ref={menuRef}>
             <button className="ghost menu-toggle" onClick={() => setMenuOpen((v) => !v)} aria-label="Menu">
               ☰
             </button>
