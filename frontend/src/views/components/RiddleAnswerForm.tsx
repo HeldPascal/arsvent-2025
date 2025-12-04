@@ -132,6 +132,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
       return (
         <>
           <div className="puzzle-hint">{t("chooseOne")}</div>
+          {localError && <div className="banner error">{localError}</div>}
           <div style={{ height: "8px" }} />
           <div className="choice-list">
             {(block.options ?? []).map((opt) => (
@@ -165,6 +166,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
             {t("chooseMany")}
             {block.minSelections && block.minSelections > 1 ? ` (${block.minSelections}+)` : ""}
           </div>
+          {localError && <div className="banner error">{localError}</div>}
           <div style={{ height: "8px" }} />
           <div className="choice-list">
             {(block.options ?? []).map((opt) => (
@@ -194,35 +196,39 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
 
   return (
     <form className="riddle-answer" onSubmit={handleSubmit}>
-      {localError && <div className="banner error">{localError}</div>}
-
       {block.type === "text" && (
-        <div className="field">
-          <label htmlFor={`answer-${block.id}`}>{t("yourAnswer")}</label>
-          <input
-            id={`answer-${block.id}`}
-            type="text"
-            value={textAnswer}
-            onChange={(e) => setTextAnswer(e.target.value)}
-            disabled={submitting || block.solved}
-          />
-        </div>
+        <>
+          {localError && <div className="banner error">{localError}</div>}
+          <div className="field">
+            <label htmlFor={`answer-${block.id}`}>{t("yourAnswer")}</label>
+            <input
+              id={`answer-${block.id}`}
+              type="text"
+              value={textAnswer}
+              onChange={(e) => setTextAnswer(e.target.value)}
+              disabled={submitting || block.solved}
+            />
+          </div>
+        </>
       )}
 
       {(block.type === "single-choice" || block.type === "multi-choice") && renderChoices()}
 
       {block.type === "drag-sockets" && (
-        <DragSocketsPuzzle
-          block={block as Extract<typeof block, { type: "drag-sockets" }>}
-          assignments={dragAssignments}
-          onChange={(next) => {
-            setDragAssignments(next);
-            onInteract?.();
-          }}
-          resolveAsset={resolveImage}
-          status={status}
-          disabled={submitting || block.solved}
-        />
+        <>
+          {localError && <div className="banner error">{localError}</div>}
+          <DragSocketsPuzzle
+            block={block as Extract<typeof block, { type: "drag-sockets" }>}
+            assignments={dragAssignments}
+            onChange={(next) => {
+              setDragAssignments(next);
+              onInteract?.();
+            }}
+            resolveAsset={resolveImage}
+            status={status}
+            disabled={submitting || block.solved}
+          />
+        </>
       )}
 
       {!block.solved && (

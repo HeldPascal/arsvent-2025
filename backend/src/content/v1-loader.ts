@@ -550,7 +550,16 @@ const mapToDayBlocks = (
             throw new Error("Solution references an unknown option id");
           }
         });
-        const minSelections = Math.min(Math.max(solution.length, 1), options.length);
+        const rawMin = (block.definition.raw as { minSelections?: unknown }).minSelections;
+        const parsedMin =
+          typeof rawMin === "number"
+            ? rawMin
+            : typeof rawMin === "string" && rawMin.trim()
+              ? Number(rawMin)
+              : null;
+        const clampedRequested =
+          parsedMin && Number.isFinite(parsedMin) ? Math.min(Math.max(parsedMin, 1), options.length) : null;
+        const minSelections = Math.min(options.length, clampedRequested ?? 1);
         return {
           kind: "puzzle",
           id: block.id,
