@@ -116,14 +116,15 @@ export interface IntroPayload {
 }
 
 export interface AdminOverview {
-  diagnostics: {
-    uptimeSeconds: number;
-    serverTime: string;
-    availableDay: number;
-    maxDay: number;
-    nodeVersion: string;
-    superAdminId: string | null;
-  };
+    diagnostics: {
+      uptimeSeconds: number;
+      serverTime: string;
+      availableDay: number;
+      maxDay: number;
+      contentDayCount: number;
+      nodeVersion: string;
+      superAdminId: string | null;
+    };
   stats: {
     totalUsers: number;
     adminUsers: number;

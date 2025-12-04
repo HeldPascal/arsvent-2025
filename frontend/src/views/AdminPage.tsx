@@ -246,9 +246,17 @@ export default function AdminPage({ user }: Props) {
           <div className="panel" style={{ marginBottom: 12 }}>
             <h3>Progress</h3>
             <div className="progress-controls">
-              <div className="muted">Current unlocked day: {overview.diagnostics.availableDay}</div>
+              <div className="muted">
+                Current unlocked day: {overview.diagnostics.availableDay} · Content days: {overview.diagnostics.contentDayCount} /
+                {overview.diagnostics.maxDay}
+              </div>
               <div className="progress-actions">
-                <button className="primary" type="button" onClick={handleUnlockNext} disabled={unlocking}>
+                <button
+                  className="primary"
+                  type="button"
+                  onClick={handleUnlockNext}
+                  disabled={unlocking || overview.diagnostics.availableDay >= overview.diagnostics.contentDayCount}
+                >
                   Unlock next
                 </button>
                 <label className="progress-set">
@@ -274,6 +282,20 @@ export default function AdminPage({ user }: Props) {
                 { label: "Locked", value: Math.max(overview.diagnostics.maxDay - overview.diagnostics.availableDay, 0), color: "#334155" },
               ]}
             />
+            <div style={{ marginTop: 12 }}>
+              <StatBar
+                label="Content coverage"
+                total={overview.diagnostics.maxDay}
+                segments={[
+                  { label: "Has content", value: overview.diagnostics.contentDayCount, color: "#4ade80" },
+                  {
+                    label: "No content",
+                    value: Math.max(overview.diagnostics.maxDay - overview.diagnostics.contentDayCount, 0),
+                    color: "#475569",
+                  },
+                ]}
+              />
+            </div>
             <CollapsibleHistogram
               title="Players per last solved day"
               values={overview.stats.solveHistogram}

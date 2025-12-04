@@ -343,6 +343,13 @@ a {
   box-shadow: 0 8px 20px rgba(212, 77, 63, 0.35);
 }
 
+.primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  filter: grayscale(0.4);
+}
+
 .user-chip {
   padding: 6px 10px;
   background: #2a2e33;

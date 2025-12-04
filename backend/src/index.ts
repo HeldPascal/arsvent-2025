@@ -11,6 +11,7 @@ import { Strategy as DiscordStrategy } from "passport-discord";
 import type { Profile as DiscordProfile, StrategyOptions } from "passport-discord";
 import type { VerifyCallback } from "passport-oauth2";
 import dotenv from "dotenv";
+import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { PrismaClient } from "@prisma/client";
@@ -221,6 +222,17 @@ const requireSuperAdmin: RequestHandler = (req, res, next) => {
 };
 
 const MAX_DAY = 24;
+const getContentDayCount = async () => {
+  try {
+    const contentRoot = path.join(__dirname, "..", "content");
+    const entries = await fs.readdir(contentRoot, { withFileTypes: true });
+    const days = entries.filter((e) => e.isDirectory() && /^day\d{2}$/.test(e.name));
+    return days.length || MAX_DAY;
+  } catch (err) {
+    console.warn("[content] Failed to count day folders, falling back to MAX_DAY", err);
+    return MAX_DAY;
+  }
+};
 
 const ensureAppState = async () =>
   prisma.appState.upsert({
@@ -683,6 +695,7 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
       solveHistogram,
       downgradeHistogram,
       unlockedDay,
+      contentDayCount,
     ] =
       await Promise.all([
         prisma.user.count(),
@@ -734,6 +747,7 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
           return hist;
         })(),
         getUnlockedDay(),
+        getContentDayCount(),
       ]);
 
     res.json({
@@ -742,6 +756,7 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
         serverTime: new Date().toISOString(),
         availableDay: unlockedDay,
         maxDay: MAX_DAY,
+        contentDayCount,
         nodeVersion: process.version,
         superAdminId: superAdminId || null,
       },
