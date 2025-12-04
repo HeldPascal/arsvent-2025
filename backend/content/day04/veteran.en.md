@@ -14,7 +14,7 @@ solved:
 The scene shifts.
 You're standing in an arena, a woman in front of you.
 
-> Careful, that's Archmage Twelvane!
+> Careful, that's Archwizard Twelvane!
   She's a fearsome beastmaster.
   I was preparing to fight her, but I died before I could challenge her.
   The only way to face her chimera is to craft your own.
@@ -60,7 +60,7 @@ solution:
 > Yes, that was it!
   I was Maleric Pontecus.
   I gathered creatures and allies across Tamriel.
-  Members of every alliance wished to fight at my side.
+  Members of every alliance wished to fight by my side.
   Here, take these shields of my companions.
   Fight this battle for all mortals!
 
