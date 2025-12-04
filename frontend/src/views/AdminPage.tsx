@@ -35,6 +35,7 @@ export default function AdminPage({ user }: Props) {
   const auditLimit = 3;
   const [auditLoading, setAuditLoading] = useState(false);
   const navigate = useNavigate();
+  const contentLimit = overview?.diagnostics.contentDayCount ?? 24;
 
   const loadData = useCallback(
     async (showLoader = false) => {
@@ -196,7 +197,9 @@ export default function AdminPage({ user }: Props) {
   const handleUnlockSet = async () => {
     setUnlocking(true);
     try {
-      await adminUnlockSet(unlockedInput);
+      const safeDay = Math.min(Math.max(unlockedInput, 0), contentLimit);
+      setUnlockedInput(safeDay);
+      await adminUnlockSet(safeDay);
       await loadData();
     } catch (err) {
       setError((err as Error).message);
@@ -264,9 +267,13 @@ export default function AdminPage({ user }: Props) {
                   <input
                     type="number"
                     min={0}
-                    max={24}
+                    max={contentLimit}
                     value={unlockedInput}
-                    onChange={(e) => setUnlockedInput(Number(e.target.value))}
+                    onChange={(e) => {
+                      const next = Number(e.target.value);
+                      if (!Number.isFinite(next)) return;
+                      setUnlockedInput(Math.min(Math.max(next, 0), contentLimit));
+                    }}
                   />
                 </label>
                 <button className="ghost" type="button" onClick={handleUnlockSet} disabled={unlocking}>
