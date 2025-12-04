@@ -14,7 +14,10 @@ solved:
 A door swings open and you enter the next room.
 Star charts lie on the tables, and a telescope stands by the open window.
 
-> „This one loved the stars. But after he had gazed at all the constellations, Nirni's sky grew boring to him. He traveled and traveled until the sky changed. And now he can't remember who he was or where he's been…“
+> This one loved the stars.
+  But after he had gazed at all the constellations, Nirni's sky grew boring to him.
+  He traveled and traveled until the sky changed.
+  And now he can't remember who he was or where he's been…
 
 ## Puzzle
 id: "sky"
@@ -59,7 +62,10 @@ solution:
 ## Wait for: sky
 
 ## Story
-> „Ah, this one remembers. This one was K'ren-Dar, the Wanderer. Here, this water has been touched by the light of every star. It was his most prized possession, and now it is yours.“
+> Ah, this one remembers.
+  This one was K'ren-Dar, the Wanderer.
+  Here, this water has been touched by the light of every star.
+  It was his most prized possession, and now it is yours.
 
 ## Reward
 inventoryId: "stardew"

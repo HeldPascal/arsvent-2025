@@ -11,8 +11,14 @@ solved:
 # 2
 
 ## Story
-Suddenly you're no longer outside, but inside a house. It appears to be the house of an alchemist. You find yourself in a large laboratory, and a new voice speaks to you:
-> „I spent my whole life studying plants, animals, and minerals. But now I don't even know my own name. Everything is jumbled together in my head, like a potion that's been stirred too much. Please help me see what belongs to me and what doesn't.“
+Suddenly you're no longer outside, but inside a house.
+It appears to be the house of an alchemist.
+You find yourself in a large laboratory, and a new voice speaks to you:
+
+> I spent my whole life studying plants, animals, and minerals.
+  But now I don't even know my own name.
+  Everything is jumbled together in my head, like a potion that's been stirred too much.
+  Please help me see what belongs to me and what doesn't.
 
 ## Puzzle
 id: "alchemy1"
@@ -90,7 +96,11 @@ solution: "3"
 ## Wait for: alchemy3
 
 ## Story
-> „Oh, finally some peace and order. Thank you for this clarity. Now I remember, my name was Ursalette Metrane. At this alchemy table, I made all my great discoveries. It now belongs to you.“
+> Oh, finally some peace and order.
+  Thank you for this clarity.
+  Now I remember, my name was Ursalette Metrane.
+  At this alchemy table, I made all my great discoveries.
+  It now belongs to you.
 
 You sense that more trapped souls are waiting for your aid.
 

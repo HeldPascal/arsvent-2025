@@ -11,13 +11,19 @@ solved:
 # 4
 
 ## Story
-The arena coalesces around you, Twelvane poised to strike.
+The scene shifts.
+You're standing in an arena, a woman in front of you.
 
-> “That’s Archmage Twelvane. Her chimera is deadly. I died before I could challenge her. To defeat her, you need a chimera of your own. Which beasts are **not** part of Twelvane’s creature?”
+> Careful, that's Archmage Twelvane!
+  She's a fearsome beastmaster.
+  I was preparing to fight her, but I died before I could challenge her.
+  The only way to face her chimera is to craft your own.
+  I can't recall my plan anymore.
+  Which beasts was I going to tame?
 
 ## Puzzle
 id: "chimera"
-Select the beasts that are **not** part of Twelvane’s chimera.
+Select the beasts that are **not** part of Twelvane's chimera.
 
 ```yaml puzzle
 type: "multi-choice"
@@ -50,7 +56,12 @@ solution:
 ## Wait for: chimera
 
 ## Story
-> “I remember. I was Maleric Pontecus. I gathered creatures and allies across Tamriel. Members of every alliance stood ready to fight beside me. These shields belonged to my companions. Fight this battle for all mortals!”
+> Yes, that was it!
+  I was Maleric Pontecus.
+  I gathered creatures and allies across Tamriel.
+  Members of every alliance wished to fight at my side.
+  Here, take these shields of my companions.
+  Fight this battle for all mortals!
 
 ## Reward
 inventoryId: "shields"

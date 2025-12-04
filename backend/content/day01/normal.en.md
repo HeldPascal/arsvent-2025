@@ -11,9 +11,16 @@ solved:
 # 1
 
 ## Story
-A magical wave washes over you. The soul gem has pulled you inside of itself! Everything feels almost dreamlike. You stand on a shore. The voices in your head grow louder and clearer. One comes to the forefront and speaks:
+A magical wave washes over you.
+The soul gem has pulled you inside of itself!
+Everything feels almost dreamlike.
+You stand on a shore.
+The voices in your head grow louder and clearer.
+One comes to the forefront and speaks:
 
-> “I traveled the world and mapped out what I saw. Was this the last place I visited? Where was I when death found me?”
+> I traveled the world and mapped out what I saw.
+  Was this the last place I visited?
+  Where was I when death found me?
 
 ## Puzzle
 id: "poi"
@@ -39,7 +46,12 @@ solution: "1"
 ## Wait for: poi
 
 ## Story
-> „Yes, I remember. My name was Thurwe Hrorikson. And this is Kynes Aegis, my home and my final trial. Thank you. Take this restoration staff. May it serve you better than it served me.“
+> Yes, I remember.
+  My name was Thurwe Hrorikson.
+  And this is Kynes Aegis, my home and my final trial.
+  Thank you.
+  Take this restoration staff.
+  May it serve you better than it served me.
 
 You sense that more trapped souls are waiting for your aid.
 

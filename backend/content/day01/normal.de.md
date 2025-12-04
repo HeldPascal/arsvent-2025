@@ -11,9 +11,16 @@ solved:
 # 1
 
 ## Story
-Du spürst eine magische Welle um dich herum. Der Seelenstein hat dich in sich hineingezogen! Alles fühlt sich fast wie ein Traum an. Du befindest dich an einem Strand. Die Stimmen in deinem Kopf sind lauter und klarer als zuvor. Eine tritt in den Vordergrund und spricht zu dir:
+Du spürst eine magische Welle um dich herum.
+Der Seelenstein hat dich in sich hineingezogen!
+Alles fühlt sich fast wie ein Traum an.
+Du befindest dich an einem Strand.
+Die Stimmen in deinem Kopf sind lauter und klarer als zuvor.
+Eine tritt in den Vordergrund und spricht zu dir:
 
-> „Ich reiste durch die Welt und zeichnete Karten von dem, was ich sah. War dieser Ort der letzte, den ich besuchte? Wo war ich, als der Tod mich fand?“
+> Ich reiste durch die Welt und zeichnete Karten von dem, was ich sah.
+  War dieser Ort der letzte, den ich besuchte?
+  Wo war ich, als der Tod mich fand?
 
 ## Puzzle
 id: "poi"
@@ -39,7 +46,12 @@ solution: "1"
 ## Wait for: poi
 
 ## Story
-> „Ja, ich erinnere mich. Mein Name war Thurwe Hrorikson. Und dies ist Kynes Ägis, meine Heimat und meine letzte Prüfung. Ich danke Euch. Nehmt diesen Heilungsstab. Möge er Euch bessere Dienste leisten, als mir.“
+> Ja, ich erinnere mich.
+  Mein Name war Thurwe Hrorikson.
+  Und dies ist Kynes Ägis, meine Heimat und meine letzte Prüfung.
+  Ich danke Euch.
+  Nehmt diesen Heilungsstab.
+  Möge er Euch bessere Dienste leisten, als mir.
 
 Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
 

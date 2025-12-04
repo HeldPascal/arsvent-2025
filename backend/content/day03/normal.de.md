@@ -14,7 +14,10 @@ solved:
 Eine Tür schwingt auf und du betrittst den Raum nebenan.
 Auf den Tischen liegen Sternenkarten und am geöffneten Fenster steht ein Teleskop.
 
-> „Dieser liebte die Sterne. Doch nachdem er alle Sternbilder betrachtet hatte, wurde der Himmel von Nirni ihm langweilig. Dieser reiste und reiste, bis der Himmel sich wandelte. Und nun kann dieser sich nicht erinnern, wer er war und wo er gewesen ist…“
+> Dieser liebte die Sterne.
+  Doch nachdem er alle Sternbilder betrachtet hatte, wurde der Himmel von Nirni ihm langweilig.
+  Dieser reiste und reiste, bis der Himmel sich wandelte.
+  Und nun kann dieser sich nicht erinnern, wer er war und wo er gewesen ist…
 
 ## Puzzle
 id: "sky"
@@ -59,7 +62,10 @@ solution:
 ## Wait for: sky
 
 ## Story
-> „Ah, dieser erinnert sich. Dieser war K’ren-Dar, der Wanderer. Hier, dieses Wasser wurde vom Licht jedes Sterns berührt. Es war der wertvollste Besitz von diesem, und nun gehört es Euch.“
+> Ah, dieser erinnert sich.
+  Dieser war K'ren-Dar, der Wanderer.
+  Hier, dieses Wasser wurde vom Licht jedes Sterns berührt.
+  Es war der wertvollste Besitz von diesem, und nun gehört es Euch.
 
 ## Reward
 inventoryId: "stardew"

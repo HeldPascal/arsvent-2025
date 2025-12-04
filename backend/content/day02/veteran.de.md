@@ -11,8 +11,14 @@ solved:
 # 2
 
 ## Story
-Plötzlich stehst du nicht mehr draußen, sondern im Inneren eines Hauses. Es scheint das Haus eines Alchemisten zu sein. Du befindest dich in einem großen Labor und eine neue Stimme spricht zu dir:
-> „Ein Leben lang studierte ich Pflanzen, Tiere und Mineralien. Doch nun kenne ich nicht einmal mehr meinen eigenen Namen. Alles vermischt sich in meinem Kopf, wie ein Trank, der zu sehr gerührt wurde. Bitte hilf mir zu sehen, was zu mir gehört und was nicht.“
+Plötzlich stehst du nicht mehr draußen, sondern im Inneren eines Hauses.
+Es scheint das Haus eines Alchemisten zu sein.
+Du befindest dich in einem großen Labor und eine neue Stimme spricht zu dir:
+
+> Ein Leben lang studierte ich Pflanzen, Tiere und Mineralien.
+  Doch nun kenne ich nicht einmal mehr meinen eigenen Namen.
+  Alles vermischt sich in meinem Kopf, wie ein Trank, der zu sehr gerührt wurde.
+  Bitte hilf mir zu sehen, was zu mir gehört und was nicht.
 
 ## Puzzle
 id: "alchemy1"
@@ -115,7 +121,11 @@ solution: "1"
 ## Wait for: alchemy4
 
 ## Story
-> „Oh, endlich etwas Ruhe und Ordnung. Danke für diese Klarheit. Nun erinnere ich mich, mein Name war Ursalette Metrane. An diesem Alchemietisch machte ich all meine großen Entdeckungen. Er gehört nun Euch.“
+> Oh, endlich etwas Ruhe und Ordnung.
+  Danke für diese Klarheit.
+  Nun erinnere ich mich, mein Name war Ursalette Metrane.
+  An diesem Alchemietisch machte ich all meine großen Entdeckungen.
+  Er gehört nun Euch.
 
 Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
 

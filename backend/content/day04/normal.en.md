@@ -11,13 +11,19 @@ solved:
 # 4
 
 ## Story
-The scene shifts. You’re standing in an arena, a woman in front of you.
+The scene shifts.
+You're standing in an arena, a woman in front of you.
 
-> “Careful, that’s Archmage Twelvane! She’s a fearsome beastmaster. I was preparing to fight her, but I died before I could challenge her. The only way to face her chimera is to craft your own. I can’t recall my plan anymore. Which beasts was I going to tame?”
+> Careful, that's Archmage Twelvane!
+  She's a fearsome beastmaster.
+  I was preparing to fight her, but I died before I could challenge her.
+  The only way to face her chimera is to craft your own.
+  I can't recall my plan anymore.
+  Which beasts was I going to tame?
 
 ## Puzzle
 id: "chimera"
-Select the beasts that are **not** part of Twelvane’s edge-of-madness chimera.
+Select the beasts that are **not** part of Twelvane's edge-of-madness chimera.
 
 ```yaml puzzle
 type: "multi-choice"
@@ -50,7 +56,12 @@ solution:
 ## Wait for: chimera
 
 ## Story
-> “Yes, that was it! I was Maleric Pontecus. I gathered creatures and allies across Tamriel. Members of every alliance wished to fight at my side. Here, take these shields of my companions. Fight this battle for all mortals!”
+> Yes, that was it!
+  I was Maleric Pontecus.
+  I gathered creatures and allies across Tamriel.
+  Members of every alliance wished to fight at my side.
+  Here, take these shields of my companions.
+  Fight this battle for all mortals!
 
 ## Reward
 inventoryId: "shields"
