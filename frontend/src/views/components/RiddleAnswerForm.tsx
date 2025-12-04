@@ -125,6 +125,8 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
 
   const statusClass =
     status === "correct" ? "choice-correct" : status === "incorrect" ? "choice-error" : submitting ? "choice-pending" : "";
+  const optionSize = (block.kind === "puzzle" && "optionSize" in block && block.optionSize) || "small";
+  const optionSizeClass = `option-size-${optionSize}`;
 
   const renderChoices = () => {
     if (!block.options) return null;
@@ -136,7 +138,10 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
           <div style={{ height: "8px" }} />
           <div className="choice-list">
             {(block.options ?? []).map((opt) => (
-              <label key={opt.id} className={`choice-item ${singleChoice === opt.id ? "selected" : ""} ${statusClass}`}>
+              <label
+                key={opt.id}
+                className={`choice-item ${singleChoice === opt.id ? "selected" : ""} ${statusClass} ${optionSizeClass}`}
+              >
                 <input
                   type="radio"
                   name={`single-choice-${block.id}`}
@@ -149,7 +154,9 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
                   disabled={submitting || block.solved}
                 />
                 <div className="choice-visual">
-                  {opt.image && <img src={resolveImage(opt.image)} alt={opt.label || opt.id} className="choice-image" />}
+                  {opt.image && (
+                    <img src={resolveImage(opt.image)} alt={opt.label || opt.id} className={`choice-image ${optionSizeClass}`} />
+                  )}
                   {opt.label && <span>{opt.label}</span>}
                 </div>
               </label>
@@ -170,7 +177,10 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
           <div style={{ height: "8px" }} />
           <div className="choice-list">
             {(block.options ?? []).map((opt) => (
-              <label key={opt.id} className={`choice-item ${multiChoices.includes(opt.id) ? "selected" : ""} ${statusClass}`}>
+              <label
+                key={opt.id}
+                className={`choice-item ${multiChoices.includes(opt.id) ? "selected" : ""} ${statusClass} ${optionSizeClass}`}
+              >
                 <input
                   type="checkbox"
                   value={opt.id}
@@ -182,7 +192,9 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
                   disabled={submitting || block.solved}
                 />
                 <div className="choice-visual">
-                  {opt.image && <img src={resolveImage(opt.image)} alt={opt.label || opt.id} className="choice-image" />}
+                  {opt.image && (
+                    <img src={resolveImage(opt.image)} alt={opt.label || opt.id} className={`choice-image ${optionSizeClass}`} />
+                  )}
                   {opt.label && <span>{opt.label}</span>}
                 </div>
               </label>

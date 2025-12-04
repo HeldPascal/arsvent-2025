@@ -79,6 +79,7 @@ export type DayBlock =
       solved: boolean;
       options?: RiddleOption[];
       minSelections?: number;
+      optionSize?: "small" | "medium" | "large";
       backgroundImage?: string;
       items?: DragSocketItem[];
       sockets?: DragSocketSlot[];

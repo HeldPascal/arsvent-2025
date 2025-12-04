@@ -71,6 +71,7 @@ export interface PuzzleBlock {
   html: string;
   visible: boolean;
   type: RiddleType;
+  optionSize?: "small" | "medium" | "large";
   options?: RiddleOption[];
   groups?: RiddleGroup[];
   minSelections?: number;

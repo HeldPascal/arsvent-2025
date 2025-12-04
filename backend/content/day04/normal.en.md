@@ -27,6 +27,7 @@ Select the beasts that are **not** part of Twelvane's edge-of-madness chimera.
 
 ```yaml puzzle
 type: "multi-choice"
+size: "large"
 options:
   - id: "gryphon"
     label: "Gryphon"

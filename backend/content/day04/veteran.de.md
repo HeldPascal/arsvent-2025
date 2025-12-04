@@ -27,6 +27,7 @@ Wähle die Tiere aus, die **nicht** in Twelvanes Chimäre enthalten sind.
 
 ```yaml puzzle
 type: "multi-choice"
+size: "large"
 options:
   - id: "gryphon"
     label: "Greif"

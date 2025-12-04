@@ -137,6 +137,15 @@ const resolveType = (input?: string): RiddleType => {
   return "text";
 };
 
+const normalizeOptionSize = (value: unknown): "small" | "medium" | "large" | undefined => {
+  if (typeof value !== "string") return undefined;
+  const normalized = value.toLowerCase().trim();
+  if (normalized === "small" || normalized === "medium" || normalized === "large") {
+    return normalized;
+  }
+  return undefined;
+};
+
 const resolveShape = (input: unknown): DragShape => {
   const normalized = String(input ?? "circle").toLowerCase();
   if (normalized === "circle" || normalized === "round") return "circle";
@@ -527,6 +536,7 @@ const mapToDayBlocks = (
         const solution = normalizeId(block.definition.solution, "Solution must match a single option id");
         const optionIds = new Set(options.map((opt) => opt.id));
         if (!optionIds.has(solution)) throw new Error("Solution must reference one of the provided options");
+        const optionSize = normalizeOptionSize((block.definition.raw as { size?: unknown }).size);
         return {
           kind: "puzzle",
           id: block.id,
@@ -535,6 +545,7 @@ const mapToDayBlocks = (
           type,
           solution,
           options,
+          ...(optionSize ? { optionSize } : {}),
           solved,
           ...(block.title ? { title: block.title } : {}),
         };
@@ -560,6 +571,7 @@ const mapToDayBlocks = (
         const clampedRequested =
           parsedMin && Number.isFinite(parsedMin) ? Math.min(Math.max(parsedMin, 1), options.length) : null;
         const minSelections = Math.min(options.length, clampedRequested ?? 1);
+        const optionSize = normalizeOptionSize((block.definition.raw as { size?: unknown }).size);
         return {
           kind: "puzzle",
           id: block.id,
@@ -569,6 +581,7 @@ const mapToDayBlocks = (
           solution,
           options,
           minSelections,
+          ...(optionSize ? { optionSize } : {}),
           solved,
           ...(block.title ? { title: block.title } : {}),
         };

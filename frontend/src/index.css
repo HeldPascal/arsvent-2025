@@ -593,6 +593,37 @@ a {
   background: #1f2327;
 }
 
+.option-size-medium .choice-image {
+  width: 130px;
+  height: 130px;
+}
+
+.option-size-large .choice-image {
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+}
+
+.option-size-medium.choice-item,
+.option-size-large.choice-item {
+  min-height: 160px;
+  align-items: center;
+  justify-content: center;
+}
+
+.option-size-large.choice-item {
+  flex-direction: column;
+}
+
+.option-size-large.choice-item .choice-visual {
+  flex-direction: column;
+  gap: 6px;
+}
+
+.option-size-large .choice-visual span {
+  text-align: center;
+}
+
 .drag-sockets-wrapper {
   --socket-size: 96px;
   display: flex;
