@@ -127,6 +127,9 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
     status === "correct" ? "choice-correct" : status === "incorrect" ? "choice-error" : submitting ? "choice-pending" : "";
   const optionSize = (block.kind === "puzzle" && "optionSize" in block && block.optionSize) || "small";
   const optionSizeClass = `option-size-${optionSize}`;
+  const renderLabel = (label?: string) =>
+    label ? <span className="choice-label" dangerouslySetInnerHTML={{ __html: label }} /> : null;
+  const plainText = (label?: string) => label?.replace(/<[^>]+>/g, "") ?? undefined;
 
   const renderChoices = () => {
     if (!block.options) return null;
@@ -155,9 +158,9 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
                 />
                 <div className="choice-visual">
                   {opt.image && (
-                    <img src={resolveImage(opt.image)} alt={opt.label || opt.id} className={`choice-image ${optionSizeClass}`} />
+                    <img src={resolveImage(opt.image)} alt={plainText(opt.label) || opt.id} className={`choice-image ${optionSizeClass}`} />
                   )}
-                  {opt.label && <span>{opt.label}</span>}
+                  {renderLabel(opt.label)}
                 </div>
               </label>
             ))}
@@ -193,9 +196,9 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
                 />
                 <div className="choice-visual">
                   {opt.image && (
-                    <img src={resolveImage(opt.image)} alt={opt.label || opt.id} className={`choice-image ${optionSizeClass}`} />
+                    <img src={resolveImage(opt.image)} alt={plainText(opt.label) || opt.id} className={`choice-image ${optionSizeClass}`} />
                   )}
-                  {opt.label && <span>{opt.label}</span>}
+                  {renderLabel(opt.label)}
                 </div>
               </label>
             ))}

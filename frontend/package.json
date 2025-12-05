@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/square-peg": "^5.2.8",
     "html-to-image": "^1.11.11",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

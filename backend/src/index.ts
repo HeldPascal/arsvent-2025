@@ -324,6 +324,83 @@ const ensureDragSocketAnswer = (value: unknown) => {
   });
 };
 
+const buildCreatureSwap = (locale: Locale) =>
+  locale === "de"
+    ? [
+        { needle: "greif", replacement: "gefiederter Drache" },
+        { needle: "drache", replacement: "geschuppter Greif" },
+      ]
+    : [
+        { needle: "gryphon", replacement: "feathered dragon" },
+        { needle: "dragon", replacement: "scaled gryphon" },
+      ];
+
+const applyCreatureSwapText = (text: string, locale: Locale, enabled: boolean) => {
+  if (!enabled || !text) return text;
+  const swaps = buildCreatureSwap(locale);
+  const placeholders: Array<{ token: string; old: string; replacement: string }> = [];
+  let working = text;
+  swaps.forEach(({ needle, replacement }, idx) => {
+    const regex = new RegExp(`\\b${needle}\\b`, "gi");
+    working = working.replace(regex, (match) => {
+      const token = `__SWAP_${idx}_${placeholders.length}__`;
+      placeholders.push({ token, old: match, replacement });
+      return token;
+    });
+  });
+  placeholders.forEach(({ token, old, replacement }) => {
+    const replacementHtml = `<span class="creature-swap"><span class="creature-old">${old}</span><span class="creature-new">${replacement}</span></span>`;
+    working = working.replaceAll(token, replacementHtml);
+  });
+  return working;
+};
+
+const applyCreatureSwapToBlocks = (blocks: DayBlock[], locale: Locale, enabled: boolean): DayBlock[] =>
+  blocks.map((block) => {
+    if (!enabled) return block;
+    if (block.kind === "story") {
+      return {
+        ...block,
+        ...(block.title ? { title: applyCreatureSwapText(block.title, locale, enabled) } : {}),
+        html: applyCreatureSwapText(block.html, locale, enabled),
+      };
+    }
+    if (block.kind === "puzzle") {
+      return {
+        ...block,
+        ...(block.title ? { title: applyCreatureSwapText(block.title, locale, enabled) } : {}),
+        html: applyCreatureSwapText(block.html, locale, enabled),
+        options: block.options?.map((opt) => ({ ...opt, ...(opt.label ? { label: applyCreatureSwapText(opt.label, locale, enabled) } : {}) })),
+        groups: block.groups?.map((grp) => ({ ...grp, ...(grp.label ? { label: applyCreatureSwapText(grp.label, locale, enabled) } : {}) })),
+        items: block.items?.map((itm) => ({ ...itm, ...(itm.label ? { label: applyCreatureSwapText(itm.label, locale, enabled) } : {}) })),
+        sockets: block.sockets?.map((sock) => ({ ...sock, ...(sock.label ? { label: applyCreatureSwapText(sock.label, locale, enabled) } : {}) })),
+      };
+    }
+    if (block.kind === "reward") {
+      return {
+        ...block,
+        ...(block.title ? { title: applyCreatureSwapText(block.title, locale, enabled) } : {}),
+        item: block.item
+          ? {
+              ...block.item,
+              title: applyCreatureSwapText(block.item.title, locale, enabled),
+              ...(block.item.description ? { description: applyCreatureSwapText(block.item.description, locale, enabled) } : {}),
+            }
+          : block.item,
+      };
+    }
+    return block;
+  });
+
+const applyCreatureSwapToDay = (content: DayContent, locale: Locale, enabled: boolean): DayContent => {
+  if (!enabled) return content;
+  return {
+    ...content,
+    title: applyCreatureSwapText(content.title, locale, enabled),
+    blocks: applyCreatureSwapToBlocks(content.blocks, locale, enabled),
+  };
+};
+
 const evaluatePuzzleAnswer = (block: Extract<DayBlock, { kind: "puzzle" }>, answer: unknown) => {
   switch (block.type) {
     case "text": {
@@ -478,13 +555,34 @@ app.post("/api/user/mode", requireAuth, async (req: Request, res: Response, next
   }
 });
 
+app.post("/api/user/creature-swap", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { creatureSwap } = req.body as { creatureSwap?: unknown };
+    if (typeof creatureSwap !== "boolean") {
+      return res.status(400).json({ error: "Invalid creature swap value" });
+    }
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user!.id },
+      data: { creatureSwap, stateVersion: { increment: 1 } },
+    });
+    req.login(updatedUser, (err) => {
+      if (err) return next(err);
+      storeSessionVersion(req, updatedUser);
+      return res.json({ id: updatedUser.id, creatureSwap: updatedUser.creatureSwap });
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.get("/api/intro", requireAuth, async (req, res, next) => {
   try {
     const locale = normalizeLocale(getUserLocale(req.user as PrismaUser));
+    const funSwap = Boolean((req.user as PrismaUser)?.creatureSwap);
     const content = await loadIntro(locale);
     return res.json({
-      title: content.title,
-      body: content.body,
+      title: applyCreatureSwapText(content.title, locale, funSwap),
+      body: applyCreatureSwapText(content.body, locale, funSwap),
       introCompleted: Boolean(req.user?.introCompleted),
       mode: req.user?.mode ?? "NORMAL",
     });
@@ -551,6 +649,7 @@ app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, ne
     const lastSolved = req.user!.lastSolvedDay ?? 0;
     const orderAllowed = isAdminOverride || day <= lastSolved + 1;
     const available = isAdminOverride || day <= unlockedDay;
+    const funSwap = Boolean(req.user?.creatureSwap);
 
     const requestedLocale =
       typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
@@ -582,12 +681,12 @@ app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, ne
     }
 
     const sessionSolved = getSessionPuzzleProgress(req, day);
-    let content = await loadDayContent(day, locale, mode, sessionSolved, false);
+    let content = applyCreatureSwapToDay(await loadDayContent(day, locale, mode, sessionSolved, false), locale, funSwap);
 
     const daySolvedInDb = day <= lastSolved;
     if (daySolvedInDb) {
       const solvedAll = new Set(content.puzzleIds);
-      content = await loadDayContent(day, locale, mode, solvedAll, false);
+      content = applyCreatureSwapToDay(await loadDayContent(day, locale, mode, solvedAll, false), locale, funSwap);
     }
 
     return res.json({
@@ -617,6 +716,7 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
     const isAdminOverride =
       (req.user?.isAdmin || req.user?.isSuperAdmin) &&
       (req.query.override === "1" || req.query.override === "true" || req.query.override === "yes");
+    const funSwap = Boolean(req.user?.creatureSwap);
     const unlockedDay = await getUnlockedDay();
     if (!isAdminOverride && day > unlockedDay) {
       return res.status(400).json({ error: "This day is not available yet." });
@@ -698,7 +798,7 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
       isSolved: daySolved,
       correct,
       message: correct ? "Correct! Well done." : "Incorrect answer. Try again.",
-      blocks: nextContent.blocks,
+      blocks: applyCreatureSwapToDay(nextContent, locale, funSwap).blocks,
     });
   } catch (error) {
     if (error instanceof RiddleNotFoundError) {

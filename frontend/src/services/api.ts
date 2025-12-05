@@ -89,6 +89,12 @@ export const updateMode = (mode: Mode) =>
     body: JSON.stringify({ mode }),
   });
 
+export const updateCreatureSwap = (creatureSwap: boolean) =>
+  apiFetch<{ id: string; creatureSwap: boolean }>("/api/user/creature-swap", {
+    method: "POST",
+    body: JSON.stringify({ creatureSwap }),
+  });
+
 export const fetchAdminOverview = () => apiFetch<AdminOverview>("/api/admin/overview");
 
 export const fetchAdminUsers = () => apiFetch<AdminUserSummary[]>("/api/admin/users");

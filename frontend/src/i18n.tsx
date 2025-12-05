@@ -73,7 +73,11 @@ type TranslationKey =
   | "socketPlaceholder"
   | "allItemsPlaced"
   | "override"
-  | "noContent";
+  | "noContent"
+  | "funSettingTitle"
+  | "funSettingDescription"
+  | "funSettingToggle"
+  | "funSettingSaved";
 
 const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -149,6 +153,10 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     socketPlaceholder: "?",
     override: "Override",
     noContent: "No content yet",
+    funSettingTitle: "Fun setting",
+    funSettingDescription: "Swap gryphon/dragon names everywhere.",
+    funSettingToggle: "Swap gryphon ↔ dragon",
+    funSettingSaved: "Fun setting updated.",
   },
   de: {
     brand: "Arsvent",
@@ -223,6 +231,10 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     socketPlaceholder: "?",
     override: "Überschreiben",
     noContent: "Kein Inhalt",
+    funSettingTitle: "Spaß-Einstellung",
+    funSettingDescription: "Vertauscht überall Greif-/Drachen-Namen.",
+    funSettingToggle: "Greif ↔ Drache tauschen",
+    funSettingSaved: "Spaß-Einstellung aktualisiert.",
   },
 };
 

@@ -119,6 +119,8 @@ export default function DayPage({ user, version }: Props) {
   if (loading) return <div className="panel">{t("loading")}</div>;
   if (error) return <div className="panel error">{error}</div>;
   if (!detail) return null;
+  const displayMode = useOverride ? previewMode : user.mode;
+  const displayLocale = useOverride ? previewLocale.toUpperCase() : user.locale.toUpperCase();
   const renderBlock = (block: DayBlock, idx: number) => {
     if (!block.visible) return null;
     if (block.kind === "story") {
@@ -171,7 +173,7 @@ export default function DayPage({ user, version }: Props) {
       <header className="panel-header">
         <div>
           <div className="eyebrow">
-            {t("day")} {detail.day} · {user.mode}
+            {t("day")} {detail.day} · {displayLocale} · {displayMode}
           </div>
           <h2>{detail.title}</h2>
         </div>

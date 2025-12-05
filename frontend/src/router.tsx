@@ -193,7 +193,11 @@ export default function AppRouter() {
             element={
               user ? (
                 user.introCompleted ? (
-                  <SettingsPage user={user} onModeChange={(mode) => handleUserPatch({ mode })} />
+                  <SettingsPage
+                    user={user}
+                    onModeChange={(mode) => handleUserPatch({ mode })}
+                    onFunChange={(creatureSwap) => handleUserPatch({ creatureSwap })}
+                  />
                 ) : (
                   <Navigate to="/intro" replace />
                 )

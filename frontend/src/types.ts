@@ -43,6 +43,7 @@ export interface User {
   avatar?: string | null;
   locale: Locale;
   mode: Mode;
+  creatureSwap?: boolean;
   introCompleted?: boolean;
   createdAt: string;
   updatedAt: string;

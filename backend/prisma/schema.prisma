@@ -17,6 +17,7 @@ model User {
   avatar         String?
   locale         String        @default("en")
   mode           String        @default("NORMAL") // "NORMAL" | "VET"
+  creatureSwap   Boolean       @default(false)
   isAdmin        Boolean       @default(false)
   isSuperAdmin   Boolean       @default(false)
   sessionVersion Int           @default(1)

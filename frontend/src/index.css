@@ -423,6 +423,49 @@ a {
   padding: 8px 12px;
 }
 
+.creature-swap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.creature-swap .creature-old {
+  position: relative;
+  opacity: 0.65;
+  padding: 0 10px;
+}
+
+.creature-swap .creature-old::after {
+  content: "";
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: 55%;
+  height: 3px;
+  background: #d44d3f;
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+  transform: translateY(-50%) rotate(-2deg);
+  border-radius: 3px;
+  mask-image: radial-gradient(130% 200% at 50% 140%, rgba(0, 0, 0, 1) 60%, transparent 85%);
+  filter: drop-shadow(0 0 3px rgba(212, 77, 63, 0.35));
+  mix-blend-mode: multiply;
+}
+
+.creature-swap .creature-new {
+  font-family: "Square Peg", "Patrick Hand", "Caveat", "Comic Sans MS", cursive;
+  font-weight: 700;
+  font-size: 1.45em;
+  color: var(--accent);
+  letter-spacing: 0.4px;
+}
+
+.choice-label {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
 .day-card.solved {
   border-color: #4aa96c;
   background: #23352d;
