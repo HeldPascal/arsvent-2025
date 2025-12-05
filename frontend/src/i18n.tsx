@@ -71,7 +71,9 @@ type TranslationKey =
   | "placeAllItems"
   | "dragHint"
   | "socketPlaceholder"
-  | "allItemsPlaced";
+  | "allItemsPlaced"
+  | "override"
+  | "noContent";
 
 const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -145,6 +147,8 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     dragHint: "Select or drag an item, then click or drop on a matching socket to place or swap it.",
     allItemsPlaced: "All items are placed. Select or drag one to a socket to adjust.",
     socketPlaceholder: "?",
+    override: "Override",
+    noContent: "No content yet",
   },
   de: {
     brand: "Arsvent",
@@ -217,6 +221,8 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     dragHint: "Wähle oder ziehe ein Teil und klicke bzw. lasse es auf einem passenden Feld los, um es zu platzieren oder zu tauschen.",
     allItemsPlaced: "Alle Teile sind platziert. Wähle oder ziehe eines auf ein Feld, um es anzupassen.",
     socketPlaceholder: "?",
+    override: "Überschreiben",
+    noContent: "Kein Inhalt",
   },
 };
 

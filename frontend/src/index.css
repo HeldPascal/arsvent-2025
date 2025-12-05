@@ -395,13 +395,56 @@ a {
   color: var(--muted);
 }
 
+.day-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.preview-toggles {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 8px;
+  background: #1e2328;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.preview-toggle-group {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.preview-toggle-group .small-btn {
+  min-width: 68px;
+  padding: 8px 12px;
+}
+
 .day-card.solved {
   border-color: #4aa96c;
   background: #23352d;
 }
 
 .day-card.locked {
-  opacity: 0.65;
+  position: relative;
+  overflow: hidden;
+}
+
+.day-card.locked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.day-card.locked .day-actions {
+  position: relative;
+  z-index: 1;
 }
 
 .small-btn {
@@ -414,6 +457,18 @@ a {
   font-weight: 600;
   color: var(--text);
   background: transparent;
+}
+
+.small-btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0b1020;
+}
+
+.small-btn.ghost {
+  background: #1f242a;
+  border-color: var(--line);
+  color: var(--text);
 }
 
 .small-btn.disabled {

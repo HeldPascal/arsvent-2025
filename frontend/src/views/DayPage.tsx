@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { fetchDay, submitAnswer } from "../services/api";
 import type { DayDetail, DayBlock, RiddleAnswerPayload, User } from "../types";
 import { useI18n } from "../i18n";
@@ -14,6 +14,7 @@ interface Props {
 export default function DayPage({ user, version }: Props) {
   const { day } = useParams<{ day: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const dayNumber = Number(day);
   const { t } = useI18n();
   const [detail, setDetail] = useState<DayDetail | null>(null);
@@ -24,6 +25,13 @@ export default function DayPage({ user, version }: Props) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<{ block: Extract<DayBlock, { kind: "puzzle" }>; payload: RiddleAnswerPayload } | null>(null);
   const [lastResult, setLastResult] = useState<{ puzzleId: string; correct: boolean } | null>(null);
+  const [previewLocale, setPreviewLocale] = useState<"en" | "de">(user.locale);
+  const [previewMode, setPreviewMode] = useState<"NORMAL" | "VET">(user.mode);
+  const isOverride = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("override") === "1";
+  }, [location.search]);
+  const useOverride = isOverride || (user.isAdmin || user.isSuperAdmin);
   const backendBase =
     import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ||
     (window.location.origin.includes("localhost:5173") ? "http://localhost:4000" : window.location.origin);
@@ -38,6 +46,12 @@ export default function DayPage({ user, version }: Props) {
   const resolveAsset = (src?: string) =>
     src && src.startsWith("/assets/") && backendBase ? `${backendBase}/content-${src.slice(1)}` : src ?? "";
 
+  // keep preview selection in sync when navigating to a new day or when user prefs change
+  useEffect(() => {
+    setPreviewLocale(user.locale);
+    setPreviewMode(user.mode);
+  }, [dayNumber, user.locale, user.mode]);
+
   useEffect(() => {
     if (!Number.isInteger(dayNumber) || dayNumber < 1 || dayNumber > 24) {
       navigate("/calendar");
@@ -51,18 +65,18 @@ export default function DayPage({ user, version }: Props) {
     setShowConfirm(false);
     setLastResult(null);
 
-    fetchDay(dayNumber)
+    fetchDay(dayNumber, { override: useOverride, locale: previewLocale, mode: previewMode })
       .then((data) => setDetail(data))
       .catch(() => setError(t("dayLoadFailed")))
       .finally(() => setLoading(false));
-  }, [dayNumber, navigate, t, version]);
+  }, [dayNumber, useOverride, previewLocale, previewMode, navigate, t, version]);
 
   const performSubmit = async (block: Extract<DayBlock, { kind: "puzzle" }>, payload: RiddleAnswerPayload) => {
     if (!detail) return;
     setSubmitting(true);
     setPendingPayload(null);
     try {
-      const resp = await submitAnswer(detail.day, payload);
+      const resp = await submitAnswer(detail.day, payload, { override: useOverride, locale: previewLocale, mode: previewMode });
       setLastResult({ puzzleId: block.id, correct: resp.correct });
       setDetail((current) =>
         current
@@ -161,7 +175,34 @@ export default function DayPage({ user, version }: Props) {
           </div>
           <h2>{detail.title}</h2>
         </div>
-        <div className="panel-actions">
+        <div className="panel-actions" style={{ flexWrap: "wrap", gap: 8 }}>
+          {(user.isAdmin || user.isSuperAdmin) && (
+            <div className="preview-toggles">
+              <div className="muted small">Preview</div>
+              <div className="preview-toggle-group">
+                {(["en", "de"] as const).map((loc) => (
+                  <button
+                    key={loc}
+                    className={`small-btn ${previewLocale === loc ? "primary" : "ghost"}`}
+                    onClick={() => setPreviewLocale(loc)}
+                  >
+                    {loc.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <div className="preview-toggle-group">
+                {(["NORMAL", "VET"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    className={`small-btn ${previewMode === mode ? "primary" : "ghost"}`}
+                    onClick={() => setPreviewMode(mode)}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <button className="ghost nav-link" onClick={() => navigate("/calendar")}>
             {t("backToCalendar")}
           </button>

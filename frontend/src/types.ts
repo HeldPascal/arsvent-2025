@@ -64,6 +64,7 @@ export interface DaySummary {
 export interface DaysResponse {
   days: DaySummary[];
   unlockedDay: number;
+  contentDayCount?: number;
 }
 
 export type DayBlock =

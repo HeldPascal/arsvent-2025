@@ -520,6 +520,7 @@ app.get("/api/days", requireAuth, requireIntroComplete, async (req, res, next) =
     const unlockedDay = await getUnlockedDay();
     const lastSolved = req.user!.lastSolvedDay ?? 0;
     const playLimit = Math.min(unlockedDay, lastSolved + 1);
+    const contentDayCount = await getContentDayCount();
 
     const days = Array.from({ length: MAX_DAY }, (_, index) => {
       const day = index + 1;
@@ -530,7 +531,7 @@ app.get("/api/days", requireAuth, requireIntroComplete, async (req, res, next) =
       };
     });
 
-    res.json({ days, unlockedDay });
+    res.json({ days, unlockedDay, contentDayCount });
   } catch (error) {
     next(error);
   }
@@ -543,13 +544,25 @@ app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, ne
   }
 
   try {
+    const isAdminOverride =
+      (req.user?.isAdmin || req.user?.isSuperAdmin) &&
+      (req.query.override === "1" || req.query.override === "true" || req.query.override === "yes");
     const unlockedDay = await getUnlockedDay();
     const lastSolved = req.user!.lastSolvedDay ?? 0;
-    const orderAllowed = day <= lastSolved + 1;
-    const available = day <= unlockedDay;
+    const orderAllowed = isAdminOverride || day <= lastSolved + 1;
+    const available = isAdminOverride || day <= unlockedDay;
 
-    const locale = normalizeLocale(getUserLocale(req.user as PrismaUser));
-    const mode = getUserMode(req.user as PrismaUser);
+    const requestedLocale =
+      typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
+        ? normalizeLocale(req.query.locale)
+        : null;
+    const requestedMode =
+      typeof req.query.mode === "string" && (req.query.mode === "NORMAL" || req.query.mode === "VET")
+        ? (req.query.mode as Mode)
+        : null;
+
+    const locale = isAdminOverride && requestedLocale ? requestedLocale : normalizeLocale(getUserLocale(req.user as PrismaUser));
+    const mode = isAdminOverride && requestedMode ? requestedMode : getUserMode(req.user as PrismaUser);
 
     if (!available) {
       return res.json({
@@ -601,22 +614,34 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
   const { answer, puzzleId, type: submittedType } = req.body as { answer?: unknown; puzzleId?: string; type?: string };
 
   try {
+    const isAdminOverride =
+      (req.user?.isAdmin || req.user?.isSuperAdmin) &&
+      (req.query.override === "1" || req.query.override === "true" || req.query.override === "yes");
     const unlockedDay = await getUnlockedDay();
-    if (day > unlockedDay) {
+    if (!isAdminOverride && day > unlockedDay) {
       return res.status(400).json({ error: "This day is not available yet." });
     }
 
     const lastSolved = req.user!.lastSolvedDay ?? 0;
-    if (day <= lastSolved) {
+    if (!isAdminOverride && day <= lastSolved) {
       return res.json({ day, isSolved: true, correct: true, message: "Already solved." });
     }
-    if (day !== lastSolved + 1) {
+    if (!isAdminOverride && day !== lastSolved + 1) {
       return res.status(400).json({ error: "Solve previous days first." });
     }
 
-    const locale = getUserLocale(req.user as PrismaUser);
-    const mode = getUserMode(req.user as PrismaUser);
-    const sessionSolved = getSessionPuzzleProgress(req, day);
+    const requestedLocale =
+      typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
+        ? normalizeLocale(req.query.locale)
+        : null;
+    const requestedMode =
+      typeof req.query.mode === "string" && (req.query.mode === "NORMAL" || req.query.mode === "VET")
+        ? (req.query.mode as Mode)
+        : null;
+
+    const locale = isAdminOverride && requestedLocale ? requestedLocale : getUserLocale(req.user as PrismaUser);
+    const mode = isAdminOverride && requestedMode ? requestedMode : getUserMode(req.user as PrismaUser);
+    const sessionSolved = isAdminOverride ? new Set<string>() : getSessionPuzzleProgress(req, day);
     const content = await loadDayContent(day, locale, mode, sessionSolved, false);
 
     if (!puzzleId) {
@@ -649,7 +674,9 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
     const updatedSolved = new Set(sessionSolved);
     if (correct) {
       updatedSolved.add(puzzleBlock.id);
-      setSessionPuzzleProgress(req, day, updatedSolved);
+      if (!isAdminOverride) {
+        setSessionPuzzleProgress(req, day, updatedSolved);
+      }
     }
 
     let nextContent = await loadDayContent(day, locale, mode, updatedSolved, false);
@@ -657,7 +684,7 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
     const allPuzzleIds = new Set(nextContent.puzzleIds);
     const daySolved = evaluateCondition(solvedCondition, updatedSolved, allPuzzleIds);
 
-    if (correct && daySolved) {
+    if (!isAdminOverride && correct && daySolved) {
       await prisma.user.update({
         where: { id: req.user!.id },
         data: { lastSolvedDay: day, lastSolvedAt: new Date(), stateVersion: { increment: 1 } },

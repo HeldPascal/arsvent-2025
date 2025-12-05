@@ -14,12 +14,14 @@ export default function CalendarPage({ user, version }: Props) {
   const [days, setDays] = useState<DaySummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [contentDayCount, setContentDayCount] = useState<number | null>(null);
   const { t } = useI18n();
   const availableRef = useRef<number | null>(null);
   const unlockedRef = useRef<number | null>(null);
 
-  const applyDays = (payload: { days: DaySummary[]; unlockedDay: number }, allowToast: boolean) => {
+  const applyDays = (payload: { days: DaySummary[]; unlockedDay: number; contentDayCount?: number }, allowToast: boolean) => {
     setDays(payload.days);
+    setContentDayCount(payload.contentDayCount ?? null);
     const available = payload.days.filter((d) => d.isAvailable).length;
     if (allowToast) {
       const unlockedIncreased =
@@ -90,6 +92,8 @@ export default function CalendarPage({ user, version }: Props) {
             key={item.day}
             day={item}
             lastSolvedDay={user.lastSolvedDay}
+            isAdmin={user.isAdmin || user.isSuperAdmin}
+            contentDayCount={contentDayCount ?? undefined}
             labels={{
               solved: t("daySolved"),
               available: t("dayAvailable"),
@@ -98,6 +102,8 @@ export default function CalendarPage({ user, version }: Props) {
               next: t("dayNext"),
               open: t("open"),
               soon: t("soon"),
+              override: t("override"),
+              noContent: t("noContent"),
             }}
           />
         ))}
@@ -123,10 +129,24 @@ function DayCard({
   day,
   labels,
   lastSolvedDay,
+  isAdmin,
+  contentDayCount,
 }: {
   day: DaySummary;
-  labels: { solved: string; available: string; locked: string; solvePrev: string; next: string; open: string; soon: string };
+  labels: {
+    solved: string;
+    available: string;
+    locked: string;
+    solvePrev: string;
+    next: string;
+    open: string;
+    soon: string;
+    override: string;
+    noContent: string;
+  };
   lastSolvedDay: number;
+  isAdmin: boolean;
+  contentDayCount?: number;
 }) {
   const state = day.isAvailable ? (day.isSolved ? "solved" : "open") : "locked";
   const needsPrev = day.day > lastSolvedDay + 1;
@@ -140,17 +160,29 @@ function DayCard({
         : needsPrev
           ? labels.solvePrev
           : labels.locked;
+  const hasContent = typeof contentDayCount === "number" ? day.day <= contentDayCount : true;
   return (
     <div className={`day-card ${state}`}>
       <div className="day-number">{day.day}</div>
       <div className="day-status">{statusLabel}</div>
-      {day.isAvailable ? (
-        <Link className="small-btn" to={`/day/${day.day}`}>
-          {labels.open}
-        </Link>
-      ) : (
-        <span className="small-btn disabled">{labels.soon}</span>
-      )}
+      <div className="day-actions">
+        {day.isAvailable ? (
+          <Link className="small-btn" to={`/day/${day.day}`}>
+            {labels.open}
+          </Link>
+        ) : (
+          <span className="small-btn disabled">{labels.soon}</span>
+        )}
+        {isAdmin && (
+          hasContent ? (
+            <Link className="small-btn ghost" to={`/day/${day.day}?override=1`}>
+              {labels.override}
+            </Link>
+          ) : (
+            <span className="small-btn disabled">{labels.noContent}</span>
+          )
+        )}
+      </div>
     </div>
   );
 }

@@ -40,22 +40,42 @@ export const fetchMe = () => apiFetch<User>("/api/auth/me");
 
 export const fetchDays = () => apiFetch<DaysResponse>("/api/days");
 
-export const fetchDay = (day: number) => apiFetch<DayDetail>(`/api/days/${day}`);
+export const fetchDay = (
+  day: number,
+  opts?: { override?: boolean; locale?: "en" | "de"; mode?: "NORMAL" | "VET" },
+) => {
+  const params = new URLSearchParams();
+  if (opts?.override) params.set("override", "1");
+  if (opts?.locale) params.set("locale", opts.locale);
+  if (opts?.mode) params.set("mode", opts.mode);
+  const suffix = params.toString();
+  return apiFetch<DayDetail>(`/api/days/${day}${suffix ? `?${suffix}` : ""}`);
+};
 
-export const submitAnswer = (day: number, payload: RiddleAnswerPayload) =>
-  apiFetch<{
+export const submitAnswer = (
+  day: number,
+  payload: RiddleAnswerPayload,
+  opts?: { override?: boolean; locale?: "en" | "de"; mode?: "NORMAL" | "VET" },
+) => {
+  const params = new URLSearchParams();
+  if (opts?.override) params.set("override", "1");
+  if (opts?.locale) params.set("locale", opts.locale);
+  if (opts?.mode) params.set("mode", opts.mode);
+  const suffix = params.toString();
+  return apiFetch<{
     day: number;
     isSolved: boolean;
     correct: boolean;
     message: string;
     blocks: DayDetail["blocks"];
   }>(
-    `/api/days/${day}/submit`,
+    `/api/days/${day}/submit${suffix ? `?${suffix}` : ""}`,
     {
       method: "POST",
       body: JSON.stringify(payload),
     },
   );
+};
 
 export const updateLocale = (locale: Locale) =>
   apiFetch<{ id: string; locale: Locale }>("/api/user/locale", {
