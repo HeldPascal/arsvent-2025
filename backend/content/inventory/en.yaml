@@ -18,3 +18,8 @@
   description: "Shields of Pact, Covenant and Dominion."
   image: "/assets/25_04_reward.png"
   rarity: "uncommon"
+- id: "nickel"
+  title: "Ciira's nickel"
+  description: "Material that embodies the essence of the Imperials."
+  image: "/assets/25_05_reward.png"
+  rarity: "common"
