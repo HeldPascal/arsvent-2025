@@ -18,3 +18,9 @@
   description: "Schilde von Pakt, Bündnis und Dominion."
   image: "/assets/25_04_reward.png"
   rarity: "uncommon"
+- id: "nickel"
+  title: "Schilde von Malerics Gefährten"
+  description: "Schilde von Pakt, Bündnis und Dominion."
+  image: "/assets/25_05_reward.png"
+  rarity: "common"
+
