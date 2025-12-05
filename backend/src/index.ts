@@ -370,23 +370,53 @@ const applyCreatureSwapToBlocks = (blocks: DayBlock[], locale: Locale, enabled: 
         ...block,
         ...(block.title ? { title: applyCreatureSwapText(block.title, locale, enabled) } : {}),
         html: applyCreatureSwapText(block.html, locale, enabled),
-        options: block.options?.map((opt) => ({ ...opt, ...(opt.label ? { label: applyCreatureSwapText(opt.label, locale, enabled) } : {}) })),
-        groups: block.groups?.map((grp) => ({ ...grp, ...(grp.label ? { label: applyCreatureSwapText(grp.label, locale, enabled) } : {}) })),
-        items: block.items?.map((itm) => ({ ...itm, ...(itm.label ? { label: applyCreatureSwapText(itm.label, locale, enabled) } : {}) })),
-        sockets: block.sockets?.map((sock) => ({ ...sock, ...(sock.label ? { label: applyCreatureSwapText(sock.label, locale, enabled) } : {}) })),
+        ...(block.options
+          ? {
+              options: block.options.map((opt) => ({
+                ...opt,
+                ...(opt.label ? { label: applyCreatureSwapText(opt.label, locale, enabled) } : {}),
+              })),
+            }
+          : {}),
+        ...(block.groups
+          ? {
+              groups: block.groups.map((grp) => ({
+                ...grp,
+                ...(grp.label ? { label: applyCreatureSwapText(grp.label, locale, enabled) } : {}),
+              })),
+            }
+          : {}),
+        ...(block.items
+          ? {
+              items: block.items.map((itm) => ({
+                ...itm,
+                ...(itm.label ? { label: applyCreatureSwapText(itm.label, locale, enabled) } : {}),
+              })),
+            }
+          : {}),
+        ...(block.sockets
+          ? {
+              sockets: block.sockets.map((sock) => ({
+                ...sock,
+                ...(sock.label ? { label: applyCreatureSwapText(sock.label, locale, enabled) } : {}),
+              })),
+            }
+          : {}),
       };
     }
     if (block.kind === "reward") {
       return {
         ...block,
         ...(block.title ? { title: applyCreatureSwapText(block.title, locale, enabled) } : {}),
-        item: block.item
+        ...(block.item
           ? {
-              ...block.item,
-              title: applyCreatureSwapText(block.item.title, locale, enabled),
-              ...(block.item.description ? { description: applyCreatureSwapText(block.item.description, locale, enabled) } : {}),
+              item: {
+                ...block.item,
+                title: applyCreatureSwapText(block.item.title, locale, enabled),
+                ...(block.item.description ? { description: applyCreatureSwapText(block.item.description, locale, enabled) } : {}),
+              },
             }
-          : block.item,
+          : {}),
       };
     }
     return block;
