@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
+import { toPng } from "html-to-image";
 import LanguageSwitcher from "./components/LanguageSwitcher";
 import type { Locale, User } from "../types";
 import { useI18n } from "../i18n";
@@ -21,6 +22,7 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
   const navigate = useNavigate();
   const location = useLocation();
   const handledAuthRef = useRef<string | null>(null);
+  const [screenshotting, setScreenshotting] = useState(false);
   const [toasts, setToasts] = useState<
     Array<{ id: number; type: "success" | "error" | "info"; message?: string; key?: string; durationMs?: number }>
   >([]);
@@ -81,9 +83,38 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
         }
         params.delete("auth");
         const newSearch = params.toString();
-        navigate({ pathname: location.pathname, search: newSearch ? `?${newSearch}` : "" }, { replace: true });
+    navigate({ pathname: location.pathname, search: newSearch ? `?${newSearch}` : "" }, { replace: true });
       }
   }, [location.pathname, location.search, navigate, t]);
+
+  const handleScreenshot = async () => {
+    if (!user?.isAdmin && !user?.isSuperAdmin) return;
+    if (screenshotting) return;
+    setScreenshotting(true);
+    try {
+      const target = document.documentElement;
+      const width = target.scrollWidth;
+      const height = target.scrollHeight;
+      const dataUrl = await toPng(target, {
+        cacheBust: true,
+        pixelRatio: window.devicePixelRatio || 2,
+        width,
+        height,
+        canvasWidth: width,
+        canvasHeight: height,
+        style: { width: `${width}px`, height: `${height}px` },
+      });
+      const link = document.createElement("a");
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      link.download = `arsvent-${stamp}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      addToast({ type: "error", message: (err as Error).message || "Failed to capture screenshot" });
+    } finally {
+      setScreenshotting(false);
+    }
+  };
 
   return (
     <div className="app-shell">
@@ -98,6 +129,11 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
         {user ? (
           <>
             <div className="topbar-actions row menu-container" ref={menuRef}>
+              {(user.isAdmin || user.isSuperAdmin) && (
+                <button className="ghost icon-btn" onClick={handleScreenshot} title="Download full-page screenshot" disabled={screenshotting}>
+                  {screenshotting ? "…" : "📸"}
+                </button>
+              )}
               <Link className="ghost icon-btn" to="/settings" title={t("settingsTitle")}>
                 ⚙️
               </Link>
