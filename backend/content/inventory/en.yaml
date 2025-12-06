@@ -23,3 +23,8 @@
   description: "Material that embodies the essence of the Imperials."
   image: "/assets/25_05_reward.png"
   rarity: "common"
+- id: "starmetal"
+  title: "Enniz's starmetal"
+  description: "Material that embodies the essence of the Redguards."
+  image: "/assets/25_06_reward.png"
+  rarity: "common"

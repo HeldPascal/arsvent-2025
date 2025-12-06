@@ -23,3 +23,8 @@
   description: "Material, das die Essenz der Kaiserlichen verkörpert."
   image: "/assets/25_05_reward.png"
   rarity: "common"
+- id: "starmetal"
+  title: "Sternmetall von Enniz"
+  description: "Material, das die Essenz der Rothwardonen verkörpert."
+  image: "/assets/25_06_reward.png"
+  rarity: "common"
