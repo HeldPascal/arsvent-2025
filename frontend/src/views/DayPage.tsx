@@ -16,7 +16,7 @@ export default function DayPage({ user, version }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
   const dayNumber = Number(day);
-  const { t } = useI18n();
+  const { t, setLocale: setAppLocale } = useI18n();
   const [detail, setDetail] = useState<DayDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,13 +25,13 @@ export default function DayPage({ user, version }: Props) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<{ block: Extract<DayBlock, { kind: "puzzle" }>; payload: RiddleAnswerPayload } | null>(null);
   const [lastResult, setLastResult] = useState<{ puzzleId: string; correct: boolean } | null>(null);
-  const [previewLocale, setPreviewLocale] = useState<"en" | "de">(user.locale);
-  const [previewMode, setPreviewMode] = useState<"NORMAL" | "VET">(user.mode);
-  const isOverride = useMemo(() => {
+  const isOverrideParam = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return params.get("override") === "1";
   }, [location.search]);
-  const useOverride = isOverride || (user.isAdmin || user.isSuperAdmin);
+  const useOverride = isOverrideParam;
+  const [previewLocale, setPreviewLocale] = useState<"en" | "de">(user.locale);
+  const [previewMode, setPreviewMode] = useState<"NORMAL" | "VET">(user.mode);
   const backendBase =
     import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ||
     (window.location.origin.includes("localhost:5173") ? "http://localhost:4000" : window.location.origin);
@@ -48,9 +48,20 @@ export default function DayPage({ user, version }: Props) {
 
   // keep preview selection in sync when navigating to a new day or when user prefs change
   useEffect(() => {
-    setPreviewLocale(user.locale);
-    setPreviewMode(user.mode);
-  }, [dayNumber, user.locale, user.mode]);
+    if (!useOverride) {
+      setPreviewLocale(user.locale);
+      setPreviewMode(user.mode);
+    }
+  }, [dayNumber, user.locale, user.mode, useOverride]);
+
+  // Sync UI locale with preview selection in override mode so banners/buttons/toasts localize
+  useEffect(() => {
+    if (useOverride) {
+      setAppLocale(previewLocale);
+    } else {
+      setAppLocale(user.locale);
+    }
+  }, [useOverride, previewLocale, user.locale, setAppLocale]);
 
   useEffect(() => {
     if (!Number.isInteger(dayNumber) || dayNumber < 1 || dayNumber > 24) {
@@ -178,7 +189,7 @@ export default function DayPage({ user, version }: Props) {
           <h2>{detail.title}</h2>
         </div>
         <div className="panel-actions" style={{ flexWrap: "wrap", gap: 8 }}>
-          {(user.isAdmin || user.isSuperAdmin) && (
+          {useOverride && (user.isAdmin || user.isSuperAdmin) ? (
             <div className="preview-toggles">
               <div className="muted small">Preview</div>
               <div className="preview-toggle-group">
@@ -204,7 +215,7 @@ export default function DayPage({ user, version }: Props) {
                 ))}
               </div>
             </div>
-          )}
+          ) : null}
           <button className="ghost nav-link" onClick={() => navigate("/calendar")}>
             {t("backToCalendar")}
           </button>

@@ -1,10 +1,5 @@
 Ideas and improvements to tackle
 
-- In the English version the banner in the solved state is not correctly localized.
-- Submit button as well.
-
-- No player updates for admins not in override mode.
-
 - Drag-and-drop puzzle polish  
   The sockets/board should scale gracefully across viewport sizes. Define a layout that preserves relative positions, enforces minimum tap targets, and keeps drag ghosts consistent in size and styling regardless of start location (list vs socket).
 
