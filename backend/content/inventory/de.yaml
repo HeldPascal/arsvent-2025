@@ -28,3 +28,8 @@
   description: "Material, das die Essenz der Rothwardonen verkörpert."
   image: "/assets/25_06_reward.png"
   rarity: "common"
+- id: "weaponskills"
+  title: "Fähigkeiten von Magrub"
+  description: "Einige nützliche Fähigkeiten."
+  image: "/assets/25_07_reward.png"
+  rarity: "common"

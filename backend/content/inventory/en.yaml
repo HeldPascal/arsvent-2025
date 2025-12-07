@@ -28,3 +28,8 @@
   description: "Material that embodies the essence of the Redguards."
   image: "/assets/25_06_reward.png"
   rarity: "common"
+- id: "weaponskills"
+  title: "Magrub's skills"
+  description: "Some useful skills."
+  image: "/assets/25_07_reward.png"
+  rarity: "common"
