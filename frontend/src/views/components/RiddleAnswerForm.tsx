@@ -324,11 +324,6 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
             status={dragStatus}
             disabled={submitting || block.solved}
             errorMessage={localError || undefined}
-            canReset={canResetDefaults}
-            onResetDefaults={() => {
-              setDragAssignments(defaultAssignments);
-              setLocalError(null);
-            }}
             onStartInteraction={() => {
               setLocalError(null);
               onInteract?.();
