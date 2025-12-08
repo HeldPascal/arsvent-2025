@@ -33,3 +33,8 @@
   description: "Some useful skills."
   image: "/assets/25_07_reward.png"
   rarity: "common"
+- id: "glyph"
+  title: "Lytril's glyph"
+  description: "A powerful enchantment."
+  image: "/assets/25_08_reward.png"
+  rarity: "common"
