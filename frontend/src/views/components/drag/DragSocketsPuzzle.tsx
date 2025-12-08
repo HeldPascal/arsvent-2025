@@ -18,8 +18,6 @@ interface Props {
   resolveAsset: (src?: string) => string;
   status?: "correct" | "incorrect" | "idle";
   disabled?: boolean;
-  canReset?: boolean;
-  onResetDefaults?: () => void;
   errorMessage?: string;
   onStartInteraction?: () => void;
 }
@@ -31,8 +29,6 @@ export default function DragSocketsPuzzle({
   resolveAsset,
   status = "idle",
   disabled = false,
-  canReset = false,
-  onResetDefaults,
   errorMessage,
   onStartInteraction,
 }: Props) {
