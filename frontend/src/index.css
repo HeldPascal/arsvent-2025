@@ -1146,6 +1146,14 @@ a {
   pointer-events: none;
 }
 
+.drag-item-tooltip.is-portal {
+  position: fixed;
+  top: auto;
+  left: auto;
+  transform: translate(-50%, -100%);
+  z-index: 2000;
+}
+
 .drag-item-card.dragging .drag-item-tooltip {
   display: none;
 }

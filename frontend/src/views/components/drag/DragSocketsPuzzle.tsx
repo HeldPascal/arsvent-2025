@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent } from "react";
+import { createPortal } from "react-dom";
 import type { DayBlock, DragSocketItem, DragSocketSlot } from "../../../types";
 import { useI18n } from "../../../i18n";
 
@@ -38,6 +39,7 @@ export default function DragSocketsPuzzle({
   const [hoverSocket, setHoverSocket] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState<number>(4 / 3);
   const [previewItem, setPreviewItem] = useState<string | null>(null);
+  const [previewRect, setPreviewRect] = useState<DOMRectReadOnly | null>(null);
   const [draggingItem, setDraggingItem] = useState<string | null>(null);
   const [draggingFromSocket, setDraggingFromSocket] = useState<string | null>(null);
   const dragGhostRef = useRef<HTMLElement | null>(null);
@@ -139,6 +141,16 @@ export default function DragSocketsPuzzle({
     }
   };
 
+  const hidePreview = useCallback((itemId?: string | null) => {
+    setPreviewItem((prev) => (itemId && prev !== itemId ? prev : null));
+    setPreviewRect(null);
+  }, []);
+
+  const showPreview = useCallback((itemId: string, target?: HTMLElement | null) => {
+    setPreviewItem(itemId);
+    setPreviewRect(target?.getBoundingClientRect() ?? null);
+  }, []);
+
   const placeItem = (socketId: string, itemId: string) => {
     if (disabled) return;
     if (draggingFromSocket === socketId) return;
@@ -189,6 +201,7 @@ export default function DragSocketsPuzzle({
     setDraggingItem(null);
     setDraggingFromSocket(null);
     setPreviewItem(null);
+    setPreviewRect(null);
   };
 
   const handleDrop = (socketId: string, event: DragEvent<HTMLDivElement>) => {
@@ -285,8 +298,8 @@ export default function DragSocketsPuzzle({
               setDraggingItem(assignedItem.id);
               setDraggingFromSocket(socket.id);
             }}
-            onMouseEnter={() => setPreviewItem(assignedItem.id)}
-            onMouseLeave={() => setPreviewItem((prev) => (prev === assignedItem.id ? null : prev))}
+            onMouseEnter={(evt) => showPreview(assignedItem.id, evt.currentTarget)}
+            onMouseLeave={() => hidePreview(assignedItem.id)}
           >
             {assignedItem.image && (
               <img src={resolveAsset(assignedItem.image)} alt={assignedItem.label || assignedItem.id} draggable={!disabled} />
@@ -303,14 +316,6 @@ export default function DragSocketsPuzzle({
               >
                 ×
               </button>
-            )}
-            {previewItem === assignedItem.id && (
-              <div className={`drag-item-tooltip ${shapeClass(socket.shape)}`}>
-                {assignedItem.image && (
-                  <img src={resolveAsset(assignedItem.image)} alt="" aria-hidden className="drag-item-tooltip-image" />
-                )}
-                {assignedItem.label && <div className="drag-item-title tooltip-label">{assignedItem.label}</div>}
-              </div>
             )}
           </div>
         )}
@@ -351,8 +356,8 @@ export default function DragSocketsPuzzle({
         setDraggingItem(item.id);
         setDraggingFromSocket(null);
       }}
-      onMouseEnter={() => setPreviewItem(item.id)}
-      onMouseLeave={() => setPreviewItem((prev) => (prev === item.id ? null : prev))}
+      onMouseEnter={(evt) => showPreview(item.id, evt.currentTarget)}
+      onMouseLeave={() => hidePreview(item.id)}
     >
       {item.image && (
         <img
@@ -362,14 +367,40 @@ export default function DragSocketsPuzzle({
           draggable={false}
         />
       )}
-      {previewItem === item.id && draggingItem !== item.id && (
-        <div className={`drag-item-tooltip ${shapeClass(item.shape)}`}>
-          {item.image && <img src={resolveAsset(item.image)} alt="" aria-hidden className="drag-item-tooltip-image" />}
-          {item.label && <div className="drag-item-title tooltip-label">{item.label}</div>}
-        </div>
-      )}
     </div>
   );
+
+  const previewData = items.find((itm) => itm.id === previewItem) ?? null;
+
+  const tooltipNode =
+    previewData && previewRect && draggingItem !== previewData.id
+      ? createPortal(
+          <div
+            className={`drag-item-tooltip ${shapeClass(previewData.shape)} is-portal`}
+            style={{
+              left: previewRect.left + previewRect.width / 2,
+              top: previewRect.top - 8,
+            }}
+          >
+            {previewData.image && (
+              <img src={resolveAsset(previewData.image)} alt="" aria-hidden className="drag-item-tooltip-image" />
+            )}
+            {previewData.label && <div className="drag-item-title tooltip-label">{previewData.label}</div>}
+          </div>,
+          document.body
+        )
+      : null;
+
+  useEffect(() => {
+    if (!previewItem) return;
+    const handleHide = () => hidePreview();
+    window.addEventListener("scroll", handleHide, true);
+    window.addEventListener("resize", handleHide);
+    return () => {
+      window.removeEventListener("scroll", handleHide, true);
+      window.removeEventListener("resize", handleHide);
+    };
+  }, [previewItem, hidePreview]);
 
   return (
     <div className="drag-sockets-wrapper">
@@ -390,6 +421,7 @@ export default function DragSocketsPuzzle({
         {availableItems.length === 0 && items.length > 0 && <div className="muted small">{t("allItemsPlaced")}</div>}
         {availableItems.map((item: DragSocketItem) => renderItemCard(item))}
       </div>
+      {tooltipNode}
     </div>
   );
 }
