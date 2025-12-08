@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { DayBlock, RiddleAnswerPayload } from "../../types";
 import { useI18n } from "../../i18n";
 import DragSocketsPuzzle from "./drag/DragSocketsPuzzle";
@@ -9,9 +9,10 @@ interface Props {
   status?: "correct" | "incorrect" | "idle";
   onInteract?: () => void;
   onSubmit: (payload: RiddleAnswerPayload) => void;
+  canResetDefaults?: boolean;
 }
 
-export default function RiddleAnswerForm({ block, submitting, status = "idle", onInteract, onSubmit }: Props) {
+export default function RiddleAnswerForm({ block, submitting, status = "idle", onInteract, onSubmit, canResetDefaults = false }: Props) {
   const { t } = useI18n();
   const backendBase =
     import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ||
@@ -24,6 +25,18 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
   const [multiChoices, setMultiChoices] = useState<string[]>([]);
   const [dragAssignments, setDragAssignments] = useState<Record<string, string | undefined>>({});
   const [localError, setLocalError] = useState<string | null>(null);
+  const [initializedDefaults, setInitializedDefaults] = useState(false);
+  const defaultAssignments = useMemo(() => {
+    if (block.type !== "drag-sockets") return {};
+    const items = block.items ?? [];
+    const defaults: Record<string, string> = {};
+    items.forEach((itm) => {
+      if (itm.defaultSocketId) {
+        defaults[itm.defaultSocketId] = itm.id;
+      }
+    });
+    return defaults;
+  }, [block]);
 
   useEffect(() => {
     // Preserve selections while unsolved; only hydrate from solution when solved
@@ -32,7 +45,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
         setTextAnswer(String(block.solution));
         setSingleChoice(String(block.solution));
         setMultiChoices([]);
-        setDragAssignments({});
+        setDragAssignments(defaultAssignments);
       } else if (Array.isArray(block.solution)) {
         setTextAnswer("");
         setSingleChoice("");
@@ -44,14 +57,65 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
               solvedPlacements[entry.socketId] = entry.itemId;
             }
           });
-          setDragAssignments(solvedPlacements);
+          setDragAssignments(Object.keys(solvedPlacements).length ? solvedPlacements : defaultAssignments);
         }
+      } else if (block.type === "drag-sockets" && block.solution && typeof block.solution === "object") {
+        const solvedPlacements: Record<string, string> = {};
+        const solutionSockets =
+          "sockets" in (block.solution as Record<string, unknown>)
+            ? ((block.solution as { sockets?: Array<{ socketId?: string; itemId?: string; listId?: string }> }).sockets ?? [])
+            : [];
+        const listMap: Map<string, string[]> =
+          "lists" in (block.solution as Record<string, unknown>)
+            ? new Map(
+                ((block.solution as { lists?: Array<{ id?: string; items?: string[] }> }).lists ?? []).map((lst) => [
+                  lst?.id ?? "",
+                  lst?.items ?? [],
+                ]),
+              )
+            : new Map();
+        const listCursors = new Map<string, number>();
+        solutionSockets.forEach((entry) => {
+          if (!entry?.socketId) return;
+          let itemId = entry.itemId;
+          if (!itemId && entry.listId) {
+            const listItems = listMap.get(entry.listId) ?? [];
+            const cursor = listCursors.get(entry.listId) ?? 0;
+            if (cursor < listItems.length) {
+              itemId = listItems[cursor];
+              listCursors.set(entry.listId, cursor + 1);
+            }
+          }
+          if (itemId) {
+            solvedPlacements[entry.socketId] = itemId;
+          }
+        });
+        setDragAssignments(Object.keys(solvedPlacements).length ? solvedPlacements : defaultAssignments);
       } else {
         setDragAssignments({});
       }
     }
     setLocalError(null);
-  }, [block.id, block.solved, block.solution, block.type]);
+    setInitializedDefaults(false);
+  }, [block.id, block.solved, block.solution, block.type, defaultAssignments]);
+
+  useEffect(() => {
+    if (block.type !== "drag-sockets" || block.solved) return;
+    if (initializedDefaults) return;
+    if (Object.keys(defaultAssignments).length > 0) {
+      setDragAssignments((prev) => ({ ...defaultAssignments, ...prev }));
+    }
+    setInitializedDefaults(true);
+  }, [block, initializedDefaults, defaultAssignments]);
+
+  // Clear local drag error when user interacts
+  useEffect(() => {
+    if (block.type === "drag-sockets" && localError) {
+      setLocalError(null);
+    }
+    // Only run when assignments change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dragAssignments]);
 
   const handleSubmit = (evt: React.FormEvent) => {
     evt.preventDefault();
@@ -96,18 +160,32 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
         setLocalError(t("submissionFailed"));
         return;
       }
-      const requiredSockets = Array.isArray(block.solution)
-        ? new Set(
-            (block.solution as Array<{ socketId?: string }>).map((entry) => entry?.socketId).filter((id): id is string => Boolean(id)),
-          )
-        : new Set<string>();
-      if (requiredSockets.size === 0) {
-        sockets.forEach((socket) => requiredSockets.add(socket.id));
-      }
-      const missing = Array.from(requiredSockets).filter((id) => !dragAssignments[id]);
-      if (missing.length > 0) {
-        setLocalError(t("placeAllItems"));
-        return;
+      const solutionEntries = Array.isArray(block.solution)
+        ? (block.solution as Array<{ socketId?: string; itemId?: string }>)
+        : block.solution && typeof block.solution === "object" && "sockets" in (block.solution as Record<string, unknown>)
+          ? ((block.solution as { sockets?: Array<{ socketId?: string; itemId?: string; listId?: string }> }).sockets ?? [])
+          : [];
+
+      const presenceOnly = solutionEntries.length > 0 && solutionEntries.every((entry) => entry && !entry.socketId);
+      if (presenceOnly) {
+        const requiredCount = solutionEntries.filter((e) => e?.itemId).length;
+        const placedCount = Object.values(dragAssignments).filter(Boolean).length;
+        if (placedCount < requiredCount) {
+          setLocalError(t("placeAllItems"));
+          return;
+        }
+      } else {
+        const requiredSockets = new Set(
+          solutionEntries.map((entry) => entry?.socketId).filter((id): id is string => Boolean(id)),
+        );
+        if (requiredSockets.size === 0) {
+          sockets.forEach((socket) => requiredSockets.add(socket.id));
+        }
+        const missing = Array.from(requiredSockets).filter((id) => !dragAssignments[id]);
+        if (missing.length > 0) {
+          setLocalError(t("placeAllItems"));
+          return;
+        }
       }
       const answer = sockets
         .map((socket) => ({
@@ -125,6 +203,10 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
 
   const statusClass =
     status === "correct" ? "choice-correct" : status === "incorrect" ? "choice-error" : submitting ? "choice-pending" : "";
+  const effectiveStatus =
+    block.type === "drag-sockets" && localError ? "incorrect" : status;
+  const dragStatus: "correct" | "incorrect" | "idle" =
+    effectiveStatus === "correct" ? "correct" : effectiveStatus === "incorrect" ? "incorrect" : "idle";
   const optionSize = (block.kind === "puzzle" && "optionSize" in block && block.optionSize) || "small";
   const optionSizeClass = `option-size-${optionSize}`;
   const renderLabel = (label?: string) =>
@@ -231,7 +313,6 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
 
       {block.type === "drag-sockets" && (
         <>
-          {localError && <div className="banner error">{localError}</div>}
           <DragSocketsPuzzle
             block={block as Extract<typeof block, { type: "drag-sockets" }>}
             assignments={dragAssignments}
@@ -240,17 +321,40 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
               onInteract?.();
             }}
             resolveAsset={resolveImage}
-            status={status}
+            status={dragStatus}
             disabled={submitting || block.solved}
+            errorMessage={localError || undefined}
+            canReset={canResetDefaults}
+            onResetDefaults={() => {
+              setDragAssignments(defaultAssignments);
+              setLocalError(null);
+            }}
+            onStartInteraction={() => {
+              setLocalError(null);
+              onInteract?.();
+            }}
           />
         </>
       )}
 
       {!block.solved && (
         <div className="actions">
-          <button type="submit" className="primary" disabled={submitting}>
+          <button type="submit" className="primary wide" disabled={submitting}>
             {submitting ? "…" : t("submit")}
           </button>
+          {block.type === "drag-sockets" && canResetDefaults && (
+            <button
+              type="button"
+              className="ghost wide"
+              style={{ marginTop: 10 }}
+              onClick={() => {
+                setDragAssignments(defaultAssignments);
+                setLocalError(null);
+              }}
+            >
+              {t("reset")}
+            </button>
+          )}
         </div>
       )}
     </form>

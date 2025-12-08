@@ -77,7 +77,8 @@ type TranslationKey =
   | "funSettingTitle"
   | "funSettingDescription"
   | "funSettingToggle"
-  | "funSettingSaved";
+  | "funSettingSaved"
+  | "reset";
 
 const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -147,7 +148,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     dayUnlocked: "A new day has been unlocked!",
     answerCorrect: "Correct! Well done.",
     answerIncorrect: "Incorrect answer. Try again.",
-    placeAllItems: "Place every item onto a marked socket.",
+    placeAllItems: "Place the items onto the marked sockets.",
     dragHint: "Select or drag an item, then click or drop on a matching socket to place or swap it.",
     allItemsPlaced: "All items are placed. Select or drag one to a socket to adjust.",
     socketPlaceholder: "?",
@@ -157,6 +158,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     funSettingDescription: "Swap gryphon/dragon names everywhere.",
     funSettingToggle: "Swap gryphon ↔ dragon",
     funSettingSaved: "Fun setting updated.",
+    reset: "Reset",
   },
   de: {
     brand: "Arsvent",
@@ -225,7 +227,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     dayUnlocked: "Ein neuer Tag wurde freigeschaltet!",
     answerCorrect: "Richtig! Gut gemacht.",
     answerIncorrect: "Falsche Antwort. Versuche es erneut.",
-    placeAllItems: "Platziere alle Teile auf den markierten Stellen.",
+    placeAllItems: "Platziere die Teile auf den markierten Stellen.",
     dragHint: "Wähle oder ziehe ein Teil und klicke bzw. lasse es auf einem passenden Feld los, um es zu platzieren oder zu tauschen.",
     allItemsPlaced: "Alle Teile sind platziert. Wähle oder ziehe eines auf ein Feld, um es anzupassen.",
     socketPlaceholder: "?",
@@ -235,6 +237,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     funSettingDescription: "Vertauscht überall Greif-/Drachen-Namen.",
     funSettingToggle: "Greif ↔ Drache tauschen",
     funSettingSaved: "Spaß-Einstellung aktualisiert.",
+    reset: "Zurücksetzen",
   },
 };
 

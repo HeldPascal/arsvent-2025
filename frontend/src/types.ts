@@ -18,6 +18,7 @@ export interface DragSocketItem {
   label?: string;
   image?: string;
   shape?: "circle" | "square" | "hex";
+  defaultSocketId?: string;
 }
 
 export interface DragSocketSlot {
@@ -60,6 +61,7 @@ export interface DaySummary {
   day: number;
   isAvailable: boolean;
   isSolved: boolean;
+  hasContent?: boolean;
 }
 
 export interface DaysResponse {

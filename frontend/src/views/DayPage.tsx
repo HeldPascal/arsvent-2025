@@ -94,7 +94,7 @@ export default function DayPage({ user, version }: Props) {
           ? {
               ...current,
               isSolved: resp.isSolved,
-              blocks: resp.blocks,
+              blocks: resp.blocks ?? current.blocks,
             }
           : current,
       );
@@ -158,22 +158,25 @@ export default function DayPage({ user, version }: Props) {
       );
     }
     if (block.kind !== "puzzle") return null;
+    const effectiveSolved = useOverride ? false : block.solved;
     const status =
-      block.solved || (lastResult && lastResult.puzzleId === block.id && lastResult.correct)
+      effectiveSolved || (lastResult && lastResult.puzzleId === block.id && lastResult.correct)
         ? "correct"
         : lastResult && lastResult.puzzleId === block.id && !lastResult.correct
           ? "incorrect"
           : "idle";
+    const renderBlock = useOverride && block.kind === "puzzle" ? { ...block, solved: false } : block;
     return (
       <div className="puzzle-card" key={`puzzle-${block.id}`}>
-        {block.title && <h3 className="puzzle-title">{block.title}</h3>}
-        <article className="riddle-body" dangerouslySetInnerHTML={{ __html: rewriteAssets(block.html) }} />
+        {renderBlock.title && <h3 className="puzzle-title">{renderBlock.title}</h3>}
+        <article className="riddle-body" dangerouslySetInnerHTML={{ __html: rewriteAssets(renderBlock.html) }} />
         <RiddleAnswerForm
-          block={block}
+          block={renderBlock as Extract<DayBlock, { kind: "puzzle" }>}
           submitting={submitting}
           status={status}
           onInteract={() => setLastResult(null)}
           onSubmit={(payload) => onSubmit(block, payload)}
+          canResetDefaults={useOverride}
         />
       </div>
     );
@@ -225,7 +228,7 @@ export default function DayPage({ user, version }: Props) {
       {detail.canPlay ? (
         <>
           {detail.blocks.map((block, idx) => renderBlock(block, idx))}
-          {detail.isSolved && (
+          {detail.isSolved && !useOverride && (
             <div className="banner success">
               <div className="banner-title">{t("solved")}</div>
               <div className="banner-body">{t("answerCorrect")}</div>

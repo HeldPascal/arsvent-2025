@@ -352,12 +352,25 @@ const normalizeDragItems = (raw: unknown, defaultShape: DragShape): DragSocketIt
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
       throw new Error("Invalid drag-sockets item definition");
     }
-    const { id, label, image, shape } = entry as { id?: unknown; label?: unknown; image?: unknown; shape?: unknown };
+    const { id, label, image, shape, defaultSocketId } = entry as {
+      id?: unknown;
+      label?: unknown;
+      image?: unknown;
+      shape?: unknown;
+      defaultSocketId?: unknown;
+    };
     const itemId = normalizeId(id, "Drag-sockets items require an id");
     const itemLabel = typeof label === "string" ? label : undefined;
     const itemImage = typeof image === "string" ? image : undefined;
     const itemShape = shape ? resolveShape(shape) : defaultShape;
-    return { id: itemId, ...(itemLabel !== undefined ? { label: itemLabel } : {}), ...(itemImage ? { image: itemImage } : {}), shape: itemShape };
+    const itemDefaultSocketId = typeof defaultSocketId === "string" ? defaultSocketId : undefined;
+    return {
+      id: itemId,
+      ...(itemLabel !== undefined ? { label: itemLabel } : {}),
+      ...(itemImage ? { image: itemImage } : {}),
+      shape: itemShape,
+      ...(itemDefaultSocketId ? { defaultSocketId: itemDefaultSocketId } : {}),
+    };
   });
   const seen = new Set<string>();
   items.forEach((item) => {
@@ -430,36 +443,95 @@ const normalizeDragSolution = (
   raw: unknown,
   sockets: DragSocketSlot[],
   items: DragSocketItem[],
-): Array<{ socketId: string; itemId: string }> => {
-  if (!Array.isArray(raw) || raw.length === 0) {
+): { lists?: Array<{ id: string; items: string[] }> | undefined; sockets: Array<{ socketId?: string; itemId?: string; listId?: string }> } => {
+  if (!raw || typeof raw !== "object") {
     throw new Error("Drag-sockets puzzles require a solution");
   }
+
   const socketIds = new Set(sockets.map((socket) => socket.id));
   const itemIds = new Set(items.map((item) => item.id));
-  const solution = raw.map((entry) => {
+
+  const maybeLists = (raw as { lists?: unknown }).lists;
+  const lists =
+    Array.isArray(maybeLists) && maybeLists.length > 0
+      ? maybeLists.map((entry) => {
+          if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+            throw new Error("Invalid drag-sockets list entry");
+          }
+          const { id, items: listItems } = entry as { id?: unknown; items?: unknown };
+          const listId = normalizeId(id, "List entries require an id");
+          if (!Array.isArray(listItems) || listItems.length === 0) {
+            throw new Error(`List ${listId} requires items`);
+          }
+          const normalizedItems = listItems.map((itm) => normalizeId(itm, "List items must be strings"));
+          normalizedItems.forEach((itm) => {
+            if (!itemIds.has(itm)) throw new Error(`List ${listId} references unknown item: ${itm}`);
+          });
+          return { id: listId, items: normalizedItems };
+        })
+      : undefined;
+  const listIds = new Set((lists ?? []).map((l) => l.id));
+
+  const rawSockets =
+    Array.isArray((raw as { sockets?: unknown }).sockets) && (raw as { sockets?: unknown }).sockets
+      ? ((raw as { sockets?: Array<unknown> }).sockets as Array<unknown>)
+      : Array.isArray(raw)
+        ? (raw as Array<unknown>)
+        : [];
+
+  if (!rawSockets.length) {
+    throw new Error("Drag-sockets puzzles require a solution");
+  }
+
+  const solutionSockets = rawSockets.map((entry) => {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
       throw new Error("Invalid drag-sockets solution entry");
     }
-    const { socketId, itemId } = entry as { socketId?: unknown; itemId?: unknown };
-    const normalizedSocketId = normalizeId(socketId, "Solution entries require a socketId");
-    const normalizedItemId = normalizeId(itemId, "Solution entries require an itemId");
-    if (!socketIds.has(normalizedSocketId)) throw new Error(`Solution references unknown socket: ${normalizedSocketId}`);
-    if (!itemIds.has(normalizedItemId)) throw new Error(`Solution references unknown item: ${normalizedItemId}`);
-    const socket = sockets.find((s) => s.id === normalizedSocketId);
-    if (socket && socket.accepts.length > 0 && !socket.accepts.includes(normalizedItemId)) {
+    const { socketId, itemId, listId } = entry as { socketId?: unknown; itemId?: unknown; listId?: unknown };
+    const normalizedSocketId = socketId !== undefined ? normalizeId(socketId, "Solution entries require a socketId") : undefined;
+    const normalizedItemId = itemId !== undefined ? normalizeId(itemId, "Solution entries require an itemId") : undefined;
+    const normalizedListId = listId !== undefined ? normalizeId(listId, "Solution entries require a listId") : undefined;
+
+    if (!normalizedSocketId && !normalizedItemId) {
+      throw new Error("Solution entries require at least an itemId or a listId");
+    }
+    if (normalizedSocketId && !socketIds.has(normalizedSocketId)) {
+      throw new Error(`Solution references unknown socket: ${normalizedSocketId}`);
+    }
+    if (normalizedItemId && !itemIds.has(normalizedItemId)) {
+      throw new Error(`Solution references unknown item: ${normalizedItemId}`);
+    }
+    if (normalizedListId && !listIds.has(normalizedListId)) {
+      throw new Error(`Solution references unknown list: ${normalizedListId}`);
+    }
+    if (normalizedListId && normalizedItemId) {
+      throw new Error("Solution entries should not specify both itemId and listId");
+    }
+    const socket = normalizedSocketId ? sockets.find((s) => s.id === normalizedSocketId) : null;
+    if (socket && socket.accepts.length > 0 && normalizedItemId && !socket.accepts.includes(normalizedItemId)) {
       throw new Error(`Solution assigns an item that the socket does not accept: ${normalizedSocketId}`);
     }
-    return { socketId: normalizedSocketId, itemId: normalizedItemId };
+    return {
+      ...(normalizedSocketId !== undefined ? { socketId: normalizedSocketId } : {}),
+      ...(normalizedItemId !== undefined ? { itemId: normalizedItemId } : {}),
+      ...(normalizedListId !== undefined ? { listId: normalizedListId } : {}),
+    };
   });
+
   const seenSockets = new Set<string>();
   const seenItems = new Set<string>();
-  solution.forEach(({ socketId, itemId }) => {
-    if (seenSockets.has(socketId)) throw new Error(`Solution lists socket multiple times: ${socketId}`);
-    if (seenItems.has(itemId)) throw new Error(`Solution uses item multiple times: ${itemId}`);
-    seenSockets.add(socketId);
-    seenItems.add(itemId);
+  solutionSockets.forEach(({ socketId, itemId }) => {
+    if (socketId) {
+      if (seenSockets.has(socketId)) throw new Error(`Solution lists socket multiple times: ${socketId}`);
+      seenSockets.add(socketId);
+    }
+    if (itemId) {
+      if (seenItems.has(itemId)) throw new Error(`Solution uses item multiple times: ${itemId}`);
+      seenItems.add(itemId);
+    }
   });
-  return solution;
+
+  return { lists, sockets: solutionSockets };
 };
 
 const segmentBlocks = (blocks: StructuredBlock[]) => {

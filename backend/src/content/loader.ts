@@ -32,6 +32,7 @@ export interface DragSocketItem {
   label?: string;
   image?: string;
   shape?: DragShape;
+  defaultSocketId?: string;
 }
 
 export interface DragSocketSlot {

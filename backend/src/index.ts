@@ -222,17 +222,20 @@ const requireSuperAdmin: RequestHandler = (req, res, next) => {
 };
 
 const MAX_DAY = 24;
-const getContentDayCount = async () => {
+const getContentDaySet = async () => {
   try {
     const contentRoot = path.join(__dirname, "..", "content");
     const entries = await fs.readdir(contentRoot, { withFileTypes: true });
-    const days = entries.filter((e) => e.isDirectory() && /^day\d{2}$/.test(e.name));
-    return days.length || MAX_DAY;
+    const days = entries
+      .filter((e) => e.isDirectory() && /^day\d{2}$/.test(e.name))
+      .map((e) => Number(e.name.replace("day", "")));
+    return new Set(days.filter((n) => Number.isFinite(n) && n >= 1 && n <= MAX_DAY));
   } catch (err) {
     console.warn("[content] Failed to count day folders, falling back to MAX_DAY", err);
-    return MAX_DAY;
+    return new Set<number>(Array.from({ length: MAX_DAY }, (_, i) => i + 1));
   }
 };
+const getContentDayCount = async () => (await getContentDaySet()).size || MAX_DAY;
 
 const ensureAppState = async () =>
   prisma.appState.upsert({
@@ -485,13 +488,64 @@ const evaluatePuzzleAnswer = (block: Extract<DayBlock, { kind: "puzzle" }>, answ
         usedItems.add(itemId);
       });
       const expected = Array.isArray(block.solution)
-        ? (block.solution as Array<{ socketId: string; itemId: string }>)
-        : [];
+        ? (block.solution as Array<{ socketId?: string; itemId?: string }>)
+        : block.solution && typeof block.solution === "object" && "sockets" in (block.solution as Record<string, unknown>)
+          ? ((block.solution as { sockets?: Array<{ socketId?: string; itemId?: string; listId?: string }>; lists?: Array<{ id: string; items: string[] }> }).sockets ??
+              [])
+          : [];
+
+      // Item lists support: map listId -> set of itemIds
+      const listMap =
+        block.solution && typeof block.solution === "object" && "lists" in (block.solution as Record<string, unknown>)
+          ? new Map(
+              ((block.solution as { lists?: Array<{ id?: string; items?: string[] }> }).lists ?? []).map((lst) => {
+                if (!lst?.id || !Array.isArray(lst.items)) {
+                  throw new Error("Invalid item list in solution");
+                }
+                return [lst.id, new Set(lst.items.map(String))];
+              }),
+            )
+          : new Map<string, Set<string>>();
+
       if (!expected.length) {
         throw new Error("Puzzle is misconfigured");
       }
-      const expectedMap = new Map(expected.map(({ socketId, itemId }) => [socketId, itemId]));
-      return Array.from(expectedMap.entries()).every(([socketId, itemId]) => assignment.get(socketId) === itemId);
+
+      const allHaveSockets = expected.every(
+        (entry) =>
+          entry &&
+          typeof entry.socketId === "string" &&
+          (typeof (entry as { listId?: string }).listId === "string" || typeof entry.itemId === "string"),
+      );
+      const itemPresenceOnly = expected.every(
+        (entry) => entry && !entry.socketId && typeof entry.itemId === "string",
+      );
+
+      if (itemPresenceOnly) {
+        const requiredItems = new Set(expected.map((e) => String(e.itemId)));
+        const placedItems = new Set(assignment.values());
+        return Array.from(requiredItems).every((id) => placedItems.has(id));
+      }
+
+      if (allHaveSockets) {
+        return expected.every((entry) => {
+          const socketId = entry.socketId as string;
+          const placedItem = assignment.get(socketId);
+          if (!placedItem) return false;
+          if (entry.itemId) {
+            return placedItem === entry.itemId;
+          }
+          const listId = (entry as { listId?: string }).listId;
+          if (listId) {
+            const list = listMap.get(listId);
+            if (!list) throw new Error("Unknown item list in solution");
+            return list.has(placedItem);
+          }
+          return false;
+        });
+      }
+
+      throw new Error("Puzzle is misconfigured");
     }
     default:
       throw new Error("Unsupported puzzle type for answer evaluation");
@@ -648,7 +702,8 @@ app.get("/api/days", requireAuth, requireIntroComplete, async (req, res, next) =
     const unlockedDay = await getUnlockedDay();
     const lastSolved = req.user!.lastSolvedDay ?? 0;
     const playLimit = Math.min(unlockedDay, lastSolved + 1);
-    const contentDayCount = await getContentDayCount();
+    const contentDays = await getContentDaySet();
+    const contentDayCount = contentDays.size;
 
     const days = Array.from({ length: MAX_DAY }, (_, index) => {
       const day = index + 1;
@@ -656,6 +711,7 @@ app.get("/api/days", requireAuth, requireIntroComplete, async (req, res, next) =
         day,
         isAvailable: day <= playLimit,
         isSolved: day <= lastSolved,
+        hasContent: contentDays.has(day),
       };
     });
 
@@ -672,9 +728,10 @@ app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, ne
   }
 
   try {
-    const isAdminOverride =
+    const isAdminOverride = Boolean(
       (req.user?.isAdmin || req.user?.isSuperAdmin) &&
-      (req.query.override === "1" || req.query.override === "true" || req.query.override === "yes");
+        (req.query.override === "1" || req.query.override === "true" || req.query.override === "yes"),
+    );
     const unlockedDay = await getUnlockedDay();
     const lastSolved = req.user!.lastSolvedDay ?? 0;
     const orderAllowed = isAdminOverride || day <= lastSolved + 1;
@@ -710,13 +767,21 @@ app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, ne
       });
     }
 
-    const sessionSolved = getSessionPuzzleProgress(req, day);
-    let content = applyCreatureSwapToDay(await loadDayContent(day, locale, mode, sessionSolved, false), locale, funSwap);
+    const sessionSolved = isAdminOverride ? new Set<string>() : getSessionPuzzleProgress(req, day);
+    let content = applyCreatureSwapToDay(
+      await loadDayContent(day, locale, mode, sessionSolved, false),
+      locale,
+      funSwap,
+    );
 
-    const daySolvedInDb = day <= lastSolved;
+    const daySolvedInDb = day <= lastSolved && !isAdminOverride;
     if (daySolvedInDb) {
       const solvedAll = new Set(content.puzzleIds);
-      content = applyCreatureSwapToDay(await loadDayContent(day, locale, mode, solvedAll, false), locale, funSwap);
+      content = applyCreatureSwapToDay(
+        await loadDayContent(day, locale, mode, solvedAll, false),
+        locale,
+        funSwap,
+      );
     }
 
     return res.json({
@@ -743,9 +808,10 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
   const { answer, puzzleId, type: submittedType } = req.body as { answer?: unknown; puzzleId?: string; type?: string };
 
   try {
-    const isAdminOverride =
+    const isAdminOverride = Boolean(
       (req.user?.isAdmin || req.user?.isSuperAdmin) &&
-      (req.query.override === "1" || req.query.override === "true" || req.query.override === "yes");
+        (req.query.override === "1" || req.query.override === "true" || req.query.override === "yes"),
+    );
     const funSwap = Boolean(req.user?.creatureSwap);
     const unlockedDay = await getUnlockedDay();
     if (!isAdminOverride && day > unlockedDay) {
@@ -787,23 +853,36 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
     if (puzzleBlock.visible === false) {
       return res.status(400).json({ error: "Puzzle is not available yet" });
     }
-    if (puzzleBlock.solved) {
-      return res.json({ day, isSolved: false, correct: true, message: "Already solved." });
+    let effectivePuzzle = puzzleBlock;
+    if (isAdminOverride && puzzleBlock.solved) {
+      // In override mode we still allow re-testing; treat as unsolved for evaluation
+      effectivePuzzle = { ...puzzleBlock, solved: false };
     }
-    if (submittedType && submittedType !== puzzleBlock.type) {
+    if (!isAdminOverride && puzzleBlock.solved) {
+      const funSwap = Boolean(req.user?.creatureSwap);
+      const swapped = applyCreatureSwapToDay(content, locale, funSwap);
+      return res.json({
+        day,
+        isSolved: false,
+        correct: true,
+        message: "Already solved.",
+        blocks: swapped.blocks,
+      });
+    }
+    if (submittedType && submittedType !== effectivePuzzle.type) {
       return res.status(400).json({ error: "Answer type does not match puzzle" });
     }
 
     let correct = false;
     try {
-      correct = evaluatePuzzleAnswer(puzzleBlock, answer);
+      correct = evaluatePuzzleAnswer(effectivePuzzle, answer);
     } catch (err) {
       return res.status(400).json({ error: (err as Error).message });
     }
 
     const updatedSolved = new Set(sessionSolved);
     if (correct) {
-      updatedSolved.add(puzzleBlock.id);
+      updatedSolved.add(effectivePuzzle.id);
       if (!isAdminOverride) {
         setSessionPuzzleProgress(req, day, updatedSolved);
       }

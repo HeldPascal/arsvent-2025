@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent } from "react";
 import type { DayBlock, DragSocketItem, DragSocketSlot } from "../../../types";
 import { useI18n } from "../../../i18n";
@@ -18,6 +18,10 @@ interface Props {
   resolveAsset: (src?: string) => string;
   status?: "correct" | "incorrect" | "idle";
   disabled?: boolean;
+  canReset?: boolean;
+  onResetDefaults?: () => void;
+  errorMessage?: string;
+  onStartInteraction?: () => void;
 }
 
 export default function DragSocketsPuzzle({
@@ -27,6 +31,10 @@ export default function DragSocketsPuzzle({
   resolveAsset,
   status = "idle",
   disabled = false,
+  canReset = false,
+  onResetDefaults,
+  errorMessage,
+  onStartInteraction,
 }: Props) {
   const { t } = useI18n();
   const sockets: DragSocketSlot[] = block.sockets ?? [];
@@ -36,6 +44,25 @@ export default function DragSocketsPuzzle({
   const [previewItem, setPreviewItem] = useState<string | null>(null);
   const [draggingItem, setDraggingItem] = useState<string | null>(null);
   const [draggingFromSocket, setDraggingFromSocket] = useState<string | null>(null);
+  const dragGhostRef = useRef<HTMLElement | null>(null);
+
+  const requiredSockets = useMemo(() => {
+    const ids = new Set<string>();
+    const solution = block.solution;
+    if (Array.isArray(solution)) {
+      solution.forEach((entry) => {
+        if (entry && typeof entry === "object" && "socketId" in entry && entry.socketId) {
+          ids.add(String(entry.socketId));
+        }
+      });
+    } else if (solution && typeof solution === "object" && "sockets" in solution) {
+      const socketsArr = (solution as { sockets?: Array<{ socketId?: string }> }).sockets ?? [];
+      socketsArr.forEach((entry) => {
+        if (entry?.socketId) ids.add(String(entry.socketId));
+      });
+    }
+    return ids;
+  }, [block.solution]);
 
   const assignedSocketByItem = useMemo(() => {
     const map: Record<string, string> = {};
@@ -61,13 +88,59 @@ export default function DragSocketsPuzzle({
     img.src = resolvedBackground;
   }, [resolvedBackground]);
 
+  const defaultHomeBySocket = useMemo(() => {
+    const map: Record<string, string> = {};
+    items.forEach((itm) => {
+      if (itm.defaultSocketId) {
+        map[itm.defaultSocketId] = itm.id;
+      }
+    });
+    return map;
+  }, [items]);
+
   const canDrop = (socketId: string, itemId: string) => {
     const socket = sockets.find((s) => s.id === socketId);
     const item = items.find((itm) => itm.id === itemId);
     if (!socket || !item) return false;
+    const reservedItem = defaultHomeBySocket[socketId];
+    if (reservedItem && reservedItem !== itemId) return false;
     if (socket.shape && item.shape && socket.shape !== item.shape) return false;
     if (!socket.accepts?.length) return true;
     return socket.accepts.includes(itemId);
+  };
+
+  const createDragGhost = (item: DragSocketItem) => {
+    if (typeof document === "undefined") return null;
+    const ghost = document.createElement("div");
+    const rootStyle = getComputedStyle(document.documentElement);
+    const socketSize = rootStyle.getPropertyValue("--socket-size") || "104px";
+    ghost.className = `drag-item-card ${shapeClass(item.shape)}`;
+    ghost.style.width = socketSize.trim();
+    ghost.style.height = socketSize.trim();
+    ghost.style.position = "absolute";
+    ghost.style.top = "-9999px";
+    ghost.style.left = "-9999px";
+    ghost.style.pointerEvents = "none";
+    ghost.style.opacity = "0.95";
+
+    if (item.image) {
+      const img = document.createElement("img");
+      img.src = resolveAsset(item.image);
+      img.alt = item.label ?? item.id;
+      img.className = `drag-item-image ${shapeClass(item.shape)}`;
+      ghost.appendChild(img);
+    }
+
+    document.body.appendChild(ghost);
+    dragGhostRef.current = ghost;
+    return ghost;
+  };
+
+  const cleanupGhost = () => {
+    if (dragGhostRef.current) {
+      dragGhostRef.current.remove();
+      dragGhostRef.current = null;
+    }
   };
 
   const placeItem = (socketId: string, itemId: string) => {
@@ -75,6 +148,7 @@ export default function DragSocketsPuzzle({
     if (draggingFromSocket === socketId) return;
     const next = { ...assignments };
     const targetItem = next[socketId];
+    const targetItemObj = items.find((itm) => itm.id === targetItem);
 
     if (draggingFromSocket) {
       next[draggingFromSocket] = targetItem && canDrop(draggingFromSocket, targetItem) ? targetItem : undefined;
@@ -87,13 +161,30 @@ export default function DragSocketsPuzzle({
     });
 
     next[socketId] = itemId;
+
+    if (targetItem && targetItemObj?.defaultSocketId) {
+      const home = targetItemObj.defaultSocketId;
+      const alreadyPlaced = Object.values(next).includes(targetItem);
+      if (!alreadyPlaced && (!next[home] || next[home] === targetItem)) {
+        next[home] = targetItem;
+      }
+    }
     onChange(next);
   };
 
   const clearSocket = (socketId: string) => {
     if (disabled) return;
     const next = { ...assignments };
+    const currentItemId = next[socketId];
     next[socketId] = undefined;
+    if (currentItemId) {
+      const item = items.find((itm) => itm.id === currentItemId);
+      const home = item?.defaultSocketId;
+      if (home) {
+        // Home sockets are reserved for their default item only
+        next[home] = currentItemId;
+      }
+    }
     onChange(next);
   };
 
@@ -131,11 +222,14 @@ export default function DragSocketsPuzzle({
     const isDropCandidate = draggingItem ? canDrop(socket.id, draggingItem) : false;
     const isMuted = Boolean(draggingItem && !isDropCandidate);
     const socketLabel = socket.label && socket.label.trim().length > 0 ? socket.label : t("socketPlaceholder");
+    const isDefaultHome = assignedItem?.defaultSocketId === socket.id;
+    const socketStatusClass = requiredSockets.size === 0 || requiredSockets.has(socket.id) ? statusClass : "status-idle";
+    const isSelected = draggingItem === assignedItem?.id;
 
     return (
       <div
         key={socket.id}
-        className={`drag-socket ${statusClass} ${shapeClass(socket.shape)} ${isActive ? "is-active" : ""} ${isDropCandidate ? "is-candidate" : ""} ${isMuted ? "is-muted" : ""}`}
+        className={`drag-socket ${socketStatusClass} ${shapeClass(socket.shape)} ${isActive ? "is-active" : ""} ${isDropCandidate ? "is-candidate" : ""} ${isMuted ? "is-muted" : ""}`}
         style={{ left: `${socket.position.x * 100}%`, top: `${socket.position.y * 100}%` }}
         onDragEnter={(evt) => {
           const itemId = draggingItem ?? evt.dataTransfer.getData("text/plain");
@@ -157,25 +251,29 @@ export default function DragSocketsPuzzle({
         </div>
         {assignedItem && (
           <div
-            className={`drag-socket-item ${shapeClass(socket.shape)} ${draggingItem === assignedItem.id ? "dragging" : ""}`}
+            className={`drag-socket-item ${shapeClass(socket.shape)} ${draggingItem === assignedItem.id ? "dragging" : ""} ${isSelected ? "selected" : ""}`}
             draggable={!disabled}
             onDragStart={(evt) => {
               if (disabled) return;
+              onStartInteraction?.();
               setPreviewItem(null);
               setDraggingItem(assignedItem.id);
               setDraggingFromSocket(socket.id);
               evt.dataTransfer.setData("text/plain", assignedItem.id);
               evt.dataTransfer.effectAllowed = "move";
-              const dragVisual = evt.currentTarget as HTMLElement;
+              const ghost = createDragGhost(assignedItem);
+              const dragVisual = ghost ?? (evt.currentTarget as HTMLElement);
               evt.dataTransfer.setDragImage(dragVisual, dragVisual.clientWidth / 2, dragVisual.clientHeight / 2);
             }}
             onDragEnd={() => {
               setDraggingItem(null);
               setDraggingFromSocket(null);
+              cleanupGhost();
             }}
             onClick={(evt) => {
               if (disabled) return;
               evt.stopPropagation();
+              onStartInteraction?.();
               if (draggingItem && draggingItem !== assignedItem.id) {
                 if (canDrop(socket.id, draggingItem)) {
                   placeItem(socket.id, draggingItem);
@@ -197,10 +295,7 @@ export default function DragSocketsPuzzle({
             {assignedItem.image && (
               <img src={resolveAsset(assignedItem.image)} alt={assignedItem.label || assignedItem.id} draggable={!disabled} />
             )}
-            <div className="drag-socket-label">
-              {assignedItem.label !== undefined ? assignedItem.label : assignedItem.id}
-            </div>
-            {!disabled && (
+            {!disabled && !isDefaultHome && (
               <button
                 type="button"
                 className="ghost small reset"
@@ -213,9 +308,12 @@ export default function DragSocketsPuzzle({
                 ×
               </button>
             )}
-            {previewItem === assignedItem.id && assignedItem.image && (
+            {previewItem === assignedItem.id && (
               <div className={`drag-item-tooltip ${shapeClass(socket.shape)}`}>
-                <img src={resolveAsset(assignedItem.image)} alt="" aria-hidden className="drag-item-tooltip-image" />
+                {assignedItem.image && (
+                  <img src={resolveAsset(assignedItem.image)} alt="" aria-hidden className="drag-item-tooltip-image" />
+                )}
+                {assignedItem.label && <div className="drag-item-title tooltip-label">{assignedItem.label}</div>}
               </div>
             )}
           </div>
@@ -231,20 +329,24 @@ export default function DragSocketsPuzzle({
       draggable={!disabled}
       onDragStart={(evt) => {
         if (disabled) return;
+        onStartInteraction?.();
         setPreviewItem(null);
         setDraggingItem(item.id);
         setDraggingFromSocket(null);
         evt.dataTransfer.setData("text/plain", item.id);
         evt.dataTransfer.effectAllowed = "move";
-        const dragVisual = evt.currentTarget as HTMLElement;
+        const ghost = createDragGhost(item);
+        const dragVisual = ghost ?? (evt.currentTarget as HTMLElement);
         evt.dataTransfer.setDragImage(dragVisual, dragVisual.clientWidth / 2, dragVisual.clientHeight / 2);
       }}
       onDragEnd={() => {
         setDraggingItem(null);
         setDraggingFromSocket(null);
+        cleanupGhost();
       }}
       onClick={() => {
         if (disabled) return;
+        onStartInteraction?.();
         if (draggingItem === item.id) {
           finalizePlacement();
           return;
@@ -264,12 +366,10 @@ export default function DragSocketsPuzzle({
           draggable={false}
         />
       )}
-      <div className="drag-item-labels">
-        <div className="drag-item-title">{item.label !== undefined ? item.label : item.id}</div>
-      </div>
-      {previewItem === item.id && draggingItem !== item.id && item.image && (
+      {previewItem === item.id && draggingItem !== item.id && (
         <div className={`drag-item-tooltip ${shapeClass(item.shape)}`}>
-          <img src={resolveAsset(item.image)} alt="" aria-hidden className="drag-item-tooltip-image" />
+          {item.image && <img src={resolveAsset(item.image)} alt="" aria-hidden className="drag-item-tooltip-image" />}
+          {item.label && <div className="drag-item-title tooltip-label">{item.label}</div>}
         </div>
       )}
     </div>
@@ -278,6 +378,7 @@ export default function DragSocketsPuzzle({
   return (
     <div className="drag-sockets-wrapper">
       <div className="drag-hint">{t("dragHint")}</div>
+      {errorMessage && <div className="banner error">{errorMessage}</div>}
       <div
         className={`drag-sockets-board ${shapeClass(block.shape)} ${draggingItem ? "is-dragging" : ""}`}
         style={{
