@@ -12,9 +12,6 @@ Ideas and improvements to tackle
 - Developer ergonomics  
   Improve local dev with hot-reload scripts for both backend and frontend, clearer README setup steps, and sample `.env.example` files for quick starts.
 
-- “Greif ↔ Drache” fun setting  
-  Per-user toggle that swaps those creature names everywhere. Exact replacements: in German, replace “Greif” → “gefiederter Drache” and “Drache” → “geschuppter Greif”; in English, replace “gryphon” → “feathered dragon” and “dragon” → “scaled gryphon”. Implement as a user preference, ensure it is applied in content rendering and UI labels.
-
 - Inventory view  
   Add a page that lists all items the player has earned (name, rarity, image, description). Consider filters/sorting and a link-out from rewards.
 
