@@ -184,7 +184,7 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
             <Toast
               key={toast.id}
               type={toast.type}
-              message={toast.message ?? (toast.key ? t(toast.key as any) : "")}
+              message={toast.message ?? (toast.key ? t(toast.key as Parameters<typeof t>[0]) : "")}
               durationMs={toast.durationMs}
               onClose={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
             />

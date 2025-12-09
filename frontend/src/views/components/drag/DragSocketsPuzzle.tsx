@@ -35,7 +35,7 @@ export default function DragSocketsPuzzle({
 }: Props) {
   const { t } = useI18n();
   const sockets: DragSocketSlot[] = block.sockets ?? [];
-  const items: DragSocketItem[] = block.items ?? [];
+  const items: DragSocketItem[] = useMemo(() => block.items ?? [], [block.items]);
   const [hoverSocket, setHoverSocket] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState<number>(4 / 3);
   const [previewItem, setPreviewItem] = useState<string | null>(null);

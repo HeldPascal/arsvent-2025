@@ -107,7 +107,7 @@ export default function AdminPage({ user }: Props) {
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [loadData]);
+  }, [auditLimit, loadAudit, loadData]);
 
   const isSuperAdmin = user.isSuperAdmin;
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { completeIntro, fetchIntro } from "../services/api";
 import type { Mode, User } from "../types";
@@ -24,13 +24,16 @@ export default function IntroPage({ user, onModeChange, onIntroComplete }: Props
     import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ||
     (window.location.origin.includes("localhost:5173") ? "http://localhost:4000" : window.location.origin);
 
-  const rewriteAssets = (html: string) =>
-    backendBase
-      ? html.replace(
-          /src=(["'])(\/assets\/[^"']+)\1/g,
-          (_m, quote, path) => `src=${quote}${backendBase}/content-${path.slice(1)}${quote}`,
-        )
-      : html;
+  const rewriteAssets = useCallback(
+    (html: string) =>
+      backendBase
+        ? html.replace(
+            /src=(["'])(\/assets\/[^"']+)\1/g,
+            (_m, quote, path) => `src=${quote}${backendBase}/content-${path.slice(1)}${quote}`,
+          )
+        : html,
+    [backendBase],
+  );
 
   useEffect(() => {
     fetchIntro()
@@ -41,7 +44,7 @@ export default function IntroPage({ user, onModeChange, onIntroComplete }: Props
       })
       .catch(() => setError(t("dayLoadFailed")))
       .finally(() => setLoading(false));
-  }, [t]);
+  }, [rewriteAssets, t]);
 
   const finishIntro = async () => {
     setSaving(true);

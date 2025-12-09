@@ -37,7 +37,7 @@ export default function ModeSelector({ mode, lastSolvedDay, onUpdated }: Props) 
       const res = await updateMode(next);
       setCurrent(res.mode);
       onUpdated?.(res.mode);
-    } catch (err) {
+    } catch {
       setError(t("modeChangeNotAllowed"));
     } finally {
       setSaving(false);

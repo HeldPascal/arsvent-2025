@@ -17,7 +17,7 @@ import { fileURLToPath } from "url";
 import { PrismaClient } from "@prisma/client";
 import type { User as PrismaUser } from "@prisma/client";
 import { loadIntro, loadDayContent, IntroNotFoundError, RiddleNotFoundError } from "./content/loader.js";
-import type { Locale, Mode, DayContent, DayBlock, RiddleOption } from "./content/loader.js";
+import type { Locale, Mode, DayContent, DayBlock } from "./content/loader.js";
 import { evaluateCondition } from "./content/v1-loader.js";
 
 dotenv.config();

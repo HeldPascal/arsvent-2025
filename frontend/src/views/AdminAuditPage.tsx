@@ -7,14 +7,14 @@ interface Props {
   user: User;
 }
 
-export default function AdminAuditPage({}: Props) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export default function AdminAuditPage(_: Props) {
   const [entries, setEntries] = useState<AdminAuditEntry[]>([]);
   const [users, setUsers] = useState<AdminUserSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoading(true);
     Promise.all([fetchAudit(200), fetchAdminUsers()])
       .then(([logs, us]) => {
         setEntries(logs ?? []);
@@ -75,7 +75,11 @@ export default function AdminAuditPage({}: Props) {
               return entry.details;
             }
           })();
-          const targetHint = details && typeof details === "object" && "targetId" in (details as any) ? targetLabel((details as any).targetId) : null;
+          const targetId =
+            details && typeof details === "object" && "targetId" in (details as Record<string, unknown>)
+              ? (details as { targetId?: string }).targetId
+              : null;
+          const targetHint = typeof targetId === "string" ? targetLabel(targetId) : null;
           return (
             <li key={entry.id} className="list-row">
               <div className="list-title">
