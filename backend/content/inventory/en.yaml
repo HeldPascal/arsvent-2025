@@ -38,3 +38,8 @@
   description: "A powerful enchantment."
   image: "/assets/25_08_reward.png"
   rarity: "common"
+- id: "plants"
+  title: "Estile's alchemical plants"
+  description: "A few rare plants."
+  image: "/assets/25_09_reward.png"
+  rarity: "rare"

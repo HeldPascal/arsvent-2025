@@ -38,3 +38,8 @@
   description: "Eine mächtige Verzauberung."
   image: "/assets/25_08_reward.png"
   rarity: "common"
+- id: "plants"
+  title: "Alchemistische Pflanzen von Estile"
+  description: "Ein paar seltene Pflanzen."
+  image: "/assets/25_09_reward.png"
+  rarity: "rare"
