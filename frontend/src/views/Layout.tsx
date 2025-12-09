@@ -65,7 +65,9 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
 
   useEffect(() => {
     const onGlobalToast = (event: Event) => {
-      const detail = (event as CustomEvent<{ type: "success" | "error" | "info"; message?: string; key?: string }>).detail;
+      const detail = (
+        event as CustomEvent<{ type: "success" | "error" | "info"; message?: string; key?: string; durationMs?: number }>
+      ).detail;
       if (detail?.type) {
         addToast(detail);
       }

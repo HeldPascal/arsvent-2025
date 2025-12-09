@@ -34,7 +34,7 @@ export default function AppRouter() {
   const backendBase = import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ?? "";
   const logoutUrl = `${backendBase}/auth/logout`;
 
-  const pushToast = (detail: { type: "success" | "error" | "info"; message?: string; key?: string }) => {
+  const pushToast = (detail: { type: "success" | "error" | "info"; message?: string; key?: string; durationMs?: number }) => {
     window.dispatchEvent(new CustomEvent("app:toast", { detail }));
   };
 
