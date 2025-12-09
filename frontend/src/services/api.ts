@@ -12,15 +12,25 @@ import type {
 
 const BASE = import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ?? "";
 
+type ApiError = Error & { status?: number };
+
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    ...options,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options?.headers ?? {}),
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      ...options,
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(options?.headers ?? {}),
+      },
+    });
+  } catch (err) {
+    const error = new Error("Network request failed") as ApiError;
+    error.cause = err;
+    throw error;
+  }
+
   if (!res.ok) {
     let message = `Request failed: ${res.status}`;
     try {
@@ -31,7 +41,9 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     } catch {
       // ignore parse errors
     }
-    throw new Error(message);
+    const error = new Error(message) as ApiError;
+    error.status = res.status;
+    throw error;
   }
   return res.json() as Promise<T>;
 }

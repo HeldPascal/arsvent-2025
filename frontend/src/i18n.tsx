@@ -60,6 +60,7 @@ type TranslationKey =
   | "loginFailed"
   | "logoutSuccess"
   | "sessionEnded"
+  | "sessionRefreshRetry"
   | "introLabel"
   | "introContinue"
   | "introCompleted"
@@ -91,6 +92,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     login: "Login",
     continueCalendar: "Continue to your calendar",
     loadingSession: "Loading your session…",
+    sessionRefreshRetry: "Temporary issue checking your session. Retrying…",
     calendarTitle: "Your calendar",
     calendarSubtitle: "Click an available day to play the riddle.",
     calendarOrderHint: "Solve days in order. Only the next unlocked day can be played.",
@@ -170,6 +172,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     login: "Login",
     continueCalendar: "Weiter zum Kalender",
     loadingSession: "Lade deine Sitzung…",
+    sessionRefreshRetry: "Verbindungsproblem beim Sitzungscheck. Versuche es erneut…",
     calendarTitle: "Dein Kalender",
     calendarSubtitle: "Klicke auf einen verfügbaren Tag, um das Rätsel zu spielen.",
     calendarOrderHint: "Löse die Tage der Reihenfolge nach. Nur der nächste Tag ist spielbar.",

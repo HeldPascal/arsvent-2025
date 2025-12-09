@@ -57,7 +57,10 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
 
   const addToast = (toast: { type: "success" | "error" | "info"; message?: string; key?: string; durationMs?: number }) => {
     const id = Date.now() + Math.random();
-    setToasts((prev) => [...prev, { id, ...toast }]);
+    setToasts((prev) => {
+      if (toast.key && prev.some((t) => t.key === toast.key)) return prev;
+      return [...prev, { id, ...toast }];
+    });
   };
 
   useEffect(() => {

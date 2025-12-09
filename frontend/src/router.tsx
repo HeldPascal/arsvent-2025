@@ -39,8 +39,14 @@ export default function AppRouter() {
   };
 
   useEffect(() => {
-    fetchMe()
-      .then((u) => {
+    let cancelled = false;
+    let retrying = false;
+
+    const load = async () => {
+      retrying = false;
+      try {
+        const u = await fetchMe();
+        if (cancelled) return;
         setUser(u);
         const nextLocale = (["en", "de"] as const).includes(locale) ? locale : u.locale;
         setLocale(nextLocale);
@@ -54,15 +60,39 @@ export default function AppRouter() {
         if (!u.introCompleted) {
           navigate("/intro", { replace: true });
         }
-      })
-      .catch(() => {
-        setUser(null);
-        setLocale(initialLocale);
-        setStateVersion(0);
-        hadUserRef.current = false;
-      })
-      .finally(() => setLoading(false));
-  }, [initialLocale, locale]);
+      } catch (err) {
+        if (cancelled) return;
+        const status = (err as { status?: number })?.status;
+        if (status === 401) {
+          setUser(null);
+          setLocale(initialLocale);
+          setStateVersion(0);
+          hadUserRef.current = false;
+        } else {
+          // Keep the existing user state if the failure was transient
+          if (hadUserRef.current) {
+            pushToast({ type: "info", key: "sessionRefreshRetry" });
+          }
+          // retry once after a brief delay
+          retrying = true;
+          window.setTimeout(() => {
+            if (!cancelled) {
+              load();
+            }
+          }, 700);
+          return;
+        }
+      } finally {
+        if (!cancelled && !retrying) setLoading(false);
+      }
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialLocale, navigate, locale]);
 
   const handleUserPatch = (patch: Partial<User>) => {
     setUser((prev) => (prev ? { ...prev, ...patch } : prev));
@@ -97,16 +127,26 @@ export default function AppRouter() {
             navigate("/intro", { replace: true });
           }
         })
-        .catch(() => {
+        .catch((err) => {
           if (cancelled) return;
-          if (hadUserRef.current) {
-            pushToast({ type: "info", key: "sessionEnded" });
+          const status = (err as { status?: number })?.status;
+          if (status === 401) {
+            if (hadUserRef.current) {
+              pushToast({ type: "info", key: "sessionEnded" });
+            }
+            hadUserRef.current = false;
+            setUser(null);
+            setLocale("en");
+            setStateVersion(0);
+            navigate("/");
+          } else {
+            // transient failure; keep user state and try again soon
+            pushToast({
+              type: "info",
+              key: "sessionRefreshRetry",
+              durationMs: 4000,
+            });
           }
-          hadUserRef.current = false;
-          setUser(null);
-          setLocale("en");
-          setStateVersion(0);
-          navigate("/");
         });
     };
 
