@@ -43,6 +43,8 @@ export default function DragSocketsPuzzle({
   const [draggingItem, setDraggingItem] = useState<string | null>(null);
   const [draggingFromSocket, setDraggingFromSocket] = useState<string | null>(null);
   const dragGhostRef = useRef<HTMLElement | null>(null);
+  const boardRef = useRef<HTMLDivElement | null>(null);
+  const baseBoardWidthRef = useRef<number>(0);
 
   const requiredSockets = useMemo(() => {
     const ids = new Set<string>();
@@ -140,6 +142,22 @@ export default function DragSocketsPuzzle({
       dragGhostRef.current = null;
     }
   };
+
+  useEffect(() => {
+    const updateSocketSize = () => {
+      if (!boardRef.current) return;
+      const width = boardRef.current.clientWidth || 0;
+      if (width <= 0) return;
+      // Track the widest we've rendered at; only start shrinking when below that max
+      baseBoardWidthRef.current = Math.max(baseBoardWidthRef.current, width);
+      const baseWidth = baseBoardWidthRef.current || width;
+      const size = width >= baseWidth ? 96 : Math.max(48, Math.min(96, (width / baseWidth) * 96));
+      boardRef.current.style.setProperty("--socket-size", `${size}px`);
+    };
+    updateSocketSize();
+    window.addEventListener("resize", updateSocketSize);
+    return () => window.removeEventListener("resize", updateSocketSize);
+  }, []);
 
   const hidePreview = useCallback((itemId?: string | null) => {
     setPreviewItem((prev) => (itemId && prev !== itemId ? prev : null));
@@ -414,6 +432,7 @@ export default function DragSocketsPuzzle({
           backgroundRepeat: "no-repeat",
           backgroundSize: "contain",
         }}
+        ref={boardRef}
       >
         {sockets.map((socket: DragSocketSlot) => renderSocket(socket))}
       </div>

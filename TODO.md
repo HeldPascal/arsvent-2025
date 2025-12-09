@@ -1,8 +1,5 @@
 Ideas and improvements to tackle
 
-- Drag-and-drop puzzle polish  
-  The sockets/board should scale gracefully across viewport sizes. Define a layout that preserves relative positions, enforces minimum tap targets, and keeps drag ghosts consistent in size and styling regardless of start location (list vs socket).
-
 - Admin puzzle debug view  
   Provide an admin debug mode for any day that shows raw block data, validation details (solutions, min selections, socket shapes), and a way to simulate submissions. Goal: let admins verify puzzles before releasing or unlocking them.
 
