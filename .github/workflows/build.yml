@@ -25,6 +25,8 @@ jobs:
             backend/package-lock.json
             frontend/package-lock.json
 
+      # --- Backend ---
+
       - name: Install backend dependencies
         working-directory: ./backend
         run: npm ci
@@ -33,9 +35,15 @@ jobs:
         working-directory: ./backend
         run: npm run build
 
+      # --- Frontend ---
+
       - name: Install frontend dependencies
         working-directory: ./frontend
         run: npm ci
+
+      - name: Lint frontend
+        working-directory: ./frontend
+        run: npm run lint
 
       - name: Build frontend
         working-directory: ./frontend
