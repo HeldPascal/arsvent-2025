@@ -16,35 +16,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Enable maintenance mode (optional)
-        if: ${{ github.event.inputs.with_maintenance == 'yes' }}
+      - name: Run deployment on VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
+          envs: WITH_MAINTENANCE,BRANCH
           script: |
-            /opt/arsvent-2025/maintenance_on.sh
-
-      - name: Run deploy script
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          script: |
-            cd /opt/arsvent-2025
-            BRANCH="${{ github.ref_name }}" ./deploy.sh
-
-      - name: Disable maintenance mode (if enabled)
-        if: ${{ github.event.inputs.with_maintenance == 'yes' }}
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          script: |
-            /opt/arsvent-2025/maintenance_off.sh
+            export WITH_MAINTENANCE="${{ github.event.inputs.with_maintenance }}"
+            export BRANCH="${{ github.ref_name }}"
+            /opt/arsvent-2025/deploy.sh
