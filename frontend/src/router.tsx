@@ -33,6 +33,7 @@ export default function AppRouter() {
   const hadUserRef = useRef(false);
   const backendBase = import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ?? "";
   const logoutUrl = `${backendBase}/auth/logout`;
+  const normalizeMode = (mode: string): User["mode"] => (mode === "VETERAN" || mode === "VET" ? "VETERAN" : "NORMAL");
 
   const pushToast = (detail: { type: "success" | "error" | "info"; message?: string; key?: string; durationMs?: number }) => {
     window.dispatchEvent(new CustomEvent("app:toast", { detail }));
@@ -47,17 +48,18 @@ export default function AppRouter() {
       try {
         const u = await fetchMe();
         if (cancelled) return;
-        setUser(u);
-        const nextLocale = (["en", "de"] as const).includes(locale) ? locale : u.locale;
+        const normalizedUser = { ...u, mode: normalizeMode(u.mode) };
+        setUser(normalizedUser);
+        const nextLocale = (["en", "de"] as const).includes(locale) ? locale : normalizedUser.locale;
         setLocale(nextLocale);
         try {
           localStorage.setItem("arsvent_locale", nextLocale);
         } catch {
           // ignore
         }
-        setStateVersion(u.stateVersion ?? 0);
+        setStateVersion(normalizedUser.stateVersion ?? 0);
         hadUserRef.current = true;
-        if (!u.introCompleted) {
+        if (!normalizedUser.introCompleted) {
           navigate("/intro", { replace: true });
         }
       } catch (err) {
@@ -119,11 +121,12 @@ export default function AppRouter() {
       fetchMe()
         .then((u) => {
           if (cancelled) return;
-          setUser(u);
-          setLocale(u.locale);
-          setStateVersion(u.stateVersion ?? 0);
+          const normalizedUser = { ...u, mode: normalizeMode(u.mode) };
+          setUser(normalizedUser);
+          setLocale(normalizedUser.locale);
+          setStateVersion(normalizedUser.stateVersion ?? 0);
           hadUserRef.current = true;
-          if (!u.introCompleted) {
+          if (!normalizedUser.introCompleted) {
             navigate("/intro", { replace: true });
           }
         })

@@ -1,6 +1,6 @@
 ## Arsvent 2025
 
-Discord-authenticated Advent calendar for the Ars Necandi community. Users log in with Discord, pick a difficulty (NORMAL or VET), and solve daily riddles in English or German. Backend enforces auth, locale, difficulty rules, and answer validation; frontend is a React SPA with UI/localization matching the provided logo.
+Discord-authenticated Advent calendar for the Ars Necandi community. Users log in with Discord, pick a difficulty (NORMAL or VETERAN), and solve daily riddles in English or German. Backend enforces auth, locale, difficulty rules, and answer validation; frontend is a React SPA with UI/localization matching the provided logo.
 
 ## Stack
 
@@ -46,7 +46,7 @@ VITE_BACKEND_URL=http://localhost:4000
 - `/` landing: checks `/api/auth/me`, shows login link to backend `/auth/discord` if unauthenticated.
 - `/calendar`: grid of days 1–24 with availability/solved state; uses `/api/days`.
 - `/day/:day`: shows riddle (HTML from markdown) via `/api/days/:day`, allows answer submit via `/api/days/:day/submit`; when solved, input hides and solved pill remains.
-- `/settings`: houses difficulty selector. Rules: can always downgrade VET → NORMAL; upgrading from NORMAL → VET after first choice is blocked by backend and UI.
+- `/settings`: houses difficulty selector. Rules: can always downgrade VETERAN → NORMAL; upgrading from NORMAL → VETERAN after first choice is blocked by backend and UI.
 - Language switcher: toggles EN/DE, calls `/api/user/locale`, updates UI and content.
 - Sequential play: riddles must be solved in order. Only the next unlocked day (and past solved days) are playable; backend enforces this using a `lastSolvedDay` field.
 
@@ -59,7 +59,7 @@ VITE_BACKEND_URL=http://localhost:4000
 
 ## Content
 
-Backend reads markdown under `backend/content/dayXX/{normal|vet}.{en|de}.md`. Sample day01 riddles exist; add day02–day24 similarly. Frontmatter requires `title` and `solution`; body is rendered to HTML.
+Backend reads markdown under `backend/content/dayXX/{normal|veteran}.{en|de}.md`. Sample day01 riddles exist; add day02–day24 similarly. Frontmatter requires `title` and `solution`; body is rendered to HTML.
 
 ## Design
 

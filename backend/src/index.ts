@@ -82,12 +82,19 @@ const normalizeLocale = (input?: string | null): Locale => {
   return "en";
 };
 
+const normalizeModeValue = (input?: string | null): Mode => {
+  const val = String(input ?? "").toUpperCase();
+  if (val === "VETERAN" || val === "VET") return "VETERAN";
+  return "NORMAL";
+};
+
 const discordOptions: StrategyOptions = {
   clientID: DISCORD_CLIENT_ID,
   clientSecret: DISCORD_CLIENT_SECRET,
   callbackURL: DISCORD_CALLBACK_URL,
   scope: ["identify"],
 };
+
 
 app.set("trust proxy", 1);
 
@@ -284,7 +291,7 @@ const logAdminAction = async (action: string, actorId?: string | null, details?:
 };
 
 const getUserLocale = (user?: PrismaUser): Locale => (user?.locale === "de" ? "de" : "en");
-const getUserMode = (user?: PrismaUser): Mode => (user?.mode === "VET" ? "VET" : "NORMAL");
+const getUserMode = (user?: PrismaUser): Mode => (user?.mode === "VETERAN" || user?.mode === "VET" ? "VETERAN" : "NORMAL");
 
 const requireIntroComplete: RequestHandler = (req, res, next) => {
   if (req.user?.introCompleted || req.user?.isAdmin || req.user?.isSuperAdmin) {
@@ -578,7 +585,8 @@ app.post("/auth/logout", (req, res, next) => {
 });
 
 app.get("/api/auth/me", requireAuth, (req, res) => {
-  return res.json(req.user);
+  const user = req.user as PrismaUser;
+  return res.json({ ...user, mode: normalizeModeValue(user.mode) });
 });
 
 app.post("/api/user/locale", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
@@ -606,33 +614,32 @@ app.post("/api/user/locale", requireAuth, async (req: Request, res: Response, ne
 app.post("/api/user/mode", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { mode } = req.body as { mode?: string };
-    if (mode !== "NORMAL" && mode !== "VET") {
-      return res.status(400).json({ error: "Invalid mode" });
-    }
+    const nextMode = normalizeModeValue(mode);
 
     const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    if (user.mode === "NORMAL" && mode === "VET" && (user.lastSolvedDay ?? 0) > 0) {
-      return res.status(400).json({ error: "Cannot switch from NORMAL to VET" });
+    const currentMode = normalizeModeValue(user.mode);
+    if (currentMode === "NORMAL" && nextMode === "VETERAN" && (user.lastSolvedDay ?? 0) > 0) {
+      return res.status(400).json({ error: "Cannot switch from NORMAL to VETERAN" });
     }
 
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
-        mode,
+        mode: nextMode,
         stateVersion: { increment: 1 },
-        lastDowngradedAt: user.mode === "VET" && mode === "NORMAL" ? new Date() : null,
-        lastDowngradedFromDay: user.mode === "VET" && mode === "NORMAL" ? user.lastSolvedDay ?? 0 : 0,
+        lastDowngradedAt: currentMode === "VETERAN" && nextMode === "NORMAL" ? new Date() : null,
+        lastDowngradedFromDay: currentMode === "VETERAN" && nextMode === "NORMAL" ? user.lastSolvedDay ?? 0 : 0,
       },
     });
 
     req.login(updatedUser, (err) => {
       if (err) return next(err);
       storeSessionVersion(req, updatedUser);
-      return res.json({ id: updatedUser.id, mode: updatedUser.mode });
+      return res.json({ id: updatedUser.id, mode: normalizeModeValue(updatedUser.mode) });
     });
   } catch (error) {
     next(error);
@@ -742,10 +749,7 @@ app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, ne
       typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
         ? normalizeLocale(req.query.locale)
         : null;
-    const requestedMode =
-      typeof req.query.mode === "string" && (req.query.mode === "NORMAL" || req.query.mode === "VET")
-        ? (req.query.mode as Mode)
-        : null;
+    const requestedMode = typeof req.query.mode === "string" ? normalizeModeValue(req.query.mode) : null;
 
     const locale = isAdminOverride && requestedLocale ? requestedLocale : normalizeLocale(getUserLocale(req.user as PrismaUser));
     const mode = isAdminOverride && requestedMode ? requestedMode : getUserMode(req.user as PrismaUser);
@@ -830,10 +834,7 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
       typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
         ? normalizeLocale(req.query.locale)
         : null;
-    const requestedMode =
-      typeof req.query.mode === "string" && (req.query.mode === "NORMAL" || req.query.mode === "VET")
-        ? (req.query.mode as Mode)
-        : null;
+    const requestedMode = typeof req.query.mode === "string" ? normalizeModeValue(req.query.mode) : null;
 
     const locale = isAdminOverride && requestedLocale ? requestedLocale : getUserLocale(req.user as PrismaUser);
     const mode = isAdminOverride && requestedMode ? requestedMode : getUserMode(req.user as PrismaUser);
@@ -936,7 +937,7 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
       await Promise.all([
         prisma.user.count(),
         prisma.user.count({ where: { isAdmin: true } }),
-        prisma.user.count({ where: { mode: "VET" } }),
+        prisma.user.count({ where: { mode: { in: ["VETERAN", "VET"] } } }),
         prisma.user.count({ where: { mode: "NORMAL" } }),
         prisma.user.count({ where: { lastSolvedDay: { gt: 0 } } }),
         prisma.user.count({ where: { lastDowngradedAt: { not: null } } }),
@@ -999,15 +1000,15 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
       stats: {
         totalUsers,
         adminUsers,
-        vetUsers,
+        veteranUsers: vetUsers,
         normalUsers,
         progressedUsers,
         downgradedUsers,
         solveHistogram,
         downgradeHistogram,
       },
-      recentUsers,
-      recentSolves,
+      recentUsers: recentUsers.map((u) => ({ ...u, mode: normalizeModeValue(u.mode) })),
+      recentSolves: recentSolves.map((u) => ({ ...u, mode: normalizeModeValue(u.mode) })),
     });
   } catch (error) {
     next(error);
@@ -1026,7 +1027,7 @@ app.get("/api/admin/users", requireAuth, requireAdmin, async (req, res, next) =>
       username: user.username,
       globalName: user.globalName,
       locale: user.locale,
-      mode: user.mode,
+      mode: normalizeModeValue(user.mode),
       isAdmin: user.isAdmin,
       isSuperAdmin: user.isSuperAdmin,
       createdAt: user.createdAt,
@@ -1051,9 +1052,7 @@ app.post("/api/admin/users/:id/mode", requireAuth, requireAdmin, async (req, res
       return res.status(400).json({ error: "User id is required" });
     }
     const { mode } = req.body as { mode?: string };
-    if (mode !== "NORMAL" && mode !== "VET") {
-      return res.status(400).json({ error: "Invalid mode" });
-    }
+    const nextMode = normalizeModeValue(mode);
 
     const target = await prisma.user.findUnique({ where: { id: targetId } });
     if (!target) {
@@ -1064,17 +1063,18 @@ app.post("/api/admin/users/:id/mode", requireAuth, requireAdmin, async (req, res
     }
 
     const now = new Date();
+    const currentMode = normalizeModeValue(target.mode);
     const updated = await prisma.user.update({
       where: { id: target.id },
       data: {
-        mode,
+        mode: nextMode,
         stateVersion: { increment: 1 },
-        lastDowngradedAt: mode === "VET" ? null : now,
-        lastDowngradedFromDay: mode === "VET" ? 0 : target.lastSolvedDay ?? 0,
+        lastDowngradedAt: currentMode === "VETERAN" && nextMode === "NORMAL" ? now : null,
+        lastDowngradedFromDay: currentMode === "VETERAN" && nextMode === "NORMAL" ? target.lastSolvedDay ?? 0 : 0,
       },
     });
-    await logAdminAction("admin:set-mode", req.user?.id, { targetId: target.id, mode });
-    res.json({ id: updated.id, mode: updated.mode });
+    await logAdminAction("admin:set-mode", req.user?.id, { targetId: target.id, mode: nextMode });
+    res.json({ id: updated.id, mode: normalizeModeValue(updated.mode) });
   } catch (error) {
     next(error);
   }

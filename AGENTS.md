@@ -1,7 +1,7 @@
 # AGENTS
 
 ## What we’re building
-Discord-authenticated Advent calendar web app for Ars Necandi. Users log in with Discord, pick locale (EN/DE) and difficulty (NORMAL/VET), and solve per-day riddles served from markdown. Backend is the source of truth for identity, prefs, and progress; frontend is a React SPA that talks to the backend.
+Discord-authenticated Advent calendar web app for Ars Necandi. Users log in with Discord, pick locale (EN/DE) and difficulty (NORMAL/VETERAN), and solve per-day riddles served from markdown. Backend is the source of truth for identity, prefs, and progress; frontend is a React SPA that talks to the backend.
 
 ## Tech stack
 - Backend: Node.js (Express), TypeScript, Prisma, SQLite (dev) / Postgres later, Discord OAuth (`passport-discord`), sessions (+ Redis when available).
@@ -9,7 +9,7 @@ Discord-authenticated Advent calendar web app for Ars Necandi. Users log in with
 - Infra: Dockerfiles per app, GitHub Actions CI.
 
 ## Repo layout
-- `/backend`: Express app, Prisma schema, content loader, markdown riddles in `content/dayXX/{normal|vet}.{en|de}.md`.
+- `/backend`: Express app, Prisma schema, content loader, markdown riddles in `content/dayXX/{normal|veteran}.{en|de}.md`.
 - `/frontend`: React SPA.
 - `.github/workflows/build.yml`: CI (backend + frontend lint/build).
 
@@ -23,12 +23,12 @@ Discord-authenticated Advent calendar web app for Ars Necandi. Users log in with
 - Keep MVP working; avoid large refactors. Small, focused modules/functions.
 - All stateful actions are validated server-side; frontend is not trusted.
 - TypeScript everywhere; keep types explicit.
-- Backend owns user identity, locale, difficulty, and per-day progress. Difficulty: allow VET→NORMAL; block NORMAL→VET after first choice.
+- Backend owns user identity, locale, difficulty, and per-day progress. Difficulty: allow VETERAN→NORMAL; block NORMAL→VETERAN after first choice.
 - Riddles are markdown with frontmatter (`title`, `solution`, etc.); solutions are validated server-side (trim + case-insensitive).
 
 ## Frontend behavior (current)
 - Routes: `/` landing, `/calendar`, `/day/:day`, `/settings`, `/intro`, admin pages.
-- Session checks and locale/difficulty persisted via backend. EN/DE UI + riddles; NORMAL/VET modes.
+- Session checks and locale/difficulty persisted via backend. EN/DE UI + riddles; NORMAL/VETERAN modes.
 - Drag-sockets puzzle: sockets/items sized via `--socket-size`, tooltips rendered via portal above sockets.
 
 ## Backend behavior (current)
@@ -47,4 +47,3 @@ Discord-authenticated Advent calendar web app for Ars Necandi. Users log in with
 - Run the relevant lint/build commands above (CI does both).
 - Keep content paths/patterns intact for loaders.
 - Keep Dockerfiles aligned: they rely on `npm run build` in each app; lint runs in CI.
-

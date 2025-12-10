@@ -31,7 +31,7 @@ export default function DayPage({ user, version }: Props) {
   }, [location.search]);
   const useOverride = isOverrideParam;
   const [previewLocale, setPreviewLocale] = useState<"en" | "de">(user.locale);
-  const [previewMode, setPreviewMode] = useState<"NORMAL" | "VET">(user.mode);
+  const [previewMode, setPreviewMode] = useState<"NORMAL" | "VETERAN">(user.mode);
   const backendBase =
     import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ||
     (window.location.origin.includes("localhost:5173") ? "http://localhost:4000" : window.location.origin);
@@ -207,7 +207,7 @@ export default function DayPage({ user, version }: Props) {
                 ))}
               </div>
               <div className="preview-toggle-group">
-                {(["NORMAL", "VET"] as const).map((mode) => (
+                {(["NORMAL", "VETERAN"] as const).map((mode) => (
                   <button
                     key={mode}
                     className={`small-btn ${previewMode === mode ? "primary" : "ghost"}`}

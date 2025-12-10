@@ -1,5 +1,5 @@
 export type Locale = "en" | "de";
-export type Mode = "NORMAL" | "VET";
+export type Mode = "NORMAL" | "VETERAN";
 export type RiddleType = "text" | "single-choice" | "multi-choice" | "sort" | "group" | "drag-sockets";
 
 export interface RiddleOption {
@@ -132,7 +132,7 @@ export interface AdminOverview {
   stats: {
     totalUsers: number;
     adminUsers: number;
-    vetUsers: number;
+    veteranUsers: number;
     normalUsers: number;
     progressedUsers: number;
     downgradedUsers: number;

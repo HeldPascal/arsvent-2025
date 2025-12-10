@@ -338,7 +338,7 @@ export default function AdminPage({ user }: Props) {
                 label="Difficulty split"
                 total={overview.stats.totalUsers}
                 segments={[
-                  { label: "VET", value: overview.stats.vetUsers, color: "#f59e0b" },
+                  { label: "VETERAN", value: overview.stats.veteranUsers, color: "#f59e0b" },
                   { label: "NORMAL", value: overview.stats.normalUsers, color: "#60a5fa" },
                 ]}
               />
@@ -408,7 +408,7 @@ export default function AdminPage({ user }: Props) {
             <MetricCard label="Users" value={overview.stats.totalUsers} hint={`${overview.stats.adminUsers} admins`} />
             <MetricCard
               label="Difficulty split"
-              value={`${overview.stats.vetUsers} VET / ${overview.stats.normalUsers} NORMAL`}
+              value={`${overview.stats.veteranUsers} VETERAN / ${overview.stats.normalUsers} NORMAL`}
                 hint="Current user modes"
               />
               <MetricCard
@@ -518,8 +518,8 @@ export default function AdminPage({ user }: Props) {
                 <button disabled={busyUserId === u.id} onClick={() => handleModeChange(u.id, "NORMAL")}>
                   Set NORMAL
                 </button>
-                <button disabled={busyUserId === u.id} onClick={() => handleModeChange(u.id, "VET")}>
-                  Set VET
+                <button disabled={busyUserId === u.id} onClick={() => handleModeChange(u.id, "VETERAN")}>
+                  Set VETERAN
                 </button>
                 <button disabled={busyUserId === u.id} onClick={() => handleRevoke(u.id)}>
                   End sessions

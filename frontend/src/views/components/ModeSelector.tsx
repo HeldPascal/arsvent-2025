@@ -25,8 +25,8 @@ export default function ModeSelector({ mode, lastSolvedDay, onUpdated }: Props) 
   }, [mode]);
 
   const changeMode = async (next: Mode, skipConfirm = false) => {
-    if (next === current || (next === "VET" && vetLocked)) return;
-    if (!skipConfirm && current === "VET" && next === "NORMAL" && lastSolvedDay > 0) {
+    if (next === current || (next === "VETERAN" && vetLocked)) return;
+    if (!skipConfirm && current === "VETERAN" && next === "NORMAL" && lastSolvedDay > 0) {
       setPendingMode(next);
       setShowConfirm(true);
       return;
@@ -58,13 +58,13 @@ export default function ModeSelector({ mode, lastSolvedDay, onUpdated }: Props) 
           {current === "NORMAL" && <span className="mode-badge">{t("selected")}</span>}
         </button>
         <button
-          className={`mode-btn ${current === "VET" ? "selected" : ""} ${vetLocked ? "locked" : ""}`}
-          onClick={() => changeMode("VET")}
+          className={`mode-btn ${current === "VETERAN" ? "selected" : ""} ${vetLocked ? "locked" : ""}`}
+          onClick={() => changeMode("VETERAN")}
           disabled={saving || vetLocked}
           type="button"
         >
           <span className="mode-title">{t("modeVetLabel")}</span>
-          <span className="mode-badge">{vetLocked ? t("locked") : current === "VET" ? t("selected") : ""}</span>
+          <span className="mode-badge">{vetLocked ? t("locked") : current === "VETERAN" ? t("selected") : ""}</span>
         </button>
       </div>
       <div className="mode-hint">{t("modeHint")}</div>

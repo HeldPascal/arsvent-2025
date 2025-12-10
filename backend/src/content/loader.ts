@@ -7,7 +7,7 @@ import { loadVersionedContent, type LoadedVersionedContent } from "./v1-loader.j
 import { loadInventory, invalidateInventoryCache } from "./inventory.js";
 
 export type Locale = "en" | "de";
-export type Mode = "NORMAL" | "VET";
+export type Mode = "NORMAL" | "VETERAN";
 export type RiddleType = "text" | "single-choice" | "multi-choice" | "sort" | "group" | "drag-sockets";
 export type DragShape = "circle" | "square" | "hex";
 
@@ -132,7 +132,7 @@ const stripLeadingH1 = (markdown: string) => markdown.replace(/^#\s+.+\s*/m, "")
 
 type ModeNormalized = "normal" | "veteran";
 
-const normalizeMode = (mode: Mode): ModeNormalized => (mode === "VET" ? "veteran" : "normal");
+const normalizeMode = (mode: Mode | "VET"): ModeNormalized => (mode === "VETERAN" || mode === "VET" ? "veteran" : "normal");
 const normalizeLocale = (locale: string): Locale => (locale.toLowerCase() === "de" ? "de" : "en");
 
 type ParsedCacheEntry = {

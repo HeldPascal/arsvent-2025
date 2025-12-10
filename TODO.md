@@ -101,6 +101,6 @@ Feature ideas (suggested)
 - Daily streak rewards  
   Grant cosmetic badges or inventory items for consecutive solves; display in inventory and profile.
 - Dynamic difficulty hints  
-  If a user repeatedly fails on VET, offer optional hint packs that do not spoil the solution outright.
+  If a user repeatedly fails on VETERAN, offer optional hint packs that do not spoil the solution outright.
 - Discord bot integration  
   Bot announces new unlocked days, provides hint tokens, and lets users check their progress via commands.

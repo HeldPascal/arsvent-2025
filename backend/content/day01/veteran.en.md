@@ -1,5 +1,5 @@
 ---
-id: "25-day01-vet-en"
+id: "25-day01-veteran-en"
 version: 1
 release: "2025-12-01T00:00:00Z"
 language: "en"
