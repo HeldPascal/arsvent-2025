@@ -25,6 +25,11 @@ Discord-authenticated Advent calendar web app for Ars Necandi. Users log in with
 - TypeScript everywhere; keep types explicit.
 - Backend owns user identity, locale, difficulty, and per-day progress. Difficulty: allow VETERAN→NORMAL; block NORMAL→VETERAN after first choice.
 - Riddles are markdown with frontmatter (`title`, `solution`, etc.); solutions are validated server-side (trim + case-insensitive).
+- DB/migrations workflow:
+  - Update `prisma/schema.prisma` as needed.
+  - Check for structural diffs non-interactively: `cd backend && npx prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --exit-code`.
+  - If diff exists, prompt the user to run `npx prisma migrate dev --name <name>` (don’t run interactively yourself). Prod uses `prisma migrate deploy`.
+  - For convention/data-only changes Prisma won’t detect (e.g., value renames), add a custom migration SQL under `prisma/migrations/<timestamp>_<name>/` and ask the user to run `npx prisma migrate dev` or `npx prisma db execute --file ... --schema prisma/schema.prisma`.
 
 ## Frontend behavior (current)
 - Routes: `/` landing, `/calendar`, `/day/:day`, `/settings`, `/intro`, admin pages.
