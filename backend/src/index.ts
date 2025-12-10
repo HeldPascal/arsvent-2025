@@ -923,7 +923,7 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
     const [
       totalUsers,
       adminUsers,
-      vetUsers,
+      veteranUsers,
       normalUsers,
       progressedUsers,
       downgradedUsers,
@@ -1000,7 +1000,7 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
       stats: {
         totalUsers,
         adminUsers,
-        veteranUsers: vetUsers,
+        veteranUsers,
         normalUsers,
         progressedUsers,
         downgradedUsers,
