@@ -7,7 +7,7 @@ interface Props {
   block: Extract<DayBlock, { kind: "puzzle" }>;
   submitting: boolean;
   status?: "correct" | "incorrect" | "idle";
-  onInteract?: () => void;
+  onInteract?: (puzzleId: string) => void;
   onSubmit: (payload: RiddleAnswerPayload) => void;
   canResetDefaults?: boolean;
 }
@@ -128,7 +128,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
         setLocalError(t("enterAnswer"));
         return;
       }
-      onInteract?.();
+      onInteract?.(block.id);
       onSubmit({ puzzleId: block.id, type: "text", answer: trimmed });
       return;
     }
@@ -138,7 +138,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
         setLocalError(t("chooseOne"));
         return;
       }
-      onInteract?.();
+      onInteract?.(block.id);
       onSubmit({ puzzleId: block.id, type: "single-choice", answer: singleChoice });
       return;
     }
@@ -149,7 +149,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
         setLocalError(minSelections > 1 ? `${t("chooseMany")} (${minSelections}+)` : t("chooseMany"));
         return;
       }
-      onInteract?.();
+      onInteract?.(block.id);
       onSubmit({ puzzleId: block.id, type: "multi-choice", answer: multiChoices });
       return;
     }
@@ -193,7 +193,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
           itemId: dragAssignments[socket.id],
         }))
         .filter((entry): entry is { socketId: string; itemId: string } => Boolean(entry.itemId));
-      onInteract?.();
+      onInteract?.(block.id);
       onSubmit({ puzzleId: block.id, type: "drag-sockets", answer });
       return;
     }
@@ -234,7 +234,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
                   checked={singleChoice === opt.id}
                   onChange={() => {
                     setSingleChoice(opt.id);
-                    onInteract?.();
+                    onInteract?.(block.id);
                   }}
                   disabled={submitting || block.solved}
                 />
@@ -272,7 +272,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
                   checked={multiChoices.includes(opt.id)}
                   onChange={() => {
                     setMultiChoices((prev) => (prev.includes(opt.id) ? prev.filter((item) => item !== opt.id) : [...prev, opt.id]));
-                    onInteract?.();
+                    onInteract?.(block.id);
                   }}
                   disabled={submitting || block.solved}
                 />
@@ -318,7 +318,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
             assignments={dragAssignments}
             onChange={(next) => {
               setDragAssignments(next);
-              onInteract?.();
+              onInteract?.(block.id);
             }}
             resolveAsset={resolveImage}
             status={dragStatus}
@@ -326,7 +326,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
             errorMessage={localError || undefined}
             onStartInteraction={() => {
               setLocalError(null);
-              onInteract?.();
+              onInteract?.(block.id);
             }}
           />
         </>

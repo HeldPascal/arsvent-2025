@@ -262,6 +262,13 @@ const setSessionPuzzleProgress = (req: Request, day: number, ids: Set<string>) =
   sess.puzzleProgress[String(day)] = Array.from(ids);
 };
 
+const clearSessionPuzzleProgress = (req: Request, day: number) => {
+  const sess = req.session as SessionWithVersion | undefined;
+  if (sess?.puzzleProgress) {
+    delete sess.puzzleProgress[String(day)];
+  }
+};
+
 const getUnlockedDay = async () => {
   const state = await ensureAppState();
   return Math.min(Math.max(state.unlockedDay ?? 0, 0), MAX_DAY);
@@ -754,6 +761,10 @@ app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, ne
     const locale = isAdminOverride && requestedLocale ? requestedLocale : normalizeLocale(getUserLocale(req.user as PrismaUser));
     const mode = isAdminOverride && requestedMode ? requestedMode : getUserMode(req.user as PrismaUser);
 
+    if (isAdminOverride) {
+      clearSessionPuzzleProgress(req, day);
+    }
+
     if (!available) {
       return res.json({
         day,
@@ -771,7 +782,7 @@ app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, ne
       });
     }
 
-    const sessionSolved = isAdminOverride ? new Set<string>() : getSessionPuzzleProgress(req, day);
+    const sessionSolved = getSessionPuzzleProgress(req, day);
     let content = applyCreatureSwapToDay(
       await loadDayContent(day, locale, mode, sessionSolved, false),
       locale,
@@ -838,7 +849,7 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
 
     const locale = isAdminOverride && requestedLocale ? requestedLocale : getUserLocale(req.user as PrismaUser);
     const mode = isAdminOverride && requestedMode ? requestedMode : getUserMode(req.user as PrismaUser);
-    const sessionSolved = isAdminOverride ? new Set<string>() : getSessionPuzzleProgress(req, day);
+    const sessionSolved = getSessionPuzzleProgress(req, day);
     const content = await loadDayContent(day, locale, mode, sessionSolved, false);
 
     if (!puzzleId) {
@@ -884,9 +895,7 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
     const updatedSolved = new Set(sessionSolved);
     if (correct) {
       updatedSolved.add(effectivePuzzle.id);
-      if (!isAdminOverride) {
-        setSessionPuzzleProgress(req, day, updatedSolved);
-      }
+      setSessionPuzzleProgress(req, day, updatedSolved);
     }
 
     let nextContent = await loadDayContent(day, locale, mode, updatedSolved, false);

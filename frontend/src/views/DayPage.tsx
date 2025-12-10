@@ -24,7 +24,7 @@ export default function DayPage({ user, version }: Props) {
   const [warned, setWarned] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<{ block: Extract<DayBlock, { kind: "puzzle" }>; payload: RiddleAnswerPayload } | null>(null);
-  const [lastResult, setLastResult] = useState<{ puzzleId: string; correct: boolean } | null>(null);
+  const [lastResults, setLastResults] = useState<Record<string, { correct: boolean }>>({});
   const isOverrideParam = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return params.get("override") === "1";
@@ -74,7 +74,7 @@ export default function DayPage({ user, version }: Props) {
     setPendingPayload(null);
     setWarned(false);
     setShowConfirm(false);
-    setLastResult(null);
+    setLastResults({});
 
     fetchDay(dayNumber, { override: useOverride, locale: previewLocale, mode: previewMode })
       .then((data) => setDetail(data))
@@ -88,7 +88,7 @@ export default function DayPage({ user, version }: Props) {
     setPendingPayload(null);
     try {
       const resp = await submitAnswer(detail.day, payload, { override: useOverride, locale: previewLocale, mode: previewMode });
-      setLastResult({ puzzleId: block.id, correct: resp.correct });
+      setLastResults((prev) => ({ ...prev, [block.id]: { correct: resp.correct } }));
       setDetail((current) =>
         current
           ? {
@@ -159,10 +159,11 @@ export default function DayPage({ user, version }: Props) {
     }
     if (block.kind !== "puzzle") return null;
     const effectiveSolved = useOverride ? false : block.solved;
+    const lastResult = lastResults[block.id];
     const status =
-      effectiveSolved || (lastResult && lastResult.puzzleId === block.id && lastResult.correct)
+      effectiveSolved || (lastResult && lastResult.correct)
         ? "correct"
-        : lastResult && lastResult.puzzleId === block.id && !lastResult.correct
+        : lastResult && !lastResult.correct
           ? "incorrect"
           : "idle";
     const renderBlock = useOverride && block.kind === "puzzle" ? { ...block, solved: false } : block;
@@ -174,7 +175,13 @@ export default function DayPage({ user, version }: Props) {
           block={renderBlock as Extract<DayBlock, { kind: "puzzle" }>}
           submitting={submitting}
           status={status}
-          onInteract={() => setLastResult(null)}
+          onInteract={(puzzleId) =>
+            setLastResults((prev) => {
+              const next = { ...prev };
+              delete next[puzzleId];
+              return next;
+            })
+          }
           onSubmit={(payload) => onSubmit(block, payload)}
           canResetDefaults={useOverride}
         />

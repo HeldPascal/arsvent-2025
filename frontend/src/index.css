@@ -798,6 +798,8 @@ a {
   border-radius: 999px;
   font-weight: 700;
   font-size: 12px;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .drag-socket.is-active .drag-socket-target {
@@ -961,6 +963,8 @@ a {
   font-weight: 700;
   font-size: 12px;
   text-align: center;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .drag-socket .reset {
@@ -990,6 +994,8 @@ a {
   width: var(--socket-size);
   height: var(--socket-size);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .drag-item-card:hover {

@@ -40,6 +40,14 @@ export default function AppRouter() {
   };
 
   useEffect(() => {
+    try {
+      document.documentElement.lang = locale;
+    } catch {
+      // ignore
+    }
+  }, [locale]);
+
+  useEffect(() => {
     let cancelled = false;
     let retrying = false;
 
