@@ -2,6 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import matter from "gray-matter";
+import type { GrayMatterFile } from "gray-matter";
 import { marked } from "marked";
 import { loadVersionedContent, type LoadedVersionedContent } from "./v1-loader.js";
 import { loadInventory, invalidateInventoryCache } from "./inventory.js";
@@ -137,7 +138,7 @@ const normalizeLocale = (locale: string): Locale => (locale.toLowerCase() === "d
 
 type ParsedCacheEntry = {
   filePath: string;
-  parsed: ReturnType<typeof matter>;
+  parsed: GrayMatterFile<string>;
   mtimeMs: number;
 };
 
@@ -176,7 +177,7 @@ const loadParsedFile = async (filePath: string): Promise<ParsedCacheEntry> => {
     return cached;
   }
   const raw = await fs.readFile(filePath, "utf8");
-  const parsed = matter(raw);
+  const parsed = matter(raw) as GrayMatterFile<string>;
   const entry: ParsedCacheEntry = { filePath, parsed, mtimeMs };
   parsedCache.set(filePath, entry);
   return entry;
