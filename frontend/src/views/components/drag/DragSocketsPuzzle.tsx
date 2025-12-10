@@ -273,7 +273,19 @@ export default function DragSocketsPuzzle({
         onDrop={(evt) => handleDrop(socket.id, evt)}
         onClick={() => handlePlaceClick(socket.id)}
       >
-        <div className="drag-socket-target">
+        <div
+          className="drag-socket-target"
+          style={
+            socket.image
+              ? {
+                  backgroundImage: `url(${resolveAsset(socket.image)})`,
+                  backgroundSize: "contain",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "no-repeat",
+                }
+              : undefined
+          }
+        >
           <span className="drag-socket-index">{socketLabel}</span>
         </div>
         {assignedItem && (

@@ -42,6 +42,7 @@ export interface DragSocketSlot {
   accepts: string[];
   shape?: DragShape;
   label?: string;
+  image?: string;
 }
 
 export interface RiddleReward {

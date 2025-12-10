@@ -402,16 +402,18 @@ const normalizeDragSockets = (raw: unknown, items: DragSocketItem[], defaultShap
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
       throw new Error("Invalid socket definition");
     }
-    const { id, position, accepts, shape, label } = entry as {
+    const { id, position, accepts, shape, label, image } = entry as {
       id?: unknown;
       position?: unknown;
       accepts?: unknown;
       shape?: unknown;
       label?: unknown;
+      image?: unknown;
     };
     const socketId = normalizeId(id, "Sockets require an id");
     const socketShape = shape ? resolveShape(shape) : defaultShape;
     const socketLabel = typeof label === "string" ? label : undefined;
+    const socketImage = typeof image === "string" ? image : undefined;
     const shapeScopedItems =
       socketShape && items.some((item) => item.shape === socketShape)
         ? items.filter((item) => item.shape === socketShape).map((item) => item.id)
@@ -429,6 +431,7 @@ const normalizeDragSockets = (raw: unknown, items: DragSocketItem[], defaultShap
       accepts: normalizedAccepts,
       shape: socketShape,
       ...(socketLabel !== undefined ? { label: socketLabel } : {}),
+      ...(socketImage ? { image: socketImage } : {}),
     };
   });
   const seen = new Set<string>();
