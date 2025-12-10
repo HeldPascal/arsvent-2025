@@ -63,7 +63,7 @@ export default function ModeSelector({ mode, lastSolvedDay, onUpdated }: Props) 
           disabled={saving || veteranLocked}
           type="button"
         >
-          <span className="mode-title">{t("modeVetLabel")}</span>
+          <span className="mode-title">{t("modeVeteranLabel")}</span>
           <span className="mode-badge">{veteranLocked ? t("locked") : current === "VETERAN" ? t("selected") : ""}</span>
         </button>
       </div>
@@ -72,7 +72,7 @@ export default function ModeSelector({ mode, lastSolvedDay, onUpdated }: Props) 
 
       {showConfirm && pendingMode && (
         <ConfirmDialog
-          message={t("confirmVetToNormal")}
+          message={t("confirmVeteranToNormal")}
           confirmLabel={t("confirm")}
           cancelLabel={t("cancel")}
           onConfirm={() => {

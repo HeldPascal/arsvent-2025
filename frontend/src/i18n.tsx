@@ -25,7 +25,7 @@ type TranslationKey =
   | "open"
   | "soon"
   | "warnNormalLock"
-  | "confirmVetToNormal"
+  | "confirmVeteranToNormal"
   | "confirm"
   | "cancel"
   | "backToCalendar"
@@ -41,7 +41,7 @@ type TranslationKey =
   | "modeChangeNotAllowed"
   | "dayLoadFailed"
   | "modeNormalLabel"
-  | "modeVetLabel"
+  | "modeVeteranLabel"
   | "modeHint"
   | "selected"
   | "locked"
@@ -107,7 +107,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     open: "Open",
     soon: "Soon",
     warnNormalLock: "Solving day 1 on Normal will lock Veteran. Continue?",
-    confirmVetToNormal: "You have solved as Veteran. Switching to Normal will lock you out of Veteran. Continue?",
+    confirmVeteranToNormal: "You have solved as Veteran. Switching to Normal will lock you out of Veteran. Continue?",
     confirm: "Confirm",
     cancel: "Cancel",
     backToCalendar: "Back to calendar",
@@ -123,7 +123,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     modeChangeNotAllowed: "Mode change not allowed.",
     dayLoadFailed: "Unable to load this day.",
     modeNormalLabel: "Normal",
-    modeVetLabel: "Veteran",
+    modeVeteranLabel: "Veteran",
     modeHint: "Upgrading to Veteran is locked after choosing Normal. Downgrades are always allowed.",
     selected: "Selected",
     locked: "Locked",
@@ -187,7 +187,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     open: "Öffnen",
     soon: "Bald",
     warnNormalLock: "Wenn du Tag 1 auf Normal löst, ist Veteran gesperrt. Fortfahren?",
-    confirmVetToNormal: "Du hast als Veteran gelöst. Beim Wechsel auf Normal ist Veteran gesperrt. Fortfahren?",
+    confirmVeteranToNormal: "Du hast als Veteran gelöst. Beim Wechsel auf Normal ist Veteran gesperrt. Fortfahren?",
     confirm: "Bestätigen",
     cancel: "Abbrechen",
     backToCalendar: "Zurück zum Kalender",
@@ -203,7 +203,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     modeChangeNotAllowed: "Schwierigkeitswechsel nicht erlaubt.",
     dayLoadFailed: "Dieser Tag konnte nicht geladen werden.",
     modeNormalLabel: "Normal",
-    modeVetLabel: "Veteran",
+    modeVeteranLabel: "Veteran",
     modeHint: "Ein Upgrade auf Veteran ist gesperrt, nachdem du Normal gewählt hast. Herabstufen ist immer erlaubt.",
     selected: "Ausgewählt",
     locked: "Gesperrt",

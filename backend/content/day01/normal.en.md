@@ -33,13 +33,13 @@ type: single-choice
 options:
   - id: "1"
     label: ""
-    image: "/assets/25_01_option1.png"
+    image: "/assets/25_01_option_1.png"
   - id: "2"
     label: ""
-    image: "/assets/25_01_option2.png"
+    image: "/assets/25_01_option_2.png"
   - id: "3"
     label: ""
-    image: "/assets/25_01_option3.png"
+    image: "/assets/25_01_option_3.png"
 solution: "1"
 ```
 
