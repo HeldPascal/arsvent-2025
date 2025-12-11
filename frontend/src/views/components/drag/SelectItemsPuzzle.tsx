@@ -99,6 +99,7 @@ export default function SelectItemsPuzzle({
               onClick={() => toggleSelection(item.id)}
               disabled={disabled}
               aria-pressed={selected}
+              aria-label={item.label || item.id}
             >
               <div className={`drag-socket-item ${shapeClass(item.shape)} ${selected ? "selected" : ""}`}>
                 {item.image && (

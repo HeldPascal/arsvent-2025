@@ -790,9 +790,16 @@ a {
 }
 
 .select-item {
-  background: none;
-  border: none;
+  background: rgba(12, 14, 17, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
   padding: 0;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: var(--socket-size);
+  height: var(--socket-size);
+  z-index: 2;
 }
 
 .select-item:disabled {
@@ -811,6 +818,20 @@ a {
 .select-items-board.status-incorrect .select-item.is-selected .drag-socket-item.selected {
   border: 2px dashed #d85959;
   box-shadow: 0 0 0 2px rgba(216, 89, 89, 0.2), 0 8px 18px rgba(0, 0, 0, 0.35);
+}
+
+.select-item.is-selected .drag-socket-item {
+  border: 2px dashed #f7d046;
+  box-shadow:
+    0 0 0 2px rgba(247, 208, 70, 0.25),
+    0 12px 22px rgba(0, 0, 0, 0.45);
+  transform: scale(1.04);
+}
+
+.select-item .drag-socket-item:hover {
+  border-color: #f7d046;
+  box-shadow: 0 0 0 2px rgba(247, 208, 70, 0.18);
+  transform: scale(1.02);
 }
 
 .drag-socket-target {
@@ -981,6 +1002,7 @@ a {
   padding: 8px;
   overflow: visible;
   z-index: 5;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
 }
 
 .drag-socket-item img:not(.drag-item-tooltip-image) {

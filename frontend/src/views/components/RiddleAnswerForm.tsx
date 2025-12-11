@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { DayBlock, RiddleAnswerPayload } from "../../types";
 import { useI18n } from "../../i18n";
 import DragSocketsPuzzle from "./drag/DragSocketsPuzzle";
@@ -28,6 +28,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
   const [dragAssignments, setDragAssignments] = useState<Record<string, string | undefined>>({});
   const [localError, setLocalError] = useState<string | null>(null);
   const [initializedDefaults, setInitializedDefaults] = useState(false);
+  const prevBlockId = useRef<string | null>(null);
   const defaultAssignments = useMemo(() => {
     if (block.type !== "drag-sockets") return {};
     const items = block.items ?? [];
@@ -41,7 +42,6 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
   }, [block]);
 
   useEffect(() => {
-    setSelectedItems([]);
     // Preserve selections while unsolved; only hydrate from solution when solved
     if (block.solved) {
       if (typeof block.solution === "string") {
@@ -107,10 +107,15 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
       } else {
         setDragAssignments({});
       }
+    } else if (block.id !== prevBlockId.current) {
+      // Reset on first load of a new puzzle
+      setSelectedItems([]);
+      setDragAssignments(defaultAssignments);
     }
     setLocalError(null);
     setInitializedDefaults(false);
-  }, [block.id, block.solved, block.solution, block.type, defaultAssignments]);
+    prevBlockId.current = block.id;
+  }, [block.id, block.solution, block.solved, block.type, defaultAssignments]);
 
   useEffect(() => {
     if (block.type !== "drag-sockets" || block.solved) return;

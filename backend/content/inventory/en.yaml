@@ -48,3 +48,8 @@
   description: "A few rare ingredients."
   image: "/assets/25_10_reward.png"
   rarity: "rare"
+- id: "moonstone"
+  title: "N'aabi's Moonstone"
+  description: "Material that embodies the essence of the Khajiit."
+  image: "/assets/25_11_reward.png"
+  rarity: "common"
