@@ -49,6 +49,6 @@ Discord-authenticated Advent calendar web app for Ars Necandi. Users log in with
 - Use clear errors (e.g., 401/403/404/400) and JSON responses.
 
 ## When adding or changing code
-- Run the relevant lint/build commands above (CI does both).
+- Always run `npm run lint` and `npm run build` in every app you touch (backend or frontend) before wrapping up.
 - Keep content paths/patterns intact for loaders.
 - Keep Dockerfiles aligned: they rely on `npm run build` in each app; lint runs in CI.
