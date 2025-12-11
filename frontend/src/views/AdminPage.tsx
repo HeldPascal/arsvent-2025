@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { AdminAuditEntry, AdminOverview, AdminUserSummary, Mode, User } from "../types";
+import type { AdminAuditEntry, AdminOverview, AdminUserSummary, ContentDiagnostics, Mode, User } from "../types";
 import {
   adminDeleteUser,
   adminRevokeSessions,
@@ -13,6 +13,7 @@ import {
   fetchAdminOverview,
   fetchAdminUsers,
   fetchAudit,
+  fetchAdminContentDiagnostics,
 } from "../services/api";
 import StatBar from "./components/StatBar";
 import CollapsibleHistogram from "./components/CollapsibleHistogram";
@@ -34,6 +35,8 @@ export default function AdminPage({ user }: Props) {
   const [audit, setAudit] = useState<AdminAuditEntry[]>([]);
   const auditLimit = 3;
   const [auditLoading, setAuditLoading] = useState(false);
+  const [contentDiagnostics, setContentDiagnostics] = useState<ContentDiagnostics | null>(null);
+  const [contentDiagLoading, setContentDiagLoading] = useState(false);
   const navigate = useNavigate();
   const contentLimit =
     overview?.diagnostics.maxContiguousContentDay ?? overview?.diagnostics.contentDayCount ?? 24;
@@ -80,10 +83,26 @@ export default function AdminPage({ user }: Props) {
     [],
   );
 
+  const loadContentDiagnostics = useCallback(
+    async (showLoader = false) => {
+      if (showLoader) setContentDiagLoading(true);
+      try {
+        const diag = await fetchAdminContentDiagnostics();
+        setContentDiagnostics(diag);
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        if (showLoader) setContentDiagLoading(false);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     loadData(true);
     loadAudit(auditLimit);
-  }, [loadData, loadAudit]);
+    loadContentDiagnostics(true);
+  }, [loadData, loadAudit, loadContentDiagnostics]);
 
   useEffect(() => {
     if (overview) {
@@ -97,6 +116,7 @@ export default function AdminPage({ user }: Props) {
       if (!cancelled) {
         loadData(false);
         loadAudit(auditLimit);
+        loadContentDiagnostics(false);
       }
     };
     const interval = window.setInterval(refresh, 10000);
@@ -109,7 +129,7 @@ export default function AdminPage({ user }: Props) {
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [auditLimit, loadAudit, loadData]);
+  }, [auditLimit, loadAudit, loadContentDiagnostics, loadData]);
 
   const isSuperAdmin = user.isSuperAdmin;
 
@@ -308,18 +328,29 @@ export default function AdminPage({ user }: Props) {
               ]}
             />
             <div style={{ marginTop: 12 }}>
-              <StatBar
-                label="Content coverage"
-                total={overview.diagnostics.maxDay}
-                segments={[
-                  { label: "Has content", value: overview.diagnostics.contentDayCount, color: "#4ade80" },
-                  {
-                    label: "No content",
-                    value: Math.max(overview.diagnostics.maxDay - overview.diagnostics.contentDayCount, 0),
-                    color: "#475569",
-                  },
-                ]}
-              />
+              <div className="panel subpanel content-coverage">
+                <div className="compact-row" style={{ justifyContent: "space-between", width: "100%" }}>
+                  <span className="muted">Content coverage</span>
+                  <button className="ghost nav-link" type="button" onClick={() => navigate("/admin/content")}>
+                    Open matrix
+                  </button>
+                </div>
+                {contentDiagnostics && (
+                  <>
+                    <CoverageBar stats={contentDiagnostics.stats} />
+                    <div className="coverage-legend">
+                      <Legend label="Issues" value={contentDiagnostics.stats.issueDays} color="#d946ef" />
+                      <Legend label="Partial" value={contentDiagnostics.stats.partialDays} color="#f59e0b" />
+                      <Legend label="Complete" value={contentDiagnostics.stats.completeDays} color="#0ea5e9" />
+                      <Legend label="Empty" value={contentDiagnostics.stats.emptyDays} color="#475569" />
+                    </div>
+                    {contentDiagLoading && <div className="muted small">Refreshing coverage…</div>}
+                  </>
+                )}
+                {!contentDiagnostics && !contentDiagLoading && (
+                  <div className="muted small">Coverage data unavailable.</div>
+                )}
+              </div>
             </div>
             <CollapsibleHistogram
               title="Players per last solved day"
@@ -582,5 +613,33 @@ function MetricCard({ label, value, hint }: { label: string; value: string | num
       <div className="metric-value">{value}</div>
       {hint ? <div className="muted small">{hint}</div> : null}
     </div>
+  );
+}
+
+function CoverageBar({
+  stats,
+}: {
+  stats: { totalDays: number; completeDays: number; partialDays: number; issueDays: number; emptyDays: number };
+}) {
+  const total = stats.totalDays || 24;
+  const coveragePct = Math.min(100, Math.max(0, ((total - stats.emptyDays) / total) * 100));
+  const partialPct = Math.min(100, Math.max(0, ((stats.partialDays + stats.completeDays) / total) * 100));
+  const completePct = Math.min(100, Math.max(0, (stats.completeDays / total) * 100));
+  return (
+    <div className="coverage-bar">
+      <div className="coverage-track" />
+      <div className="coverage-head head-coverage" style={{ width: `${coveragePct}%` }} />
+      <div className="coverage-head head-partial" style={{ width: `${partialPct}%` }} />
+      <div className="coverage-head head-complete" style={{ width: `${completePct}%` }} />
+    </div>
+  );
+}
+
+function Legend({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <span className="legend-chip">
+      <span className="legend-dot" style={{ background: color }} />
+      {label}: {value}
+    </span>
   );
 }

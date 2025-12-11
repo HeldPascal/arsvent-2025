@@ -157,7 +157,7 @@ export class IntroNotFoundError extends Error {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const CONTENT_ROOT = path.join(__dirname, "..", "..", "content");
+export const CONTENT_ROOT = path.join(__dirname, "..", "..", "content");
 
 const buildIntroPath = (locale: Locale) => path.join(CONTENT_ROOT, "intro", `intro.${locale}.md`);
 
@@ -184,6 +184,7 @@ const parsedCache = new Map<string, ParsedCacheEntry>();
 
 type DayIndexKey = `${number}-${Locale}-${ModeNormalized}`;
 const dayIndex = new Map<DayIndexKey, string>();
+const dayIndexWarnings: string[] = [];
 let dayIndexStale = true;
 
 const warn = (...args: unknown[]) => console.warn("[content]", ...args);
@@ -208,7 +209,7 @@ const statMtime = async (filePath: string) => {
   }
 };
 
-const loadParsedFile = async (filePath: string): Promise<ParsedCacheEntry> => {
+export const loadParsedFile = async (filePath: string): Promise<ParsedCacheEntry> => {
   const mtimeMs = await statMtime(filePath);
   const cached = parsedCache.get(filePath);
   if (cached && cached.mtimeMs === mtimeMs) {
@@ -226,6 +227,7 @@ const expectedFilename = (mode: ModeNormalized, locale: Locale) => `${mode}.${lo
 const buildDayIndex = async () => {
   if (!dayIndexStale) return;
   dayIndex.clear();
+  dayIndexWarnings.length = 0;
   const entries = await fs.readdir(CONTENT_ROOT, { withFileTypes: true });
   for (const dir of entries) {
     if (!dir.isDirectory()) continue;
@@ -246,22 +248,27 @@ const buildDayIndex = async () => {
 
         const expected = expectedFilename(mode, locale);
         if (file.toLowerCase() !== expected.toLowerCase()) {
-          warn(`Filename mismatch for ${filePath}: expected ${expected} based on metadata (locale=${locale}, mode=${mode}).`);
+          const message = `Filename mismatch for ${filePath}: expected ${expected} based on metadata (locale=${locale}, mode=${mode}).`;
+          warn(message);
+          dayIndexWarnings.push(message);
         }
         if (dayIndex.has(key)) {
-          warn(`Duplicate content for day ${day}, locale ${locale}, mode ${mode} (file: ${filePath}). Using first occurrence.`);
+          const message = `Duplicate content for day ${day}, locale ${locale}, mode ${mode} (file: ${filePath}). Using first occurrence.`;
+          warn(message);
+          dayIndexWarnings.push(message);
           continue;
         }
         dayIndex.set(key, filePath);
       } catch (err) {
         warn(`Failed to index content file ${filePath}:`, err);
+        dayIndexWarnings.push(`Failed to index ${filePath}: ${(err as Error).message}`);
       }
     }
   }
   dayIndexStale = false;
 };
 
-const resolveDayPath = async (day: number, locale: Locale, mode: Mode): Promise<string> => {
+export const resolveDayPath = async (day: number, locale: Locale, mode: Mode): Promise<string> => {
   await buildDayIndex();
   const key = `${day}-${normalizeLocale(locale)}-${normalizeMode(mode)}` as DayIndexKey;
   const filePath = dayIndex.get(key);
@@ -269,6 +276,11 @@ const resolveDayPath = async (day: number, locale: Locale, mode: Mode): Promise<
     throw new RiddleNotFoundError("Riddle not found for given parameters");
   }
   return filePath;
+};
+
+export const getDayIndexWarnings = async () => {
+  await buildDayIndex();
+  return [...dayIndexWarnings];
 };
 
 export async function loadDayContent(

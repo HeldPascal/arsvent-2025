@@ -204,6 +204,70 @@ export interface AdminOverview {
   recentAudit?: AdminAuditEntry[];
 }
 
+export type ContentVariantStatus = "ok" | "missing" | "warning" | "error";
+
+export interface ContentVariantDiagnostics {
+  day: number;
+  locale: Locale;
+  mode: Mode;
+  status: ContentVariantStatus;
+  issues: string[];
+  filePath?: string;
+  title?: string;
+  contentId?: string;
+}
+
+export interface ContentDayDiagnostics {
+  day: number;
+  status: "complete" | "partial" | "issue" | "empty";
+  ok: number;
+  missing: number;
+  issues: number;
+}
+
+export interface InventoryLocaleDiagnostics {
+  locale: Locale;
+  hasFile: boolean;
+  items: number;
+  missingImages: string[];
+  issues: string[];
+  ids?: string[];
+}
+
+export interface InventoryConsistencyDiagnostics {
+  locale: Locale;
+  missingIds: string[];
+  extraIds: string[];
+}
+
+export interface ContentDiagnostics {
+  variants: ContentVariantDiagnostics[];
+  days: ContentDayDiagnostics[];
+  stats: {
+    totalDays: number;
+    completeDays: number;
+    partialDays: number;
+    issueDays: number;
+    emptyDays: number;
+  };
+  indexWarnings: string[];
+  inventory: {
+    locales: InventoryLocaleDiagnostics[];
+    consistency: InventoryConsistencyDiagnostics[];
+  };
+}
+
+export interface AdminContentDayDetail {
+  day: number;
+  locale: Locale;
+  mode: Mode;
+  filePath?: string;
+  title: string;
+  blocks: DayBlock[];
+  puzzleIds: string[];
+  solvedCondition: unknown;
+}
+
 export interface AdminUserSummary {
   id: string;
   username: string;

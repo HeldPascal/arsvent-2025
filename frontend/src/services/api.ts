@@ -1,5 +1,7 @@
 import type {
   AdminOverview,
+  AdminContentDayDetail,
+  ContentDiagnostics,
   AdminUserSummary,
   DayDetail,
   DaysResponse,
@@ -191,6 +193,13 @@ export const adminUnlockSet = (unlockedDay: number) =>
     method: "POST",
     body: JSON.stringify({ unlockedDay }),
   });
+
+export const fetchAdminContentDiagnostics = () => apiFetch<ContentDiagnostics>("/api/admin/content/diagnostics");
+
+export const fetchAdminContentDay = (day: number, locale: Locale, mode: Mode) =>
+  apiFetch<AdminContentDayDetail>(
+    `/api/admin/content/day?day=${day}&locale=${locale}&mode=${mode}`,
+  );
 
 export const fetchAudit = (limit?: number) =>
   apiFetch<AdminOverview["recentAudit"] extends Array<infer T> ? T[] : never>(

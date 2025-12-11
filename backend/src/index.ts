@@ -16,9 +16,10 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { PrismaClient } from "@prisma/client";
 import type { User as PrismaUser } from "@prisma/client";
-import { loadIntro, loadDayContent, IntroNotFoundError, RiddleNotFoundError } from "./content/loader.js";
+import { loadIntro, loadDayContent, IntroNotFoundError, RiddleNotFoundError, resolveDayPath } from "./content/loader.js";
 import type { Locale, Mode, DayContent, DayBlock } from "./content/loader.js";
 import { evaluateCondition } from "./content/v1-loader.js";
+import { getContentDiagnostics } from "./content/diagnostics.js";
 import { tokenizeDayContent, resolveAssetToken } from "./content/tokens.js";
 import { maskHtmlAssets } from "./content/tokens.js";
 
@@ -1584,6 +1585,45 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
       recentSolves: recentSolves.map((u) => ({ ...u, mode: normalizeModeValue(u.mode) })),
     });
   } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/admin/content/diagnostics", requireAuth, requireAdmin, async (_req, res, next) => {
+  try {
+    const diagnostics = await getContentDiagnostics(MAX_DAY);
+    res.json(diagnostics);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/admin/content/day", requireAuth, requireAdmin, async (req, res, next) => {
+  const day = Number(req.query.day ?? req.params.day);
+  const localeParam = typeof req.query.locale === "string" ? req.query.locale : undefined;
+  const modeParam = typeof req.query.mode === "string" ? req.query.mode : undefined;
+  if (!Number.isInteger(day) || day < 1 || day > MAX_DAY) {
+    return res.status(400).json({ error: "Day must be between 1 and 24" });
+  }
+  const locale = normalizeLocale(localeParam);
+  const mode = normalizeModeValue(modeParam);
+  try {
+    const content = await loadDayContent(day, locale, mode, new Set(), true);
+    const filePath = await resolveDayPath(day, locale, mode);
+    res.json({
+      day,
+      locale,
+      mode,
+      filePath,
+      title: content.title,
+      blocks: content.blocks,
+      puzzleIds: content.puzzleIds,
+      solvedCondition: content.solvedCondition,
+    });
+  } catch (error) {
+    if (error instanceof RiddleNotFoundError) {
+      return res.status(404).json({ error: "Content not found for this variant" });
+    }
     next(error);
   }
 });
