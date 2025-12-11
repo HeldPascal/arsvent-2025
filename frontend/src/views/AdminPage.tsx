@@ -35,7 +35,9 @@ export default function AdminPage({ user }: Props) {
   const auditLimit = 3;
   const [auditLoading, setAuditLoading] = useState(false);
   const navigate = useNavigate();
-  const contentLimit = overview?.diagnostics.contentDayCount ?? 24;
+  const contentLimit =
+    overview?.diagnostics.maxContiguousContentDay ?? overview?.diagnostics.contentDayCount ?? 24;
+  const nextDayHasContent = overview?.diagnostics.nextDayHasContent ?? false;
 
   const loadData = useCallback(
     async (showLoader = false) => {
@@ -183,6 +185,10 @@ export default function AdminPage({ user }: Props) {
   };
 
   const handleUnlockNext = async () => {
+    if (!overview?.diagnostics.nextDayHasContent) {
+      setError("Cannot unlock the next day: missing content.");
+      return;
+    }
     setUnlocking(true);
     try {
       await adminUnlockNext();
@@ -195,9 +201,16 @@ export default function AdminPage({ user }: Props) {
   };
 
   const handleUnlockSet = async () => {
+    if (!overview) return;
+    const safeDay = Math.min(Math.max(unlockedInput, 0), contentLimit);
+    const increasing = safeDay > overview.diagnostics.availableDay;
+    if (increasing && !overview.diagnostics.nextDayHasContent) {
+      setUnlockedInput(safeDay);
+      setError("Cannot unlock the next day: missing content.");
+      return;
+    }
     setUnlocking(true);
     try {
-      const safeDay = Math.min(Math.max(unlockedInput, 0), contentLimit);
       setUnlockedInput(safeDay);
       await adminUnlockSet(safeDay);
       await loadData();
@@ -251,14 +264,14 @@ export default function AdminPage({ user }: Props) {
             <div className="progress-controls">
               <div className="muted">
                 Current unlocked day: {overview.diagnostics.availableDay} · Content days: {overview.diagnostics.contentDayCount} /
-                {overview.diagnostics.maxDay}
+                {overview.diagnostics.maxDay} · Contiguous: day {overview.diagnostics.maxContiguousContentDay}
               </div>
               <div className="progress-actions">
                 <button
                   className="primary"
                   type="button"
                   onClick={handleUnlockNext}
-                  disabled={unlocking || overview.diagnostics.availableDay >= overview.diagnostics.contentDayCount}
+                  disabled={unlocking || !nextDayHasContent}
                 >
                   Unlock next
                 </button>
@@ -276,7 +289,12 @@ export default function AdminPage({ user }: Props) {
                     }}
                   />
                 </label>
-                <button className="ghost" type="button" onClick={handleUnlockSet} disabled={unlocking}>
+                <button
+                  className="ghost"
+                  type="button"
+                  onClick={handleUnlockSet}
+                  disabled={unlocking || (!nextDayHasContent && unlockedInput > overview.diagnostics.availableDay)}
+                >
                   Apply
                 </button>
               </div>

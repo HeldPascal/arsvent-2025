@@ -242,7 +242,18 @@ const getContentDaySet = async () => {
     return new Set<number>(Array.from({ length: MAX_DAY }, (_, i) => i + 1));
   }
 };
-const getContentDayCount = async () => (await getContentDaySet()).size || MAX_DAY;
+const getContentAvailability = async () => {
+  const contentDays = await getContentDaySet();
+  let maxContiguousContentDay = 0;
+  for (let day = 1; day <= MAX_DAY; day++) {
+    if (contentDays.has(day)) {
+      maxContiguousContentDay = day;
+    } else {
+      break;
+    }
+  }
+  return { contentDays, contentDayCount: contentDays.size, maxContiguousContentDay };
+};
 
 const ensureAppState = async () =>
   prisma.appState.upsert({
@@ -941,7 +952,7 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
       solveHistogram,
       downgradeHistogram,
       unlockedDay,
-      contentDayCount,
+      contentAvailability,
     ] =
       await Promise.all([
         prisma.user.count(),
@@ -993,8 +1004,11 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
           return hist;
         })(),
         getUnlockedDay(),
-        getContentDayCount(),
+        getContentAvailability(),
       ]);
+
+    const nextDayHasContent =
+      unlockedDay < MAX_DAY && unlockedDay < contentAvailability.maxContiguousContentDay;
 
     res.json({
       diagnostics: {
@@ -1002,7 +1016,9 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
         serverTime: new Date().toISOString(),
         availableDay: unlockedDay,
         maxDay: MAX_DAY,
-        contentDayCount,
+        contentDayCount: contentAvailability.contentDayCount,
+        maxContiguousContentDay: contentAvailability.maxContiguousContentDay,
+        nextDayHasContent,
         nodeVersion: process.version,
         superAdminId: superAdminId || null,
       },
@@ -1154,7 +1170,14 @@ app.post("/api/admin/users/:id/revoke-sessions", requireAuth, requireAdmin, asyn
 app.post("/api/admin/unlock/increment", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const current = await getUnlockedDay();
+    if (current >= MAX_DAY) {
+      return res.status(400).json({ error: "All days are already unlocked." });
+    }
+    const { maxContiguousContentDay } = await getContentAvailability();
     const next = Math.min(current + 1, MAX_DAY);
+    if (next > maxContiguousContentDay) {
+      return res.status(400).json({ error: `Cannot unlock day ${next}: missing content for the next day.` });
+    }
     const newVal = await setUnlockedDay(next, req.user?.id);
     await logAdminAction("admin:unlock-next", req.user?.id, { from: current, to: newVal });
     res.json({ unlockedDay: newVal });
@@ -1170,6 +1193,13 @@ app.post("/api/admin/unlock/set", requireAuth, requireAdmin, async (req, res, ne
       return res.status(400).json({ error: "unlockedDay must be between 0 and 24" });
     }
     const current = await getUnlockedDay();
+    const { maxContiguousContentDay } = await getContentAvailability();
+    if (unlockedDay > maxContiguousContentDay) {
+      const missingDay = Math.min(maxContiguousContentDay + 1, MAX_DAY);
+      return res
+        .status(400)
+        .json({ error: `Cannot unlock day ${unlockedDay}: missing content for day ${missingDay}.` });
+    }
     const newVal = await setUnlockedDay(unlockedDay, req.user?.id);
     await logAdminAction("admin:unlock-set", req.user?.id, { from: current, to: newVal });
     res.json({ unlockedDay: newVal });

@@ -127,6 +127,8 @@ export interface AdminOverview {
       availableDay: number;
       maxDay: number;
       contentDayCount: number;
+      maxContiguousContentDay: number;
+      nextDayHasContent: boolean;
       nodeVersion: string;
       superAdminId: string | null;
     };
