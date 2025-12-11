@@ -43,3 +43,8 @@
   description: "A few rare plants."
   image: "/assets/25_09_reward.png"
   rarity: "rare"
+- id: "ingredients"
+  title: "Falemon's alchemical ingredients"
+  description: "A few rare ingredients."
+  image: "/assets/25_10_reward.png"
+  rarity: "rare"

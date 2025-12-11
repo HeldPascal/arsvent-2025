@@ -43,3 +43,8 @@
   description: "Ein paar seltene Pflanzen."
   image: "/assets/25_09_reward.png"
   rarity: "rare"
+- id: "ingredients"
+  title: "Alchemistische Zutaten von Falemon"
+  description: "Ein paar seltene Zutaten."
+  image: "/assets/25_10_reward.png"
+  rarity: "rare"

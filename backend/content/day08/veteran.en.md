@@ -24,7 +24,7 @@ In front of you stand several horses and… something else.
 id: "mount"
 Which trial rewards you with this mount?
 
-![Mount](/assets/25_08_background_vet.png)
+![Mount](/assets/25_08_background_veteran.png)
 
 ```yaml puzzle
 type: "single-choice"

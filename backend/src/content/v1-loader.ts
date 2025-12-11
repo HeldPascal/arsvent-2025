@@ -133,6 +133,7 @@ const resolveType = (input?: string): RiddleType => {
   if (["multi-choice", "multiple", "multi"].includes(normalized)) return "multi-choice";
   if (["sort", "ordering", "order"].includes(normalized)) return "sort";
   if (["group", "grouping"].includes(normalized)) return "group";
+  if (["select-items", "select", "mark"].includes(normalized)) return "select-items";
   if (["drag-sockets", "drag", "sockets"].includes(normalized)) return "drag-sockets";
   return "text";
 };
@@ -344,37 +345,47 @@ export const evaluateCondition = (condition: WhenCondition, solvedIds: Set<strin
   }
 };
 
-const normalizeDragItems = (raw: unknown, defaultShape: DragShape): DragSocketItem[] => {
+const normalizeDragItems = (
+  raw: unknown,
+  defaultShape: DragShape,
+  options: { requirePosition?: boolean } = {},
+): DragSocketItem[] => {
   if (!Array.isArray(raw) || raw.length === 0) {
-    throw new Error("Drag-sockets puzzles require at least one item");
+    throw new Error("This puzzle requires at least one item");
   }
   const items = raw.map((entry) => {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-      throw new Error("Invalid drag-sockets item definition");
+      throw new Error("Invalid item definition");
     }
-    const { id, label, image, shape, defaultSocketId } = entry as {
+    const { id, label, image, shape, defaultSocketId, position } = entry as {
       id?: unknown;
       label?: unknown;
       image?: unknown;
       shape?: unknown;
       defaultSocketId?: unknown;
+      position?: unknown;
     };
     const itemId = normalizeId(id, "Drag-sockets items require an id");
     const itemLabel = typeof label === "string" ? label : undefined;
     const itemImage = typeof image === "string" ? image : undefined;
     const itemShape = shape ? resolveShape(shape) : defaultShape;
     const itemDefaultSocketId = typeof defaultSocketId === "string" ? defaultSocketId : undefined;
+    const normalizedPosition = position !== undefined ? normalizePosition(position) : undefined;
+    if (options.requirePosition && !normalizedPosition) {
+      throw new Error("Placed items require a position");
+    }
     return {
       id: itemId,
       ...(itemLabel !== undefined ? { label: itemLabel } : {}),
       ...(itemImage ? { image: itemImage } : {}),
       shape: itemShape,
       ...(itemDefaultSocketId ? { defaultSocketId: itemDefaultSocketId } : {}),
+      ...(normalizedPosition ? { position: normalizedPosition } : {}),
     };
   });
   const seen = new Set<string>();
   items.forEach((item) => {
-    if (seen.has(item.id)) throw new Error(`Duplicate drag-sockets item id: ${item.id}`);
+    if (seen.has(item.id)) throw new Error(`Duplicate item id: ${item.id}`);
     seen.add(item.id);
   });
   return items;
@@ -382,12 +393,12 @@ const normalizeDragItems = (raw: unknown, defaultShape: DragShape): DragSocketIt
 
 const normalizePosition = (value: unknown) => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("Socket position must be an object with x and y");
+    throw new Error("Position must be an object with x and y");
   }
   const { x, y } = value as { x?: unknown; y?: unknown };
   const toRatio = (val: unknown, axis: "x" | "y") => {
     const num = Number(val);
-    if (!Number.isFinite(num)) throw new Error(`Socket ${axis} must be a number`);
+    if (!Number.isFinite(num)) throw new Error(`Position ${axis} must be a number`);
     return Math.min(Math.max(num, 0), 1);
   };
   return { x: toRatio(x, "x"), y: toRatio(y, "y") };
@@ -402,16 +413,18 @@ const normalizeDragSockets = (raw: unknown, items: DragSocketItem[], defaultShap
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
       throw new Error("Invalid socket definition");
     }
-    const { id, position, accepts, shape, label } = entry as {
+    const { id, position, accepts, shape, label, image } = entry as {
       id?: unknown;
       position?: unknown;
       accepts?: unknown;
       shape?: unknown;
       label?: unknown;
+      image?: unknown;
     };
     const socketId = normalizeId(id, "Sockets require an id");
     const socketShape = shape ? resolveShape(shape) : defaultShape;
     const socketLabel = typeof label === "string" ? label : undefined;
+    const socketImage = typeof image === "string" ? image : undefined;
     const shapeScopedItems =
       socketShape && items.some((item) => item.shape === socketShape)
         ? items.filter((item) => item.shape === socketShape).map((item) => item.id)
@@ -429,6 +442,7 @@ const normalizeDragSockets = (raw: unknown, items: DragSocketItem[], defaultShap
       accepts: normalizedAccepts,
       shape: socketShape,
       ...(socketLabel !== undefined ? { label: socketLabel } : {}),
+      ...(socketImage ? { image: socketImage } : {}),
     };
   });
   const seen = new Set<string>();
@@ -654,6 +668,50 @@ const mapToDayBlocks = (
           options,
           minSelections,
           ...(optionSize ? { optionSize } : {}),
+          solved,
+          ...(block.title ? { title: block.title } : {}),
+        };
+      }
+
+      if (type === "select-items") {
+        const rawDef = block.definition.raw as Record<string, unknown>;
+        const backgroundImageCandidate = rawDef.backgroundImage ?? rawDef["background-image"];
+        const backgroundImage =
+          typeof backgroundImageCandidate === "string" ? backgroundImageCandidate : undefined;
+        if (!backgroundImage) {
+          throw new Error("Select-items puzzles require a background image");
+        }
+        const shape = rawDef.shape ? resolveShape(rawDef.shape) : "circle";
+        const items = normalizeDragItems(rawDef.items, shape, { requirePosition: true });
+        const rawSolution = block.definition.solution;
+        const solutionItems =
+          Array.isArray(rawSolution) || typeof rawSolution === "string"
+            ? ensureStringArray(
+                Array.isArray(rawSolution) ? rawSolution : [rawSolution],
+                "Solution must list the correct items",
+              )
+            : rawSolution && typeof rawSolution === "object" && "items" in rawSolution
+              ? ensureStringArray((rawSolution as { items?: unknown }).items, "Solution must list the correct items")
+              : null;
+        if (!solutionItems || solutionItems.length === 0) {
+          throw new Error("Solution must include at least one item id");
+        }
+        const itemIds = new Set(items.map((itm) => itm.id));
+        solutionItems.forEach((id) => {
+          if (!itemIds.has(id)) {
+            throw new Error("Solution references an unknown item id");
+          }
+        });
+        return {
+          kind: "puzzle",
+          id: block.id,
+          html: block.html,
+          visible: visibleSet.has(block) || includeHidden,
+          type,
+          solution: solutionItems,
+          backgroundImage,
+          items,
+          shape,
           solved,
           ...(block.title ? { title: block.title } : {}),
         };

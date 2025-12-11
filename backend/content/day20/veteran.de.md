@@ -28,25 +28,25 @@ Lege die Embleme der Allianzen auf die Karte – die genaue Anordnung spielt kei
 
 ```yaml puzzle
 type: "drag-sockets"
-background-image: "/assets/25_05_background_vet.png"
+background-image: "/assets/25_05_background_veteran.png"
 shape: "circle"
 
 items:
   - id: "shield-1"
     label: "Aaaaa"
-    image: "/assets/25_05_option1.png"
+    image: "/assets/25_05_option_1.png"
     defaultSocketId: "start-1"
   - id: "shield-2"
     label: "Bbbbb"
-    image: "/assets/25_05_option2.png"
+    image: "/assets/25_05_option_2.png"
     defaultSocketId: "start-2"
   - id: "shield-3"
     label: "Ccccc"
-    image: "/assets/25_05_option3.png"
+    image: "/assets/25_05_option_3.png"
     defaultSocketId: "start-3"
   - id: "shield-4"
     label: "Ddddd"
-    image: "/assets/25_05_option3.png"
+    image: "/assets/25_05_option_3.png"
 
 sockets:
   # starting sockets for default placements (centerline, evenly spaced)

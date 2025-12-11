@@ -31,13 +31,13 @@ shape: "square"
 items:
   - id: "sky-1"
     label: ""
-    image: "/assets/25_03_option1Vet.png"
+    image: "/assets/25_03_option_1_veteran.png"
   - id: "sky-2"
     label: ""
-    image: "/assets/25_03_option2Vet.png"
+    image: "/assets/25_03_option_2_veteran.png"
   - id: "sky-3"
     label: ""
-    image: "/assets/25_03_option3Vet.png"
+    image: "/assets/25_03_option_3_veteran.png"
 
 sockets:
   - id: "socket-1"

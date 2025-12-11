@@ -25,7 +25,7 @@ type TranslationKey =
   | "open"
   | "soon"
   | "warnNormalLock"
-  | "confirmVetToNormal"
+  | "confirmVeteranToNormal"
   | "confirm"
   | "cancel"
   | "backToCalendar"
@@ -41,7 +41,7 @@ type TranslationKey =
   | "modeChangeNotAllowed"
   | "dayLoadFailed"
   | "modeNormalLabel"
-  | "modeVetLabel"
+  | "modeVeteranLabel"
   | "modeHint"
   | "selected"
   | "locked"
@@ -74,6 +74,8 @@ type TranslationKey =
   | "dragHint"
   | "socketPlaceholder"
   | "allItemsPlaced"
+  | "selectItemsHint"
+  | "selectItemsRequired"
   | "override"
   | "noContent"
   | "funSettingTitle"
@@ -107,7 +109,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     open: "Open",
     soon: "Soon",
     warnNormalLock: "Solving day 1 on Normal will lock Veteran. Continue?",
-    confirmVetToNormal: "You have solved as Veteran. Switching to Normal will lock you out of Veteran. Continue?",
+    confirmVeteranToNormal: "You have solved as Veteran. Switching to Normal will lock you out of Veteran. Continue?",
     confirm: "Confirm",
     cancel: "Cancel",
     backToCalendar: "Back to calendar",
@@ -123,7 +125,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     modeChangeNotAllowed: "Mode change not allowed.",
     dayLoadFailed: "Unable to load this day.",
     modeNormalLabel: "Normal",
-    modeVetLabel: "Veteran",
+    modeVeteranLabel: "Veteran",
     modeHint: "Upgrading to Veteran is locked after choosing Normal. Downgrades are always allowed.",
     selected: "Selected",
     locked: "Locked",
@@ -154,6 +156,8 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     placeAllItems: "Place the items onto the marked sockets.",
     dragHint: "Select or drag an item, then click or drop on a matching socket to place or swap it.",
     allItemsPlaced: "All items are placed. Select or drag one to a socket to adjust.",
+    selectItemsHint: "Tap the items that belong to the answer. Tap again to unselect.",
+    selectItemsRequired: "Select at least one item.",
     socketPlaceholder: "?",
     override: "Override",
     noContent: "No content yet",
@@ -187,7 +191,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     open: "Öffnen",
     soon: "Bald",
     warnNormalLock: "Wenn du Tag 1 auf Normal löst, ist Veteran gesperrt. Fortfahren?",
-    confirmVetToNormal: "Du hast als Veteran gelöst. Beim Wechsel auf Normal ist Veteran gesperrt. Fortfahren?",
+    confirmVeteranToNormal: "Du hast als Veteran gelöst. Beim Wechsel auf Normal ist Veteran gesperrt. Fortfahren?",
     confirm: "Bestätigen",
     cancel: "Abbrechen",
     backToCalendar: "Zurück zum Kalender",
@@ -203,7 +207,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     modeChangeNotAllowed: "Schwierigkeitswechsel nicht erlaubt.",
     dayLoadFailed: "Dieser Tag konnte nicht geladen werden.",
     modeNormalLabel: "Normal",
-    modeVetLabel: "Veteran",
+    modeVeteranLabel: "Veteran",
     modeHint: "Ein Upgrade auf Veteran ist gesperrt, nachdem du Normal gewählt hast. Herabstufen ist immer erlaubt.",
     selected: "Ausgewählt",
     locked: "Gesperrt",
@@ -234,6 +238,8 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     placeAllItems: "Platziere die Teile auf den markierten Stellen.",
     dragHint: "Wähle oder ziehe ein Teil und klicke bzw. lasse es auf einem passenden Feld los, um es zu platzieren oder zu tauschen.",
     allItemsPlaced: "Alle Teile sind platziert. Wähle oder ziehe eines auf ein Feld, um es anzupassen.",
+    selectItemsHint: "Tippe die passenden Elemente in der Szene an. Tippe erneut, um abzuwählen.",
+    selectItemsRequired: "Wähle mindestens ein Element aus.",
     socketPlaceholder: "?",
     override: "Überschreiben",
     noContent: "Kein Inhalt",

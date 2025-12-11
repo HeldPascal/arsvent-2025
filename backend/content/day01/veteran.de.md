@@ -1,5 +1,5 @@
 ---
-id: "25-day01-vet-de"
+id: "25-day01-veteran-de"
 version: 1
 release: "2025-12-01T00:00:00Z"
 language: "de"
@@ -33,22 +33,22 @@ type: single-choice
 options:
   - id: "1"
     label: ""
-    image: "/assets/25_01_option1.png"
+    image: "/assets/25_01_option_1.png"
   - id: "4"
     label: ""
-    image: "/assets/25_01_option4.png"
+    image: "/assets/25_01_option_4.png"
   - id: "5"
     label: ""
-    image: "/assets/25_01_option5.png"
+    image: "/assets/25_01_option_5.png"
   - id: "2"
     label: ""
-    image: "/assets/25_01_option2.png"
+    image: "/assets/25_01_option_2.png"
   - id: "3"
     label: ""
-    image: "/assets/25_01_option3.png"
+    image: "/assets/25_01_option_3.png"
   - id: "6"
     label: ""
-    image: "/assets/25_01_option6.png"
+    image: "/assets/25_01_option_6.png"
 solution: "1"
 ```
 

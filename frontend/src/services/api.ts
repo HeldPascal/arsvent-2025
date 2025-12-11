@@ -54,7 +54,7 @@ export const fetchDays = () => apiFetch<DaysResponse>("/api/days");
 
 export const fetchDay = (
   day: number,
-  opts?: { override?: boolean; locale?: "en" | "de"; mode?: "NORMAL" | "VET" },
+  opts?: { override?: boolean; locale?: "en" | "de"; mode?: "NORMAL" | "VETERAN" },
 ) => {
   const params = new URLSearchParams();
   if (opts?.override) params.set("override", "1");
@@ -67,7 +67,7 @@ export const fetchDay = (
 export const submitAnswer = (
   day: number,
   payload: RiddleAnswerPayload,
-  opts?: { override?: boolean; locale?: "en" | "de"; mode?: "NORMAL" | "VET" },
+  opts?: { override?: boolean; locale?: "en" | "de"; mode?: "NORMAL" | "VETERAN" },
 ) => {
   const params = new URLSearchParams();
   if (opts?.override) params.set("override", "1");

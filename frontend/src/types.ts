@@ -1,6 +1,6 @@
 export type Locale = "en" | "de";
-export type Mode = "NORMAL" | "VET";
-export type RiddleType = "text" | "single-choice" | "multi-choice" | "sort" | "group" | "drag-sockets";
+export type Mode = "NORMAL" | "VETERAN";
+export type RiddleType = "text" | "single-choice" | "multi-choice" | "sort" | "group" | "drag-sockets" | "select-items";
 
 export interface RiddleOption {
   id: string;
@@ -19,6 +19,7 @@ export interface DragSocketItem {
   image?: string;
   shape?: "circle" | "square" | "hex";
   defaultSocketId?: string;
+  position?: { x: number; y: number };
 }
 
 export interface DragSocketSlot {
@@ -27,6 +28,7 @@ export interface DragSocketSlot {
   accepts: string[];
   shape?: "circle" | "square" | "hex";
   label?: string;
+  image?: string;
 }
 
 export type RiddleAnswerPayload =
@@ -35,6 +37,7 @@ export type RiddleAnswerPayload =
   | { puzzleId: string; type: "multi-choice"; answer: string[] }
   | { puzzleId: string; type: "sort"; answer: string[] }
   | { puzzleId: string; type: "group"; answer: Record<string, string[]> }
+  | { puzzleId: string; type: "select-items"; answer: string[] }
   | { puzzleId: string; type: "drag-sockets"; answer: Array<{ socketId: string; itemId: string }> };
 
 export interface User {
@@ -126,13 +129,15 @@ export interface AdminOverview {
       availableDay: number;
       maxDay: number;
       contentDayCount: number;
+      maxContiguousContentDay: number;
+      nextDayHasContent: boolean;
       nodeVersion: string;
       superAdminId: string | null;
     };
   stats: {
     totalUsers: number;
     adminUsers: number;
-    vetUsers: number;
+    veteranUsers: number;
     normalUsers: number;
     progressedUsers: number;
     downgradedUsers: number;

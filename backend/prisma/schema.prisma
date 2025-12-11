@@ -16,7 +16,7 @@ model User {
   globalName     String?
   avatar         String?
   locale         String        @default("en")
-  mode           String        @default("NORMAL") // "NORMAL" | "VET"
+  mode           String        @default("NORMAL") // "NORMAL" | "VETERAN"
   creatureSwap   Boolean       @default(false)
   isAdmin        Boolean       @default(false)
   isSuperAdmin   Boolean       @default(false)

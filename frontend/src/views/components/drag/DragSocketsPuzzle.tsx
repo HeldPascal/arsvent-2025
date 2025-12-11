@@ -273,7 +273,19 @@ export default function DragSocketsPuzzle({
         onDrop={(evt) => handleDrop(socket.id, evt)}
         onClick={() => handlePlaceClick(socket.id)}
       >
-        <div className="drag-socket-target">
+        <div
+          className="drag-socket-target"
+          style={
+            socket.image
+              ? {
+                  backgroundImage: `url(${resolveAsset(socket.image)})`,
+                  backgroundSize: "contain",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "no-repeat",
+                }
+              : undefined
+          }
+        >
           <span className="drag-socket-index">{socketLabel}</span>
         </div>
         {assignedItem && (
@@ -316,11 +328,13 @@ export default function DragSocketsPuzzle({
               setDraggingItem(assignedItem.id);
               setDraggingFromSocket(socket.id);
             }}
-            onMouseEnter={(evt) => showPreview(assignedItem.id, evt.currentTarget)}
-            onMouseLeave={() => hidePreview(assignedItem.id)}
+            onMouseEnter={(evt) => assignedItem.image && showPreview(assignedItem.id, evt.currentTarget)}
+            onMouseLeave={() => assignedItem.image && hidePreview(assignedItem.id)}
           >
-            {assignedItem.image && (
+            {assignedItem.image ? (
               <img src={resolveAsset(assignedItem.image)} alt={assignedItem.label || assignedItem.id} draggable={!disabled} />
+            ) : (
+              <span className="drag-socket-label">{assignedItem.label || assignedItem.id}</span>
             )}
             {!disabled && !isDefaultHome && (
               <button
@@ -377,13 +391,15 @@ export default function DragSocketsPuzzle({
       onMouseEnter={(evt) => showPreview(item.id, evt.currentTarget)}
       onMouseLeave={() => hidePreview(item.id)}
     >
-      {item.image && (
+      {item.image ? (
         <img
           src={resolveAsset(item.image)}
           alt={item.label !== undefined ? item.label : item.id}
           className={`drag-item-image ${shapeClass(item.shape)}`}
           draggable={false}
         />
+      ) : (
+        <span className="drag-socket-label">{item.label ?? item.id}</span>
       )}
     </div>
   );

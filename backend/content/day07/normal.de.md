@@ -27,7 +27,7 @@ Die einzige Tür hinaus ist versiegelt.
 id: "hardmode1"
 In welcher Instanz kann man mit diesem Schalter den HardMode aktivieren?
 
-![Hard-Mode Schalter](/assets/25_07_round1.png)
+![Hard-Mode Schalter](/assets/25_07_round_1.png)
 
 ```yaml puzzle
 type: "single-choice"
@@ -48,7 +48,7 @@ solution: "1"
 id: "hardmode2"
 In welcher Instanz kann man mit diesem Schalter den HardMode aktivieren?
 
-![Hard-Mode Schalter](/assets/25_07_round2.png)
+![Hard-Mode Schalter](/assets/25_07_round_2.png)
 
 ```yaml puzzle
 type: "single-choice"
@@ -69,7 +69,7 @@ solution: "3"
 id: "hardmode3"
 In welcher Instanz kann man mit diesem Schalter den HardMode aktivieren?
 
-![Hard-Mode Schalter](/assets/25_07_round3.png)
+![Hard-Mode Schalter](/assets/25_07_round_3.png)
 
 ```yaml puzzle
 type: "single-choice"

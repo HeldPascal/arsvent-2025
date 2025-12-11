@@ -34,13 +34,13 @@ shape: "square"
 items:
   - id: "shield-1"
     label: ""
-    image: "/assets/25_05_option1.png"
+    image: "/assets/25_05_option_1.png"
   - id: "shield-2"
     label: ""
-    image: "/assets/25_05_option2.png"
+    image: "/assets/25_05_option_2.png"
   - id: "shield-3"
     label: ""
-    image: "/assets/25_05_option3.png"
+    image: "/assets/25_05_option_3.png"
 
 sockets:
   - id: "socket-1"

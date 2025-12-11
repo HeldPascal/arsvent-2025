@@ -22,7 +22,7 @@ Vor dir stehen einige Pferde und… noch etwas anderes.
 id: "mount"
 Welche Prüfung belohnt mit diesem Reittier?
 
-![Reittier](/assets/25_08_background_vet.png)
+![Reittier](/assets/25_08_background_veteran.png)
 
 ```yaml puzzle
 type: "single-choice"

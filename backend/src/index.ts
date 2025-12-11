@@ -82,12 +82,19 @@ const normalizeLocale = (input?: string | null): Locale => {
   return "en";
 };
 
+const normalizeModeValue = (input?: string | null): Mode => {
+  const val = String(input ?? "").toUpperCase();
+  if (val === "VETERAN" || val === "VET") return "VETERAN";
+  return "NORMAL";
+};
+
 const discordOptions: StrategyOptions = {
   clientID: DISCORD_CLIENT_ID,
   clientSecret: DISCORD_CLIENT_SECRET,
   callbackURL: DISCORD_CALLBACK_URL,
   scope: ["identify"],
 };
+
 
 app.set("trust proxy", 1);
 
@@ -235,7 +242,18 @@ const getContentDaySet = async () => {
     return new Set<number>(Array.from({ length: MAX_DAY }, (_, i) => i + 1));
   }
 };
-const getContentDayCount = async () => (await getContentDaySet()).size || MAX_DAY;
+const getContentAvailability = async () => {
+  const contentDays = await getContentDaySet();
+  let maxContiguousContentDay = 0;
+  for (let day = 1; day <= MAX_DAY; day++) {
+    if (contentDays.has(day)) {
+      maxContiguousContentDay = day;
+    } else {
+      break;
+    }
+  }
+  return { contentDays, contentDayCount: contentDays.size, maxContiguousContentDay };
+};
 
 const ensureAppState = async () =>
   prisma.appState.upsert({
@@ -253,6 +271,13 @@ const setSessionPuzzleProgress = (req: Request, day: number, ids: Set<string>) =
   const sess = req.session as SessionWithVersion;
   if (!sess.puzzleProgress) sess.puzzleProgress = {};
   sess.puzzleProgress[String(day)] = Array.from(ids);
+};
+
+const clearSessionPuzzleProgress = (req: Request, day: number) => {
+  const sess = req.session as SessionWithVersion | undefined;
+  if (sess?.puzzleProgress) {
+    delete sess.puzzleProgress[String(day)];
+  }
 };
 
 const getUnlockedDay = async () => {
@@ -284,7 +309,7 @@ const logAdminAction = async (action: string, actorId?: string | null, details?:
 };
 
 const getUserLocale = (user?: PrismaUser): Locale => (user?.locale === "de" ? "de" : "en");
-const getUserMode = (user?: PrismaUser): Mode => (user?.mode === "VET" ? "VET" : "NORMAL");
+const getUserMode = (user?: PrismaUser): Mode => (user?.mode === "VETERAN" || user?.mode === "VET" ? "VETERAN" : "NORMAL");
 
 const requireIntroComplete: RequestHandler = (req, res, next) => {
   if (req.user?.introCompleted || req.user?.isAdmin || req.user?.isSuperAdmin) {
@@ -460,6 +485,38 @@ const evaluatePuzzleAnswer = (block: Extract<DayBlock, { kind: "puzzle" }>, answ
       const expected = new Set(block.solution as string[]);
       return uniqueChoices.size === expected.size && choices.every((choice) => expected.has(choice));
     }
+    case "select-items": {
+      const selections = ensureStringArrayAnswer(answer, "Answer must list selected items");
+      if (selections.length === 0) throw new Error("Select at least one item");
+      const items = block.items ?? [];
+      if (!items.length) {
+        throw new Error("Puzzle is misconfigured");
+      }
+      const itemIds = new Set(items.map((item) => item.id));
+      const uniqueSelections = new Set<string>();
+      selections.forEach((id) => {
+        if (!itemIds.has(id)) throw new Error("Unknown item");
+        if (uniqueSelections.has(id)) throw new Error("Duplicate selections are not allowed");
+        uniqueSelections.add(id);
+      });
+      const rawSolutionItems: unknown[] =
+        Array.isArray(block.solution)
+          ? block.solution
+          : block.solution && typeof block.solution === "object" && "items" in (block.solution as Record<string, unknown>)
+            ? ((block.solution as { items?: unknown }).items as unknown[] | undefined) ?? []
+            : [];
+      const solutionItems = rawSolutionItems.map((entry) => normalizeAnswerId(entry, "Solution entries must be strings"));
+      if (!solutionItems.length) {
+        throw new Error("Puzzle is misconfigured");
+      }
+      solutionItems.forEach((id) => {
+        if (!itemIds.has(id)) {
+          throw new Error("Puzzle is misconfigured");
+        }
+      });
+      const expected = new Set(solutionItems);
+      return uniqueSelections.size === expected.size && Array.from(expected).every((id) => uniqueSelections.has(id));
+    }
     case "drag-sockets": {
       const placements = ensureDragSocketAnswer(answer);
       const sockets = block.sockets ?? [];
@@ -578,7 +635,8 @@ app.post("/auth/logout", (req, res, next) => {
 });
 
 app.get("/api/auth/me", requireAuth, (req, res) => {
-  return res.json(req.user);
+  const user = req.user as PrismaUser;
+  return res.json({ ...user, mode: normalizeModeValue(user.mode) });
 });
 
 app.post("/api/user/locale", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
@@ -606,33 +664,32 @@ app.post("/api/user/locale", requireAuth, async (req: Request, res: Response, ne
 app.post("/api/user/mode", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { mode } = req.body as { mode?: string };
-    if (mode !== "NORMAL" && mode !== "VET") {
-      return res.status(400).json({ error: "Invalid mode" });
-    }
+    const nextMode = normalizeModeValue(mode);
 
     const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    if (user.mode === "NORMAL" && mode === "VET" && (user.lastSolvedDay ?? 0) > 0) {
-      return res.status(400).json({ error: "Cannot switch from NORMAL to VET" });
+    const currentMode = normalizeModeValue(user.mode);
+    if (currentMode === "NORMAL" && nextMode === "VETERAN" && (user.lastSolvedDay ?? 0) > 0) {
+      return res.status(400).json({ error: "Cannot switch from NORMAL to VETERAN" });
     }
 
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
-        mode,
+        mode: nextMode,
         stateVersion: { increment: 1 },
-        lastDowngradedAt: user.mode === "VET" && mode === "NORMAL" ? new Date() : null,
-        lastDowngradedFromDay: user.mode === "VET" && mode === "NORMAL" ? user.lastSolvedDay ?? 0 : 0,
+        lastDowngradedAt: currentMode === "VETERAN" && nextMode === "NORMAL" ? new Date() : null,
+        lastDowngradedFromDay: currentMode === "VETERAN" && nextMode === "NORMAL" ? user.lastSolvedDay ?? 0 : 0,
       },
     });
 
     req.login(updatedUser, (err) => {
       if (err) return next(err);
       storeSessionVersion(req, updatedUser);
-      return res.json({ id: updatedUser.id, mode: updatedUser.mode });
+      return res.json({ id: updatedUser.id, mode: normalizeModeValue(updatedUser.mode) });
     });
   } catch (error) {
     next(error);
@@ -742,13 +799,14 @@ app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, ne
       typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
         ? normalizeLocale(req.query.locale)
         : null;
-    const requestedMode =
-      typeof req.query.mode === "string" && (req.query.mode === "NORMAL" || req.query.mode === "VET")
-        ? (req.query.mode as Mode)
-        : null;
+    const requestedMode = typeof req.query.mode === "string" ? normalizeModeValue(req.query.mode) : null;
 
     const locale = isAdminOverride && requestedLocale ? requestedLocale : normalizeLocale(getUserLocale(req.user as PrismaUser));
     const mode = isAdminOverride && requestedMode ? requestedMode : getUserMode(req.user as PrismaUser);
+
+    if (isAdminOverride) {
+      clearSessionPuzzleProgress(req, day);
+    }
 
     if (!available) {
       return res.json({
@@ -767,7 +825,7 @@ app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, ne
       });
     }
 
-    const sessionSolved = isAdminOverride ? new Set<string>() : getSessionPuzzleProgress(req, day);
+    const sessionSolved = getSessionPuzzleProgress(req, day);
     let content = applyCreatureSwapToDay(
       await loadDayContent(day, locale, mode, sessionSolved, false),
       locale,
@@ -830,14 +888,11 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
       typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
         ? normalizeLocale(req.query.locale)
         : null;
-    const requestedMode =
-      typeof req.query.mode === "string" && (req.query.mode === "NORMAL" || req.query.mode === "VET")
-        ? (req.query.mode as Mode)
-        : null;
+    const requestedMode = typeof req.query.mode === "string" ? normalizeModeValue(req.query.mode) : null;
 
     const locale = isAdminOverride && requestedLocale ? requestedLocale : getUserLocale(req.user as PrismaUser);
     const mode = isAdminOverride && requestedMode ? requestedMode : getUserMode(req.user as PrismaUser);
-    const sessionSolved = isAdminOverride ? new Set<string>() : getSessionPuzzleProgress(req, day);
+    const sessionSolved = getSessionPuzzleProgress(req, day);
     const content = await loadDayContent(day, locale, mode, sessionSolved, false);
 
     if (!puzzleId) {
@@ -883,9 +938,7 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
     const updatedSolved = new Set(sessionSolved);
     if (correct) {
       updatedSolved.add(effectivePuzzle.id);
-      if (!isAdminOverride) {
-        setSessionPuzzleProgress(req, day, updatedSolved);
-      }
+      setSessionPuzzleProgress(req, day, updatedSolved);
     }
 
     let nextContent = await loadDayContent(day, locale, mode, updatedSolved, false);
@@ -922,7 +975,7 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
     const [
       totalUsers,
       adminUsers,
-      vetUsers,
+      veteranUsers,
       normalUsers,
       progressedUsers,
       downgradedUsers,
@@ -931,12 +984,12 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
       solveHistogram,
       downgradeHistogram,
       unlockedDay,
-      contentDayCount,
+      contentAvailability,
     ] =
       await Promise.all([
         prisma.user.count(),
         prisma.user.count({ where: { isAdmin: true } }),
-        prisma.user.count({ where: { mode: "VET" } }),
+        prisma.user.count({ where: { mode: { in: ["VETERAN", "VET"] } } }),
         prisma.user.count({ where: { mode: "NORMAL" } }),
         prisma.user.count({ where: { lastSolvedDay: { gt: 0 } } }),
         prisma.user.count({ where: { lastDowngradedAt: { not: null } } }),
@@ -983,8 +1036,11 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
           return hist;
         })(),
         getUnlockedDay(),
-        getContentDayCount(),
+        getContentAvailability(),
       ]);
+
+    const nextDayHasContent =
+      unlockedDay < MAX_DAY && unlockedDay < contentAvailability.maxContiguousContentDay;
 
     res.json({
       diagnostics: {
@@ -992,22 +1048,24 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
         serverTime: new Date().toISOString(),
         availableDay: unlockedDay,
         maxDay: MAX_DAY,
-        contentDayCount,
+        contentDayCount: contentAvailability.contentDayCount,
+        maxContiguousContentDay: contentAvailability.maxContiguousContentDay,
+        nextDayHasContent,
         nodeVersion: process.version,
         superAdminId: superAdminId || null,
       },
       stats: {
         totalUsers,
         adminUsers,
-        vetUsers,
+        veteranUsers,
         normalUsers,
         progressedUsers,
         downgradedUsers,
         solveHistogram,
         downgradeHistogram,
       },
-      recentUsers,
-      recentSolves,
+      recentUsers: recentUsers.map((u) => ({ ...u, mode: normalizeModeValue(u.mode) })),
+      recentSolves: recentSolves.map((u) => ({ ...u, mode: normalizeModeValue(u.mode) })),
     });
   } catch (error) {
     next(error);
@@ -1026,7 +1084,7 @@ app.get("/api/admin/users", requireAuth, requireAdmin, async (req, res, next) =>
       username: user.username,
       globalName: user.globalName,
       locale: user.locale,
-      mode: user.mode,
+      mode: normalizeModeValue(user.mode),
       isAdmin: user.isAdmin,
       isSuperAdmin: user.isSuperAdmin,
       createdAt: user.createdAt,
@@ -1051,9 +1109,7 @@ app.post("/api/admin/users/:id/mode", requireAuth, requireAdmin, async (req, res
       return res.status(400).json({ error: "User id is required" });
     }
     const { mode } = req.body as { mode?: string };
-    if (mode !== "NORMAL" && mode !== "VET") {
-      return res.status(400).json({ error: "Invalid mode" });
-    }
+    const nextMode = normalizeModeValue(mode);
 
     const target = await prisma.user.findUnique({ where: { id: targetId } });
     if (!target) {
@@ -1064,17 +1120,18 @@ app.post("/api/admin/users/:id/mode", requireAuth, requireAdmin, async (req, res
     }
 
     const now = new Date();
+    const currentMode = normalizeModeValue(target.mode);
     const updated = await prisma.user.update({
       where: { id: target.id },
       data: {
-        mode,
+        mode: nextMode,
         stateVersion: { increment: 1 },
-        lastDowngradedAt: mode === "VET" ? null : now,
-        lastDowngradedFromDay: mode === "VET" ? 0 : target.lastSolvedDay ?? 0,
+        lastDowngradedAt: currentMode === "VETERAN" && nextMode === "NORMAL" ? now : null,
+        lastDowngradedFromDay: currentMode === "VETERAN" && nextMode === "NORMAL" ? target.lastSolvedDay ?? 0 : 0,
       },
     });
-    await logAdminAction("admin:set-mode", req.user?.id, { targetId: target.id, mode });
-    res.json({ id: updated.id, mode: updated.mode });
+    await logAdminAction("admin:set-mode", req.user?.id, { targetId: target.id, mode: nextMode });
+    res.json({ id: updated.id, mode: normalizeModeValue(updated.mode) });
   } catch (error) {
     next(error);
   }
@@ -1145,7 +1202,14 @@ app.post("/api/admin/users/:id/revoke-sessions", requireAuth, requireAdmin, asyn
 app.post("/api/admin/unlock/increment", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const current = await getUnlockedDay();
+    if (current >= MAX_DAY) {
+      return res.status(400).json({ error: "All days are already unlocked." });
+    }
+    const { maxContiguousContentDay } = await getContentAvailability();
     const next = Math.min(current + 1, MAX_DAY);
+    if (next > maxContiguousContentDay) {
+      return res.status(400).json({ error: `Cannot unlock day ${next}: missing content for the next day.` });
+    }
     const newVal = await setUnlockedDay(next, req.user?.id);
     await logAdminAction("admin:unlock-next", req.user?.id, { from: current, to: newVal });
     res.json({ unlockedDay: newVal });
@@ -1161,6 +1225,13 @@ app.post("/api/admin/unlock/set", requireAuth, requireAdmin, async (req, res, ne
       return res.status(400).json({ error: "unlockedDay must be between 0 and 24" });
     }
     const current = await getUnlockedDay();
+    const { maxContiguousContentDay } = await getContentAvailability();
+    if (unlockedDay > maxContiguousContentDay) {
+      const missingDay = Math.min(maxContiguousContentDay + 1, MAX_DAY);
+      return res
+        .status(400)
+        .json({ error: `Cannot unlock day ${unlockedDay}: missing content for day ${missingDay}.` });
+    }
     const newVal = await setUnlockedDay(unlockedDay, req.user?.id);
     await logAdminAction("admin:unlock-set", req.user?.id, { from: current, to: newVal });
     res.json({ unlockedDay: newVal });
