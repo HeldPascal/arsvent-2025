@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { DayBlock, RiddleAnswerPayload } from "../../types";
 import { useI18n } from "../../i18n";
 import DragSocketsPuzzle from "./drag/DragSocketsPuzzle";
+import SelectItemsPuzzle from "./drag/SelectItemsPuzzle";
 
 interface Props {
   block: Extract<DayBlock, { kind: "puzzle" }>;
@@ -23,6 +24,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
   const [textAnswer, setTextAnswer] = useState("");
   const [singleChoice, setSingleChoice] = useState("");
   const [multiChoices, setMultiChoices] = useState<string[]>([]);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [dragAssignments, setDragAssignments] = useState<Record<string, string | undefined>>({});
   const [localError, setLocalError] = useState<string | null>(null);
   const [initializedDefaults, setInitializedDefaults] = useState(false);
@@ -39,6 +41,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
   }, [block]);
 
   useEffect(() => {
+    setSelectedItems([]);
     // Preserve selections while unsolved; only hydrate from solution when solved
     if (block.solved) {
       if (typeof block.solution === "string") {
@@ -46,6 +49,9 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
         setSingleChoice(String(block.solution));
         setMultiChoices([]);
         setDragAssignments(defaultAssignments);
+        if (block.type === "select-items") {
+          setSelectedItems([String(block.solution)]);
+        }
       } else if (Array.isArray(block.solution)) {
         setTextAnswer("");
         setSingleChoice("");
@@ -58,6 +64,8 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
             }
           });
           setDragAssignments(Object.keys(solvedPlacements).length ? solvedPlacements : defaultAssignments);
+        } else if (block.type === "select-items") {
+          setSelectedItems((block.solution as Array<unknown>).map((entry) => String(entry)));
         }
       } else if (block.type === "drag-sockets" && block.solution && typeof block.solution === "object") {
         const solvedPlacements: Record<string, string> = {};
@@ -91,6 +99,11 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
           }
         });
         setDragAssignments(Object.keys(solvedPlacements).length ? solvedPlacements : defaultAssignments);
+      } else if (block.type === "select-items" && block.solution && typeof block.solution === "object") {
+        const items = "items" in (block.solution as Record<string, unknown>) ? (block.solution as { items?: unknown }).items : [];
+        if (Array.isArray(items)) {
+          setSelectedItems(items.map((entry) => String(entry)));
+        }
       } else {
         setDragAssignments({});
       }
@@ -116,6 +129,12 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
     // Only run when assignments change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dragAssignments]);
+  useEffect(() => {
+    if (block.type === "select-items" && localError) {
+      setLocalError(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedItems]);
 
   const handleSubmit = (evt: React.FormEvent) => {
     evt.preventDefault();
@@ -151,6 +170,16 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
       }
       onInteract?.(block.id);
       onSubmit({ puzzleId: block.id, type: "multi-choice", answer: multiChoices });
+      return;
+    }
+
+    if (block.type === "select-items") {
+      if (selectedItems.length === 0) {
+        setLocalError(t("selectItemsRequired"));
+        return;
+      }
+      onInteract?.(block.id);
+      onSubmit({ puzzleId: block.id, type: "select-items", answer: Array.from(new Set(selectedItems)) });
       return;
     }
 
@@ -204,8 +233,10 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
   const statusClass =
     status === "correct" ? "choice-correct" : status === "incorrect" ? "choice-error" : submitting ? "choice-pending" : "";
   const effectiveStatus =
-    block.type === "drag-sockets" && localError ? "incorrect" : status;
+    (block.type === "drag-sockets" || block.type === "select-items") && localError ? "incorrect" : status;
   const dragStatus: "correct" | "incorrect" | "idle" =
+    effectiveStatus === "correct" ? "correct" : effectiveStatus === "incorrect" ? "incorrect" : "idle";
+  const selectStatus: "correct" | "incorrect" | "idle" =
     effectiveStatus === "correct" ? "correct" : effectiveStatus === "incorrect" ? "incorrect" : "idle";
   const optionSize = (block.kind === "puzzle" && "optionSize" in block && block.optionSize) || "small";
   const optionSizeClass = `option-size-${optionSize}`;
@@ -330,6 +361,25 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
             }}
           />
         </>
+      )}
+
+      {block.type === "select-items" && (
+        <SelectItemsPuzzle
+          block={block as Extract<typeof block, { type: "select-items" }>}
+          selections={selectedItems}
+          onChange={(next) => {
+            setSelectedItems(Array.from(new Set(next)));
+            onInteract?.(block.id);
+          }}
+          resolveAsset={resolveImage}
+          status={selectStatus}
+          disabled={submitting || block.solved}
+          errorMessage={localError || undefined}
+          onStartInteraction={() => {
+            setLocalError(null);
+            onInteract?.(block.id);
+          }}
+        />
       )}
 
       {!block.solved && (

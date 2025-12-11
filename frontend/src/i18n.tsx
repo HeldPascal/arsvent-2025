@@ -74,6 +74,8 @@ type TranslationKey =
   | "dragHint"
   | "socketPlaceholder"
   | "allItemsPlaced"
+  | "selectItemsHint"
+  | "selectItemsRequired"
   | "override"
   | "noContent"
   | "funSettingTitle"
@@ -154,6 +156,8 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     placeAllItems: "Place the items onto the marked sockets.",
     dragHint: "Select or drag an item, then click or drop on a matching socket to place or swap it.",
     allItemsPlaced: "All items are placed. Select or drag one to a socket to adjust.",
+    selectItemsHint: "Tap the items that belong to the answer. Tap again to unselect.",
+    selectItemsRequired: "Select at least one item.",
     socketPlaceholder: "?",
     override: "Override",
     noContent: "No content yet",
@@ -234,6 +238,8 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     placeAllItems: "Platziere die Teile auf den markierten Stellen.",
     dragHint: "Wähle oder ziehe ein Teil und klicke bzw. lasse es auf einem passenden Feld los, um es zu platzieren oder zu tauschen.",
     allItemsPlaced: "Alle Teile sind platziert. Wähle oder ziehe eines auf ein Feld, um es anzupassen.",
+    selectItemsHint: "Tippe die passenden Elemente in der Szene an. Tippe erneut, um abzuwählen.",
+    selectItemsRequired: "Wähle mindestens ein Element aus.",
     socketPlaceholder: "?",
     override: "Überschreiben",
     noContent: "Kein Inhalt",

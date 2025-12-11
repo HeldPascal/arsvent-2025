@@ -260,6 +260,37 @@ solution:
 
 ---
 
+## 7.3 Select-Items Puzzle
+
+Players pick the correct items on a background. Items are already placed and cannot be moved; tapping toggles selection.
+
+### Fields
+- **type:** `"select-items"`
+- **backgroundImage:** path to background image
+- **items:** list of items with an absolute position (`0..1` for x/y), optional label/image/shape
+- **solution:** list of item ids that must be selected (array or `items: [...]`)
+
+### Example
+
+```yaml
+type: "select-items"
+backgroundImage: "/assets/map.png"
+
+items:
+  - id: "tower"
+    label: "Tower"
+    image: "/assets/tower.png"
+    position: { x: 0.18, y: 0.35 }
+  - id: "harbor"
+    label: "Harbor"
+    image: "/assets/harbor.png"
+    position: { x: 0.7, y: 0.65 }
+
+solution: ["tower"]
+```
+
+---
+
 # 8. Reward Block
 
 Rewards are defined separately from puzzles.

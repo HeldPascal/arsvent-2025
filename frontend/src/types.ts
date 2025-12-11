@@ -1,6 +1,6 @@
 export type Locale = "en" | "de";
 export type Mode = "NORMAL" | "VETERAN";
-export type RiddleType = "text" | "single-choice" | "multi-choice" | "sort" | "group" | "drag-sockets";
+export type RiddleType = "text" | "single-choice" | "multi-choice" | "sort" | "group" | "drag-sockets" | "select-items";
 
 export interface RiddleOption {
   id: string;
@@ -19,6 +19,7 @@ export interface DragSocketItem {
   image?: string;
   shape?: "circle" | "square" | "hex";
   defaultSocketId?: string;
+  position?: { x: number; y: number };
 }
 
 export interface DragSocketSlot {
@@ -36,6 +37,7 @@ export type RiddleAnswerPayload =
   | { puzzleId: string; type: "multi-choice"; answer: string[] }
   | { puzzleId: string; type: "sort"; answer: string[] }
   | { puzzleId: string; type: "group"; answer: Record<string, string[]> }
+  | { puzzleId: string; type: "select-items"; answer: string[] }
   | { puzzleId: string; type: "drag-sockets"; answer: Array<{ socketId: string; itemId: string }> };
 
 export interface User {

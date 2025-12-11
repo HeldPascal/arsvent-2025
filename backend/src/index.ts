@@ -485,6 +485,38 @@ const evaluatePuzzleAnswer = (block: Extract<DayBlock, { kind: "puzzle" }>, answ
       const expected = new Set(block.solution as string[]);
       return uniqueChoices.size === expected.size && choices.every((choice) => expected.has(choice));
     }
+    case "select-items": {
+      const selections = ensureStringArrayAnswer(answer, "Answer must list selected items");
+      if (selections.length === 0) throw new Error("Select at least one item");
+      const items = block.items ?? [];
+      if (!items.length) {
+        throw new Error("Puzzle is misconfigured");
+      }
+      const itemIds = new Set(items.map((item) => item.id));
+      const uniqueSelections = new Set<string>();
+      selections.forEach((id) => {
+        if (!itemIds.has(id)) throw new Error("Unknown item");
+        if (uniqueSelections.has(id)) throw new Error("Duplicate selections are not allowed");
+        uniqueSelections.add(id);
+      });
+      const rawSolutionItems: unknown[] =
+        Array.isArray(block.solution)
+          ? block.solution
+          : block.solution && typeof block.solution === "object" && "items" in (block.solution as Record<string, unknown>)
+            ? ((block.solution as { items?: unknown }).items as unknown[] | undefined) ?? []
+            : [];
+      const solutionItems = rawSolutionItems.map((entry) => normalizeAnswerId(entry, "Solution entries must be strings"));
+      if (!solutionItems.length) {
+        throw new Error("Puzzle is misconfigured");
+      }
+      solutionItems.forEach((id) => {
+        if (!itemIds.has(id)) {
+          throw new Error("Puzzle is misconfigured");
+        }
+      });
+      const expected = new Set(solutionItems);
+      return uniqueSelections.size === expected.size && Array.from(expected).every((id) => uniqueSelections.has(id));
+    }
     case "drag-sockets": {
       const placements = ensureDragSocketAnswer(answer);
       const sockets = block.sockets ?? [];

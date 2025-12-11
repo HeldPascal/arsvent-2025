@@ -736,6 +736,13 @@ a {
   gap: 12px;
 }
 
+.select-items-wrapper {
+  --socket-size: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .drag-hint,
 .puzzle-hint {
   padding: 10px 12px;
@@ -760,6 +767,10 @@ a {
   background-color: #0d0f12;
 }
 
+.select-items-board {
+  overflow: hidden;
+}
+
 .drag-sockets-board.is-dragging::after {
   content: "";
   position: absolute;
@@ -776,6 +787,30 @@ a {
   height: var(--socket-size);
   z-index: 1;
   cursor: pointer;
+}
+
+.select-item {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.select-item:disabled {
+  cursor: default;
+}
+
+.select-item .drag-socket-item {
+  cursor: pointer;
+}
+
+.select-items-board.status-correct .select-item.is-selected .drag-socket-item.selected {
+  border: 2px dashed #5bd18a;
+  box-shadow: 0 0 0 2px rgba(91, 209, 138, 0.2), 0 8px 18px rgba(0, 0, 0, 0.35);
+}
+
+.select-items-board.status-incorrect .select-item.is-selected .drag-socket-item.selected {
+  border: 2px dashed #d85959;
+  box-shadow: 0 0 0 2px rgba(216, 89, 89, 0.2), 0 8px 18px rgba(0, 0, 0, 0.35);
 }
 
 .drag-socket-target {
