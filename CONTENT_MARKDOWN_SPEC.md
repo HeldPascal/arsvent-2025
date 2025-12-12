@@ -291,6 +291,46 @@ solution: ["tower"]
 
 ---
 
+## 7.4 Memory Puzzle
+
+Classic matching pairs. Cards start face-down; players flip two at a time to find matching pairs. Matched pairs move into a list below the board.
+
+### Fields
+- **type:** `"memory"`
+- **backImage:** required card back image
+- **hoverBackImage:** optional alternative back used on hover
+- **cards:** list of card definitions (`id`, `image`; optional `label`), must be even
+- **solution:** pairs of ids (array of `{a, b}` or `[[idA, idB], ...]`), every card appears exactly once
+- **maxMisses:** optional non-negative integer; after this many wrong flips the board resets and re-shuffles (omit for unlimited)
+- **missIndicator:** optional (`deplete` | `fill`), supports `mode:animation` (e.g. `deplete:shatter`, `fill:burst`) to animate changes; defaults to no animation
+- **flipBackMs:** optional non-negative integer (ms) to control how long mismatched cards stay revealed (default 700ms)
+
+### Example
+
+```yaml
+type: "memory"
+backImage: "/assets/card_back.png"
+hoverBackImage: "/assets/card_back_hover.png"
+maxMisses: 4
+missIndicator: "deplete"
+
+cards:
+  - id: "moon-1"
+    image: "/assets/moon_left.png"
+  - id: "moon-2"
+    image: "/assets/moon_right.png"
+  - id: "tree-1"
+    image: "/assets/tree_left.png"
+  - id: "tree-2"
+    image: "/assets/tree_right.png"
+
+solution:
+  - { a: "moon-1", b: "moon-2" }
+  - [ "tree-1", "tree-2" ]
+```
+
+---
+
 # 8. Reward Block
 
 Rewards are defined separately from puzzles.

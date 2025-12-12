@@ -21,6 +21,7 @@ export default function DayPage({ user, version }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [resetPreviewRequested, setResetPreviewRequested] = useState(false);
   const [warned, setWarned] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<{ block: Extract<DayBlock, { kind: "puzzle" }>; payload: RiddleAnswerPayload } | null>(null);
@@ -76,11 +77,19 @@ export default function DayPage({ user, version }: Props) {
     setShowConfirm(false);
     setLastResults({});
 
-    fetchDay(dayNumber, { override: useOverride, locale: previewLocale, mode: previewMode })
+    fetchDay(dayNumber, {
+      override: useOverride,
+      locale: previewLocale,
+      mode: previewMode,
+      resetPreview: resetPreviewRequested,
+    })
       .then((data) => setDetail(data))
       .catch(() => setError(t("dayLoadFailed")))
-      .finally(() => setLoading(false));
-  }, [dayNumber, useOverride, previewLocale, previewMode, navigate, t, version]);
+      .finally(() => {
+        setLoading(false);
+        setResetPreviewRequested(false);
+      });
+  }, [dayNumber, useOverride, previewLocale, previewMode, navigate, t, version, resetPreviewRequested]);
 
   const performSubmit = async (block: Extract<DayBlock, { kind: "puzzle" }>, payload: RiddleAnswerPayload) => {
     if (!detail) return;
@@ -158,7 +167,7 @@ export default function DayPage({ user, version }: Props) {
       );
     }
     if (block.kind !== "puzzle") return null;
-    const effectiveSolved = useOverride ? false : block.solved;
+    const effectiveSolved = block.solved;
     const lastResult = lastResults[block.id];
     const status =
       effectiveSolved || (lastResult && lastResult.correct)
@@ -166,13 +175,12 @@ export default function DayPage({ user, version }: Props) {
         : lastResult && !lastResult.correct
           ? "incorrect"
           : "idle";
-    const renderBlock = useOverride && block.kind === "puzzle" ? { ...block, solved: false } : block;
     return (
       <div className="puzzle-card" key={`puzzle-${block.id}`}>
-        {renderBlock.title && <h3 className="puzzle-title">{renderBlock.title}</h3>}
-        <article className="riddle-body" dangerouslySetInnerHTML={{ __html: rewriteAssets(renderBlock.html) }} />
+        {block.title && <h3 className="puzzle-title">{block.title}</h3>}
+        <article className="riddle-body" dangerouslySetInnerHTML={{ __html: rewriteAssets(block.html) }} />
         <RiddleAnswerForm
-          block={renderBlock as Extract<DayBlock, { kind: "puzzle" }>}
+          block={block as Extract<DayBlock, { kind: "puzzle" }>}
           submitting={submitting}
           status={status}
           onInteract={(puzzleId) =>
@@ -224,6 +232,15 @@ export default function DayPage({ user, version }: Props) {
                   </button>
                 ))}
               </div>
+              <button
+                className="small-btn ghost"
+                onClick={() => {
+                  setResetPreviewRequested(true);
+                }}
+                disabled={loading}
+              >
+                {t("reset")}
+              </button>
             </div>
           ) : null}
           <button className="ghost nav-link" onClick={() => navigate("/calendar")}>

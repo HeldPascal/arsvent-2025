@@ -54,12 +54,13 @@ export const fetchDays = () => apiFetch<DaysResponse>("/api/days");
 
 export const fetchDay = (
   day: number,
-  opts?: { override?: boolean; locale?: "en" | "de"; mode?: "NORMAL" | "VETERAN" },
+  opts?: { override?: boolean; locale?: "en" | "de"; mode?: "NORMAL" | "VETERAN"; resetPreview?: boolean },
 ) => {
   const params = new URLSearchParams();
   if (opts?.override) params.set("override", "1");
   if (opts?.locale) params.set("locale", opts.locale);
   if (opts?.mode) params.set("mode", opts.mode);
+  if (opts?.resetPreview) params.set("resetPreview", "1");
   const suffix = params.toString();
   return apiFetch<DayDetail>(`/api/days/${day}${suffix ? `?${suffix}` : ""}`);
 };

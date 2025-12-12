@@ -64,6 +64,7 @@ type SessionWithVersion = ExpressSession &
     sessionVersion?: number;
     stateVersion?: number;
     puzzleProgress?: Record<string, string[]>;
+    previewPuzzleProgress?: Record<string, string[]>;
   };
 
 const isSuperAdminUser = (user?: PrismaUser | null) => Boolean(user?.isSuperAdmin);
@@ -262,21 +263,31 @@ const ensureAppState = async () =>
     create: { id: 1, unlockedDay: 0 },
   });
 
-const getSessionPuzzleProgress = (req: Request, day: number) => {
-  const store = (req.session as SessionWithVersion | undefined)?.puzzleProgress ?? {};
-  return new Set(store[String(day)] ?? []);
+type ProgressScope = "default" | "preview";
+const progressStoreKey = (scope: ProgressScope) => (scope === "preview" ? "previewPuzzleProgress" : "puzzleProgress");
+const buildProgressKey = (day: number, scope: ProgressScope, locale?: Locale, mode?: Mode) =>
+  scope === "preview" ? `${day}:${locale ?? "en"}:${mode ?? "NORMAL"}` : String(day);
+
+const getSessionPuzzleProgress = (req: Request, key: string, scope: ProgressScope) => {
+  const storeKey = progressStoreKey(scope);
+  const store = (req.session as SessionWithVersion | undefined)?.[storeKey] ?? {};
+  return new Set(store[key] ?? []);
 };
 
-const setSessionPuzzleProgress = (req: Request, day: number, ids: Set<string>) => {
+const setSessionPuzzleProgress = (req: Request, key: string, ids: Set<string>, scope: ProgressScope) => {
+  const storeKey = progressStoreKey(scope);
   const sess = req.session as SessionWithVersion;
-  if (!sess.puzzleProgress) sess.puzzleProgress = {};
-  sess.puzzleProgress[String(day)] = Array.from(ids);
+  if (!sess[storeKey]) {
+    sess[storeKey] = {};
+  }
+  (sess[storeKey] as Record<string, string[]>)[key] = Array.from(ids);
 };
 
-const clearSessionPuzzleProgress = (req: Request, day: number) => {
+const clearSessionPuzzleProgress = (req: Request, key: string, scope: ProgressScope) => {
+  const storeKey = progressStoreKey(scope);
   const sess = req.session as SessionWithVersion | undefined;
-  if (sess?.puzzleProgress) {
-    delete sess.puzzleProgress[String(day)];
+  if (sess?.[storeKey]) {
+    delete (sess[storeKey] as Record<string, string[]>)[key];
   }
 };
 
@@ -349,6 +360,22 @@ const ensureDragSocketAnswer = (value: unknown) => {
       socketId: normalizeAnswerId(socketId, "socketId is required"),
       itemId: normalizeAnswerId(itemId, "itemId is required"),
     };
+  });
+};
+
+const ensureMemoryAnswer = (value: unknown) => {
+  if (!Array.isArray(value)) {
+    throw new Error("Invalid memory answer format");
+  }
+  return value.map((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      throw new Error("Invalid memory answer format");
+    }
+    const { a, b, first, second } = entry as { a?: unknown; b?: unknown; first?: unknown; second?: unknown };
+    const left = normalizeAnswerId(a ?? first, "Answer must include a card id for a/first");
+    const right = normalizeAnswerId(b ?? second, "Answer must include a card id for b/second");
+    if (left === right) throw new Error("A pair must contain two different cards");
+    return { a: left, b: right };
   });
 };
 
@@ -516,6 +543,47 @@ const evaluatePuzzleAnswer = (block: Extract<DayBlock, { kind: "puzzle" }>, answ
       });
       const expected = new Set(solutionItems);
       return uniqueSelections.size === expected.size && Array.from(expected).every((id) => uniqueSelections.has(id));
+    }
+    case "memory": {
+      const pairs = ensureMemoryAnswer(answer);
+      const cards = block.cards ?? [];
+      if (!cards.length) {
+        throw new Error("Puzzle is misconfigured");
+      }
+      const cardIds = new Set(cards.map((card) => card.id));
+      const seenCards = new Set<string>();
+      const providedPairs = new Set<string>();
+      pairs.forEach(({ a, b }) => {
+        if (!cardIds.has(a) || !cardIds.has(b)) {
+          throw new Error("Unknown card");
+        }
+        if (seenCards.has(a) || seenCards.has(b)) {
+          throw new Error("Each card can only be matched once");
+        }
+        seenCards.add(a);
+        seenCards.add(b);
+        const canonical = [a, b].sort().join("|");
+        providedPairs.add(canonical);
+      });
+      const expectedPairs =
+        Array.isArray(block.solution) && block.solution.length > 0
+          ? (block.solution as Array<{ a?: string; b?: string }>)
+          : [];
+      if (!expectedPairs.length) {
+        throw new Error("Puzzle is misconfigured");
+      }
+      const expectedSet = new Set(
+        expectedPairs.map((entry) => {
+          const a = normalizeAnswerId(entry.a, "Solution pairs must have a card id");
+          const b = normalizeAnswerId(entry.b, "Solution pairs must have a card id");
+          return [a, b].sort().join("|");
+        }),
+      );
+      return (
+        seenCards.size === cardIds.size &&
+        providedPairs.size === expectedSet.size &&
+        Array.from(expectedSet).every((id) => providedPairs.has(id))
+      );
     }
     case "drag-sockets": {
       const placements = ensureDragSocketAnswer(answer);
@@ -800,13 +868,12 @@ app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, ne
         ? normalizeLocale(req.query.locale)
         : null;
     const requestedMode = typeof req.query.mode === "string" ? normalizeModeValue(req.query.mode) : null;
+    const resetPreview =
+      isAdminOverride &&
+      (req.query.resetPreview === "1" || req.query.resetPreview === "true" || req.query.resetPreview === "yes");
 
     const locale = isAdminOverride && requestedLocale ? requestedLocale : normalizeLocale(getUserLocale(req.user as PrismaUser));
     const mode = isAdminOverride && requestedMode ? requestedMode : getUserMode(req.user as PrismaUser);
-
-    if (isAdminOverride) {
-      clearSessionPuzzleProgress(req, day);
-    }
 
     if (!available) {
       return res.json({
@@ -825,7 +892,12 @@ app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, ne
       });
     }
 
-    const sessionSolved = getSessionPuzzleProgress(req, day);
+    const sessionScope: ProgressScope = isAdminOverride ? "preview" : "default";
+    const progressKey = buildProgressKey(day, sessionScope, locale, mode);
+    if (isAdminOverride && resetPreview) {
+      clearSessionPuzzleProgress(req, progressKey, sessionScope);
+    }
+    const sessionSolved = getSessionPuzzleProgress(req, progressKey, sessionScope);
     let content = applyCreatureSwapToDay(
       await loadDayContent(day, locale, mode, sessionSolved, false),
       locale,
@@ -892,7 +964,9 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
 
     const locale = isAdminOverride && requestedLocale ? requestedLocale : getUserLocale(req.user as PrismaUser);
     const mode = isAdminOverride && requestedMode ? requestedMode : getUserMode(req.user as PrismaUser);
-    const sessionSolved = getSessionPuzzleProgress(req, day);
+    const sessionScope: ProgressScope = isAdminOverride ? "preview" : "default";
+    const progressKey = buildProgressKey(day, sessionScope, locale, mode);
+    const sessionSolved = getSessionPuzzleProgress(req, progressKey, sessionScope);
     const content = await loadDayContent(day, locale, mode, sessionSolved, false);
 
     if (!puzzleId) {
@@ -938,7 +1012,7 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
     const updatedSolved = new Set(sessionSolved);
     if (correct) {
       updatedSolved.add(effectivePuzzle.id);
-      setSessionPuzzleProgress(req, day, updatedSolved);
+      setSessionPuzzleProgress(req, progressKey, updatedSolved, sessionScope);
     }
 
     let nextContent = await loadDayContent(day, locale, mode, updatedSolved, false);

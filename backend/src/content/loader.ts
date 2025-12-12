@@ -9,7 +9,7 @@ import { loadInventory, invalidateInventoryCache } from "./inventory.js";
 
 export type Locale = "en" | "de";
 export type Mode = "NORMAL" | "VETERAN";
-export type RiddleType = "text" | "single-choice" | "multi-choice" | "sort" | "group" | "drag-sockets" | "select-items";
+export type RiddleType = "text" | "single-choice" | "multi-choice" | "sort" | "group" | "drag-sockets" | "select-items" | "memory";
 export type DragShape = "circle" | "square" | "hex";
 
 export interface IntroContent {
@@ -44,6 +44,12 @@ export interface DragSocketSlot {
   shape?: DragShape;
   label?: string;
   image?: string;
+}
+
+export interface MemoryCard {
+  id: string;
+  image: string;
+  label?: string;
 }
 
 export interface RiddleReward {
@@ -83,6 +89,13 @@ export interface PuzzleBlock {
   items?: DragSocketItem[];
   sockets?: DragSocketSlot[];
   shape?: DragShape;
+  cards?: MemoryCard[];
+  backImage?: string;
+  hoverBackImage?: string;
+  maxMisses?: number | null;
+  missIndicator?: "deplete" | "fill";
+  missIndicatorAnimation?: "burst" | "shatter";
+  flipBackMs?: number;
   solved: boolean;
   solution: unknown;
 }

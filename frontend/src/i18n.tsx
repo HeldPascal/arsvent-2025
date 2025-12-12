@@ -74,6 +74,10 @@ type TranslationKey =
   | "dragHint"
   | "socketPlaceholder"
   | "allItemsPlaced"
+  | "memoryHint"
+  | "memoryReset"
+  | "memoryMisses"
+  | "matchAllPairs"
   | "selectItemsHint"
   | "selectItemsRequired"
   | "override"
@@ -156,6 +160,10 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     placeAllItems: "Place the items onto the marked sockets.",
     dragHint: "Select or drag an item, then click or drop on a matching socket to place or swap it.",
     allItemsPlaced: "All items are placed. Select or drag one to a socket to adjust.",
+    memoryHint: "Flip cards to find the correct pairs. Matched cards move to the list below.",
+    memoryReset: "Too many misses. The board has been reset and shuffled.",
+    memoryMisses: "{count} tries left",
+    matchAllPairs: "Match all pairs before submitting.",
     selectItemsHint: "Tap the items that belong to the answer. Tap again to unselect.",
     selectItemsRequired: "Select at least one item.",
     socketPlaceholder: "?",
@@ -238,6 +246,10 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     placeAllItems: "Platziere die Teile auf den markierten Stellen.",
     dragHint: "Wähle oder ziehe ein Teil und klicke bzw. lasse es auf einem passenden Feld los, um es zu platzieren oder zu tauschen.",
     allItemsPlaced: "Alle Teile sind platziert. Wähle oder ziehe eines auf ein Feld, um es anzupassen.",
+    memoryHint: "Decke Karten auf und finde die passenden Paare. Gefundene Karten wandern unten in die Liste.",
+    memoryReset: "Zu viele Fehlversuche. Das Feld wurde zurückgesetzt und neu gemischt.",
+    memoryMisses: "{count} Versuche übrig",
+    matchAllPairs: "Decke alle Paare auf, bevor du abschickst.",
     selectItemsHint: "Tippe die passenden Elemente in der Szene an. Tippe erneut, um abzuwählen.",
     selectItemsRequired: "Wähle mindestens ein Element aus.",
     socketPlaceholder: "?",

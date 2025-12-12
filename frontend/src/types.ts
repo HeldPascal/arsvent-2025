@@ -1,6 +1,6 @@
 export type Locale = "en" | "de";
 export type Mode = "NORMAL" | "VETERAN";
-export type RiddleType = "text" | "single-choice" | "multi-choice" | "sort" | "group" | "drag-sockets" | "select-items";
+export type RiddleType = "text" | "single-choice" | "multi-choice" | "sort" | "group" | "drag-sockets" | "select-items" | "memory";
 
 export interface RiddleOption {
   id: string;
@@ -31,6 +31,12 @@ export interface DragSocketSlot {
   image?: string;
 }
 
+export interface MemoryCard {
+  id: string;
+  image: string;
+  label?: string;
+}
+
 export type RiddleAnswerPayload =
   | { puzzleId: string; type: "text"; answer: string }
   | { puzzleId: string; type: "single-choice"; answer: string }
@@ -38,6 +44,7 @@ export type RiddleAnswerPayload =
   | { puzzleId: string; type: "sort"; answer: string[] }
   | { puzzleId: string; type: "group"; answer: Record<string, string[]> }
   | { puzzleId: string; type: "select-items"; answer: string[] }
+  | { puzzleId: string; type: "memory"; answer: Array<{ a: string; b: string }> }
   | { puzzleId: string; type: "drag-sockets"; answer: Array<{ socketId: string; itemId: string }> };
 
 export interface User {
@@ -91,7 +98,14 @@ export type DayBlock =
       items?: DragSocketItem[];
       sockets?: DragSocketSlot[];
       shape?: "circle" | "square" | "hex";
-    }
+  cards?: MemoryCard[];
+  backImage?: string;
+  hoverBackImage?: string;
+  maxMisses?: number | null;
+  missIndicator?: "deplete" | "fill";
+  missIndicatorAnimation?: "burst" | "shatter";
+  flipBackMs?: number;
+}
   | {
       kind: "reward";
       id?: string;

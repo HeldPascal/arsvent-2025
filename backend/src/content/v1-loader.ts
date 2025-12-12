@@ -8,6 +8,7 @@ import type {
   DragSocketItem,
   DragSocketSlot,
   DragShape,
+  MemoryCard,
 } from "./loader.js";
 
 export type WhenCondition =
@@ -134,6 +135,7 @@ const resolveType = (input?: string): RiddleType => {
   if (["sort", "ordering", "order"].includes(normalized)) return "sort";
   if (["group", "grouping"].includes(normalized)) return "group";
   if (["select-items", "select", "mark"].includes(normalized)) return "select-items";
+  if (["memory", "pairs", "card-pairs"].includes(normalized)) return "memory";
   if (["drag-sockets", "drag", "sockets"].includes(normalized)) return "drag-sockets";
   return "text";
 };
@@ -548,6 +550,103 @@ const normalizeDragSolution = (
   return { lists, sockets: solutionSockets };
 };
 
+const normalizeMemoryCards = (raw: unknown): MemoryCard[] => {
+  if (!Array.isArray(raw) || raw.length < 2) {
+    throw new Error("Memory puzzles require at least two cards");
+  }
+  if (raw.length % 2 !== 0) {
+    throw new Error("Memory puzzles require an even number of cards");
+  }
+  const cards = raw.map((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      throw new Error("Invalid memory card definition");
+    }
+    const { id, image, label } = entry as { id?: unknown; image?: unknown; label?: unknown };
+    const cardId = normalizeId(id, "Memory cards require an id");
+    const cardImage = normalizeId(image, "Memory cards require an image");
+    const cardLabel = typeof label === "string" ? label : undefined;
+    return { id: cardId, image: cardImage, ...(cardLabel ? { label: cardLabel } : {}) };
+  });
+  const seen = new Set<string>();
+  cards.forEach((card) => {
+    if (seen.has(card.id)) throw new Error(`Duplicate memory card id: ${card.id}`);
+    seen.add(card.id);
+  });
+  return cards;
+};
+
+const normalizeMemoryPairs = (raw: unknown, cards: MemoryCard[]): Array<{ a: string; b: string }> => {
+  const cardIds = new Set(cards.map((card) => card.id));
+  const rawPairs =
+    Array.isArray(raw) && raw.length > 0
+      ? raw
+      : raw && typeof raw === "object" && Array.isArray((raw as { pairs?: unknown }).pairs)
+        ? ((raw as { pairs?: unknown[] }).pairs ?? [])
+        : [];
+  if (!rawPairs.length) {
+    throw new Error("Memory puzzles require pairs in the solution");
+  }
+  const pairs = rawPairs.map((entry) => {
+    if (Array.isArray(entry) && entry.length === 2) {
+      const [a, b] = entry;
+      return { a: normalizeId(a, "Pair ids must be strings"), b: normalizeId(b, "Pair ids must be strings") };
+    }
+    if (entry && typeof entry === "object") {
+      const { a, b, first, second } = entry as { a?: unknown; b?: unknown; first?: unknown; second?: unknown };
+      const left = normalizeId(a ?? first, "Pair entries require an id for a/first");
+      const right = normalizeId(b ?? second, "Pair entries require an id for b/second");
+      return { a: left, b: right };
+    }
+    throw new Error("Invalid memory solution entry");
+  });
+
+  const used = new Set<string>();
+  pairs.forEach(({ a, b }) => {
+    if (a === b) throw new Error("Pairs must reference two different cards");
+    if (!cardIds.has(a)) throw new Error(`Solution references unknown card: ${a}`);
+    if (!cardIds.has(b)) throw new Error(`Solution references unknown card: ${b}`);
+    if (used.has(a) || used.has(b)) throw new Error("Each card must appear in exactly one pair");
+    used.add(a);
+    used.add(b);
+  });
+
+  if (used.size !== cardIds.size) {
+    throw new Error("Solution must include every card exactly once");
+  }
+
+  return pairs;
+};
+
+const normalizeMaxMisses = (value: unknown): number | null => {
+  if (value === undefined || value === null) return null;
+  if (typeof value === "string" && ["unlimited", "infinite", "none"].includes(value.toLowerCase())) return null;
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) {
+    throw new Error("maxMisses must be a non-negative number or omitted for unlimited");
+  }
+  return Math.floor(num);
+};
+
+const normalizeMissIndicator = (
+  value: unknown,
+): { mode: "deplete" | "fill"; animation?: "burst" | "shatter" | undefined } => {
+  if (typeof value !== "string") return { mode: "deplete", animation: undefined };
+  const [rawMode, rawAnim] = value.toLowerCase().split(":");
+  const mode: "deplete" | "fill" =
+    rawMode === "fill" || rawMode === "gain" || rawMode === "charge" ? "fill" : "deplete";
+  const animation = rawAnim === "burst" || rawAnim === "shatter" ? rawAnim : undefined;
+  return { mode, animation };
+};
+
+const normalizeFlipBackMs = (value: unknown, fallback: number): number => {
+  if (value === undefined || value === null) return fallback;
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) {
+    throw new Error("flipBackMs must be a non-negative number");
+  }
+  return Math.floor(num);
+};
+
 const segmentBlocks = (blocks: StructuredBlock[]) => {
   const segments: Array<{ required: WhenCondition | null; blocks: StructuredBlock[] }> = [
     { required: null, blocks: [] },
@@ -668,6 +767,45 @@ const mapToDayBlocks = (
           options,
           minSelections,
           ...(optionSize ? { optionSize } : {}),
+          solved,
+          ...(block.title ? { title: block.title } : {}),
+        };
+      }
+
+      if (type === "memory") {
+        const rawDef = block.definition.raw as Record<string, unknown>;
+        const backImageCandidate = rawDef.backImage ?? rawDef["back-image"] ?? rawDef.cardBack ?? rawDef["card-back"];
+        const hoverBackCandidate =
+          rawDef.hoverBackImage ?? rawDef["hover-back-image"] ?? rawDef.hoverCardBack ?? rawDef["hover-card-back"];
+        const backImage = typeof backImageCandidate === "string" ? backImageCandidate : undefined;
+        const hoverBackImage = typeof hoverBackCandidate === "string" ? hoverBackCandidate : undefined;
+        if (!backImage) {
+          throw new Error("Memory puzzles require a card back image");
+        }
+        const cards = normalizeMemoryCards(rawDef.cards ?? rawDef.items);
+        const solutionPairs = normalizeMemoryPairs(block.definition.solution, cards);
+        const maxMisses = normalizeMaxMisses(rawDef.maxMisses ?? rawDef["max-misses"]);
+        const { mode: missIndicator, animation: missIndicatorAnimation } = normalizeMissIndicator(
+          rawDef.missIndicator ?? rawDef["miss-indicator"],
+        );
+        const flipBackMs = normalizeFlipBackMs(
+          rawDef.flipBackMs ?? rawDef["flip-back-ms"] ?? rawDef.flipBackDelay ?? rawDef["flip-back-delay"],
+          700,
+        );
+        return {
+          kind: "puzzle",
+          id: block.id,
+          html: block.html,
+          visible: visibleSet.has(block) || includeHidden,
+          type,
+          backImage,
+          ...(hoverBackImage ? { hoverBackImage } : {}),
+          cards,
+          solution: solutionPairs,
+          ...(maxMisses !== null ? { maxMisses } : {}),
+          ...(missIndicator ? { missIndicator } : {}),
+          ...(missIndicatorAnimation ? { missIndicatorAnimation } : {}),
+          flipBackMs,
           solved,
           ...(block.title ? { title: block.title } : {}),
         };
