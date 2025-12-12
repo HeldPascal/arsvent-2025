@@ -91,6 +91,14 @@ export default function MemoryPuzzle({
     return map;
   }, [pairsFromSolution]);
 
+  const pairByKey = useMemo(() => {
+    const map = new Map<string, { a: string; b: string }>();
+    pairsFromSolution.forEach((pair, idx) => {
+      map.set(`pair-${idx}`, { a: pair.a, b: pair.b });
+    });
+    return map;
+  }, [pairsFromSolution]);
+
   const solvedMode = block.solved;
   const displayMatched = solvedMode ? new Set(cards.map((card) => card.id)) : matched;
   const displayPairs = solvedMode ? pairsFromSolution.map((p) => ({ a: p.a, b: p.b })) : foundPairs;
@@ -253,10 +261,12 @@ export default function MemoryPuzzle({
       if (isMatch) {
         setTimeout(() => {
           setMatched((prev) => new Set([...prev, first, second]));
-          const pairKey = [first, second].sort().join("|");
+          const canonical = firstKey ? pairByKey.get(firstKey) : null;
+          const pairForRecord = canonical ?? { a: first, b: second };
+          const pairKey = [pairForRecord.a, pairForRecord.b].sort().join("|");
           setFoundPairs((prev) => {
             if (prev.some((p) => [p.a, p.b].sort().join("|") === pairKey)) return prev;
-            return [...prev, { a: first, b: second }];
+            return [...prev, { a: pairForRecord.a, b: pairForRecord.b }];
           });
           setFlipped([]);
         }, 250);
