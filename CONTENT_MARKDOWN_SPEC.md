@@ -199,7 +199,24 @@ The following types are currently supported:
 
 ---
 
-## 7.1 Single Choice Puzzle
+## 7.1 Text Puzzle
+
+A simple free-text answer.
+
+### Fields
+- **type:** `"text"`
+- **solution:** string with the expected answer
+
+### Example
+
+```yaml
+type: "text"
+solution: "my answer"
+```
+
+---
+
+## 7.2 Single Choice Puzzle
 
 A multiple-choice puzzle with one correct option.
 
@@ -208,6 +225,7 @@ A multiple-choice puzzle with one correct option.
 - **difficulty:** optional (`easy`, `normal`, `hard`)
 - **options:** list of options (id, label, image)
 - **solution:** id of the correct option
+- **size:** optional (`small`, `medium`, `large`) to adjust rendering
 - **consumesInventory:** optional list of required items
 
 ### Example
@@ -226,16 +244,49 @@ solution: "1"
 
 ---
 
-## 7.2 Drag-Sockets Puzzle
+## 7.3 Multi Choice Puzzle
+
+Multiple correct options; player can select several.
+
+### Fields
+- **type:** `"multi-choice"`
+- **options:** list of options (id, label, image)
+- **minSelections:** optional minimum required (defaults to 1)
+- **solution:** array of correct option ids
+- **size:** optional (`small`, `medium`, `large`) to adjust rendering
+- **consumesInventory:** optional list of required items
+
+### Example
+
+```yaml
+type: "multi-choice"
+minSelections: 2
+options:
+  - id: "1"
+    label: "Rune"
+  - id: "2"
+    label: "Blade"
+  - id: "3"
+    label: "Shield"
+solution: ["1", "2"]
+```
+
+---
+
+## 7.4 Drag-Sockets Puzzle
 
 Players drag items into specific positions.
 
 ### Fields
 - **type:** `"drag-sockets"`
 - **backgroundImage:** path to background image
-- **items:** list of draggable items
-- **sockets:** list of socket definitions including accepted item types
-- **solution:** list of socketId → itemId relations
+- **shape:** optional default shape for items/sockets (`circle` if omitted)
+- **items:** list of draggable items (id, label, image, optional `shape`, optional `defaultSocketId`)
+- **sockets:** list of socket definitions including accepted item types; sockets can set `label`, `image`, and `shape`
+- **solution:** list of socketId → itemId relations. Supports:
+  - simple list of `{ socketId, itemId }`
+  - `lists` + `listId` to reuse pooled items
+  - presence-only mode: omit `socketId` to just require items to be placed
 
 ### Example
 
@@ -260,7 +311,7 @@ solution:
 
 ---
 
-## 7.3 Select-Items Puzzle
+## 7.5 Select-Items Puzzle
 
 Players pick the correct items on a background. Items are already placed and cannot be moved; tapping toggles selection.
 
@@ -291,7 +342,7 @@ solution: ["tower"]
 
 ---
 
-## 7.4 Memory Puzzle
+## 7.6 Memory Puzzle
 
 Classic matching pairs. Cards start face-down; players flip two at a time to find matching pairs. Matched pairs move into a list below the board.
 
