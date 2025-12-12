@@ -53,3 +53,8 @@
   description: "Material that embodies the essence of the Khajiit."
   image: "/assets/25_11_reward.png"
   rarity: "common"
+- id: "obsidian"
+  title: "Erendas' Obsidian"
+  description: "Material that embodies the essence of the Dark Elves."
+  image: "/assets/25_12_reward.png"
+  rarity: "common"

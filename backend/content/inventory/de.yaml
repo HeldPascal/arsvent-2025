@@ -53,3 +53,8 @@
   description: "Material, das die Essenz der Khajiit verkörpert."
   image: "/assets/25_11_reward.png"
   rarity: "common"
+- id: "obsidian"
+  title: "Obsidian von Erendas"
+  description: "Material, das die Essenz der Dunkelelfen verkörpert."
+  image: "/assets/25_12_reward.png"
+  rarity: "common"
