@@ -73,5 +73,7 @@ solution:
   All that remains of my beloved Cyrodiil is this stone.
   Take it, I no longer need it.
 
+You sense that more trapped souls are waiting for your aid.
+
 ## Reward
 inventoryId: "nickel"

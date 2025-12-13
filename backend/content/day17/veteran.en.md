@@ -40,5 +40,7 @@ Which of these dungeons belong to the same dlc?
   Here, take this small collection I carried with me when I died.
   Find the combination that works best for you.
 
+You sense that more trapped souls are waiting for your aid.
+
 ## Reward
 inventoryId: "runes"

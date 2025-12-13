@@ -63,5 +63,7 @@ solution:
 Ich liebte die Tiere und die Pflanzen.
 Gebt gut acht und ich lehre Euch die wichtigsten meiner Fähigkeiten!
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "wardenskills"

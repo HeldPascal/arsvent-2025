@@ -46,5 +46,7 @@ Find all the impossible things in this fight.
   Nehmt dies.
   Es ist keine meiner Waffen oder Rüstungen, aber es ist das nächstbeste.
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "voucher"

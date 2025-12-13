@@ -67,5 +67,7 @@ solution:
   Hier, dieses Wasser wurde vom Licht jedes Sterns berührt.
   Es war der wertvollste Besitz von diesem, und nun gehört es Euch.
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "stardew"

@@ -86,5 +86,7 @@ solution:
   Nehmt diesen Splitter Vulkanglas aus meiner Heimat Vvardenfell.
   Tragt ihn mit Euch auf dem Weg zu Eurer nächsten großen Schlacht.
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "obsidian"

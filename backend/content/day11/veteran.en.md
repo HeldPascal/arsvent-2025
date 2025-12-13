@@ -68,5 +68,7 @@ solution: ["3", "4"]
   Take this stone she found as a kitten and carried ever since.
   She no longer needs it.
 
+You sense that more trapped souls are waiting for your aid.
+
 ## Reward
 inventoryId: "moonstone"

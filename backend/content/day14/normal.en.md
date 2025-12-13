@@ -36,5 +36,7 @@ First find the constellation of the Tower, then the Ritual and finally the Lady.
   There, I, Hilthe Snowdaughter, was welcomed with mead and a feast.
   My mentor there once taught me this skill, and now I wish to pass my knowledge on to you.
 
+You sense that more trapped souls are waiting for your aid.
+
 ## Reward
 inventoryId: "soultrap"

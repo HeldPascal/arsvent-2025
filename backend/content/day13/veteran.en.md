@@ -61,5 +61,7 @@ solution:
   I loved all the animals and plants.
   Pay close attention, and I'll teach you my most important skills!
 
+You sense that more trapped souls are waiting for your aid.
+
 ## Reward
 inventoryId: "wardenskills"

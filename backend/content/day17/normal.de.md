@@ -40,5 +40,7 @@ Welche dieser Verliese gehören zum selben DLC?
   Hier, nehmt diese kleine Sammlung, die ich bei mir trug, als ich starb.
   Findet die Kombination, die für Euch am besten funktioniert.
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "runes"

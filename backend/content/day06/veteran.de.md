@@ -53,5 +53,7 @@ solution: "2"
   Doch egal, wie unterschiedlich wir sind, so leben wir alle unter denselben Sternen.
   Nehmt dies als Erinnerung daran.
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "starmetal"

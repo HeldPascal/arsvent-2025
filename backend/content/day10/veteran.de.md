@@ -262,5 +262,7 @@ solution:
   Eine Blume zu pflücken mag für einen Waldelf so schwer sein, wie für andere, einen Drachen zu töten.
   Nehmt diese Reagenzien als Zeichen dafür, dass alles möglich ist, wenn man ein Gleichgewicht findet.
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "ingredients"

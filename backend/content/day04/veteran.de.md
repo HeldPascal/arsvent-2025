@@ -64,5 +64,7 @@ solution:
   Hier, nehmt diese Embleme meiner Kameraden.
   Führt diesen Kampf im Namen aller Sterblichen!
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "shields"

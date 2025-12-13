@@ -46,5 +46,7 @@ Find 3 of the impossible things during the fight against Lord Falgravn.
   Take this.
   It is not one of my weapons or armor, but it is the next best thing.
 
+You sense that more trapped souls are waiting for your aid.
+
 ## Reward
 inventoryId: "voucher"

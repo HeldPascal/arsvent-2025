@@ -68,5 +68,7 @@ solution:
   We are root-siblings, you and I.
   Please, take my weapons and save us.
 
+You sense that more trapped souls are waiting for your aid.
+
 ## Reward
 inventoryId: "weapons"

@@ -50,5 +50,7 @@ solution: "3"
   Take this glyph.
   May it serve you in your coming battles as well as it served me in mine.
 
+You sense that more trapped souls are waiting for your aid.
+
 ## Reward
 inventoryId: "glyph"

@@ -39,5 +39,7 @@ Ordne die farblich passenden Schuppen den Orten zu, an denen du Lokkestiiz, Navi
   Also hat Razaami ihr Geschenk für die Göttlichen wieder mitgenommen.
   Ihr sollt es nun haben, Fünfkralle, denn diese glaubt an Euch.
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "nirncrux"

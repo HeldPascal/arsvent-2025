@@ -41,5 +41,7 @@ In welcher Reihenfolge triffst du auf diese Aspekte von Tho'at Replicanum?
   Ihr seid auch unerschrocken, nicht wahr?
   Dann nehmt diesen Schlüssel als Zeichen meines Vertrauens in Euch.
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "key"

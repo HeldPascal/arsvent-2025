@@ -64,5 +64,7 @@ solution:
   Here, take these shields of my companions.
   Fight this battle for all mortals!
 
+You sense that more trapped souls are waiting for your aid.
+
 ## Reward
 inventoryId: "shields"

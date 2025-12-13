@@ -59,5 +59,7 @@ solution:
   But in the end I learned that true beauty is not in gold, but in fleeting things.
   Take these plants as a reminder of what is truly precious.
 
+You sense that more trapped souls are waiting for your aid.
+
 ## Reward
 inventoryId: "plants"

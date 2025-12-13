@@ -38,5 +38,7 @@ Which armor skill do you need to use in order to achieve this effect?
   Many have come to me, Latharek, over the years to learn this technique.
   And now I will teach it to you!
 
+You sense that more trapped souls are waiting for your aid.
+
 ## Reward
 inventoryId: "armorskill"

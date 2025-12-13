@@ -38,5 +38,7 @@ Welche Rüstungsfähigkeit musst du verwenden, um diesen Effekt zu erzielen?
   Viele kamen im Laufe der Jahre zu mir, Latharek, um diese Technik zu erlernen.
   Und nun lehre ich sie Euch!
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "armorskill"

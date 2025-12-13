@@ -59,5 +59,7 @@ solution:
   Doch am Ende stellte ich fest, dass wahre Schönheit nicht in Gold liegt, sondern in den vergänglichen Dingen.
   Nehmt diese Pflanzen als Erinnerung daran, was wirklich kostbar ist.
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "plants"

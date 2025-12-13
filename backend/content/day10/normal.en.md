@@ -168,5 +168,7 @@ solution:
   Picking a flower may be as hard for a Wood Elf as slaying a dragon is for others.
   Take these reagents as a sign that anything is possible when you find balance.
 
+You sense that more trapped souls are waiting for your aid.
+
 ## Reward
 inventoryId: "ingredients"

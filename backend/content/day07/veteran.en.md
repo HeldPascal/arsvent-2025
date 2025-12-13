@@ -115,5 +115,7 @@ solution: "6"
   I taught them the skills for a good life.
   And I want to pass those skills on to you as well.
 
+You sense that more trapped souls are waiting for your aid.
+
 ## Reward
 inventoryId: "weaponskills"

@@ -87,5 +87,7 @@ solution:
   Take this shard of volcanic glass from my homeland Vvardenfell.
   Carry it with you on the way to your next great battle.
 
+You sense that more trapped souls are waiting for your aid.
+
 ## Reward
 inventoryId: "obsidian"

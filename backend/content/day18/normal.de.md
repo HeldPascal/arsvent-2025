@@ -46,5 +46,7 @@ Finde 3 der unmöglichen Dinge während des Kampfs gegen Fürst Falgravn.
   Nehmt dies.
   Es ist keine meiner Waffen oder Rüstungen, aber es ist das nächstbeste.
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "voucher"

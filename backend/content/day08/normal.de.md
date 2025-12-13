@@ -48,5 +48,7 @@ solution: "3"
   Nehmt diese Glyphe an Euch.
   Möge sie Euch in deinen bevorstehenden Kämpfen so gute Dienste leisten, wie sie es in meinen tat.
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "glyph"

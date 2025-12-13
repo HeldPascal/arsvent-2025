@@ -68,5 +68,7 @@ solution:
   Wir sind Wurzelgeschwister, Ihr und ich.
   Bitte, nehmt meine Waffen und rettet uns.
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "weapons"

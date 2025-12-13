@@ -36,5 +36,7 @@ Finde zuerst das Sternbild Turm, dann das Ritual und dann die Fürstin.
   Dort empfing man mich, Hilthe Schneetochter, mit Met und einem Fest.
   Mein Mentor dort lehrte mich einst diese Fähigkeit und nun möchte ich mein Wissen an Euch weitergeben.
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "soultrap"

@@ -115,5 +115,7 @@ solution: "6"
   Ich lehrte sie die Fähigkeiten für ein gutes Leben.
   Und auch an Euch möchte ich diese Fähigkeiten weitergeben.
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "weaponskills"

@@ -67,5 +67,7 @@ solution:
   Here, this water has been touched by the light of every star.
   It was his most prized possession, and now it is yours.
 
+You sense that more trapped souls are waiting for your aid.
+
 ## Reward
 inventoryId: "stardew"

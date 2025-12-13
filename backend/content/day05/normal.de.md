@@ -73,5 +73,7 @@ solution:
   Von meinem geliebten Cyrodiil blieb mir nur dieser Stein.
   Nehmt ihn, ich brauche ihn nicht mehr.
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "nickel"

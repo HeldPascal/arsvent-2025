@@ -68,5 +68,7 @@ solution: ["3", "4"]
   Nehmt diesen Stein, den diese als Kätzchen fand und immer bei sich trug.
   Sie braucht ihn nicht mehr.
 
+Du spürst, dass weitere gefangene Seelen auf deine Hilfe warten.
+
 ## Reward
 inventoryId: "moonstone"

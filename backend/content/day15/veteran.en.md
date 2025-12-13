@@ -41,5 +41,7 @@ In what order do you encounter these aspects of Tho'at Replicanum?
   You are undaunted too, aren't you?
   Then take this key as a token of my trust in you.
 
+You sense that more trapped souls are waiting for your aid.
+
 ## Reward
 inventoryId: "key"

@@ -50,5 +50,7 @@ solution: "2"
   But no matter how different we are, we all live under the same stars.
   Take this as a reminder of that.
 
+You sense that more trapped souls are waiting for your aid.
+
 ## Reward
 inventoryId: "starmetal"

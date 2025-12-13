@@ -39,5 +39,7 @@ Match the correctly color scales to the locations where you fight Lokkestiiz, Na
   So Razaami took her gift for the Divines back with her.
   Now you shall have it, five-claw, for this one believes in you.
 
+You sense that more trapped souls are waiting for your aid.
+
 ## Reward
 inventoryId: "nirncrux"
