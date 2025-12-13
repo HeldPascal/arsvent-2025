@@ -379,6 +379,47 @@ const ensureMemoryAnswer = (value: unknown) => {
   });
 };
 
+const ensureGridPathAnswer = (value: unknown) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Invalid grid path answer format");
+  }
+  const { path, startColumn, goalColumn } = value as { path?: unknown; startColumn?: unknown; goalColumn?: unknown };
+  if (!Array.isArray(path) || path.length === 0) {
+    throw new Error("Path is required");
+  }
+
+  const normalizedPath = path.map((entry, idx) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      throw new Error("Invalid path entry");
+    }
+    const { x, y } = entry as { x?: unknown; y?: unknown };
+    const coordX = Number(x);
+    const coordY = Number(y);
+    if (!Number.isInteger(coordX) || !Number.isInteger(coordY)) {
+      throw new Error(`Path entry ${idx + 1} must use integer coordinates`);
+    }
+    return { x: coordX, y: coordY };
+  });
+
+  const normalizedStart =
+    startColumn === undefined ? undefined : Number.isInteger(Number(startColumn)) ? Number(startColumn) : undefined;
+  const normalizedGoal =
+    goalColumn === undefined ? undefined : Number.isInteger(Number(goalColumn)) ? Number(goalColumn) : undefined;
+
+  if (startColumn !== undefined && normalizedStart === undefined) {
+    throw new Error("startColumn must be an integer");
+  }
+  if (goalColumn !== undefined && normalizedGoal === undefined) {
+    throw new Error("goalColumn must be an integer");
+  }
+
+  return {
+    path: normalizedPath,
+    ...(normalizedStart !== undefined ? { startColumn: normalizedStart } : {}),
+    ...(normalizedGoal !== undefined ? { goalColumn: normalizedGoal } : {}),
+  };
+};
+
 const buildCreatureSwap = (locale: Locale) =>
   locale === "de"
     ? [
@@ -671,6 +712,82 @@ const evaluatePuzzleAnswer = (block: Extract<DayBlock, { kind: "puzzle" }>, answ
       }
 
       throw new Error("Puzzle is misconfigured");
+    }
+    case "grid-path": {
+      const { path, startColumn, goalColumn } = ensureGridPathAnswer(answer);
+      const grid = block.grid ?? { width: 9, height: 9 };
+      if (!grid.width || !grid.height) {
+        throw new Error("Puzzle is misconfigured");
+      }
+
+      const boundsChecked = path.map((coord, idx) => {
+        if (coord.x < 0 || coord.x >= grid.width || coord.y < 0 || coord.y >= grid.height) {
+          throw new Error(`Path entry ${idx + 1} is out of bounds`);
+        }
+        return coord;
+      });
+
+      if (!boundsChecked.length) {
+        throw new Error("Path is required");
+      }
+      if (boundsChecked[0]?.y !== 0) {
+        throw new Error("Path must start on the top row");
+      }
+      if (startColumn !== undefined && boundsChecked[0]?.x !== startColumn) {
+        throw new Error("Path must start in the chosen start column");
+      }
+
+      const visited = new Set<string>();
+      boundsChecked.forEach(({ x, y }) => {
+        const key = `${x}:${y}`;
+        if (visited.has(key)) {
+          throw new Error("Cells cannot be visited twice");
+        }
+        visited.add(key);
+      });
+
+      boundsChecked.forEach((coord, idx) => {
+        if (idx === 0) return;
+        const prev = boundsChecked[idx - 1]!;
+        const dx = Math.abs(coord.x - prev.x);
+        const dy = Math.abs(coord.y - prev.y);
+        if (dx + dy !== 1) {
+          throw new Error("Moves must be orthogonal steps");
+        }
+      });
+
+      const last = boundsChecked[boundsChecked.length - 1];
+      if (!last || last.y !== grid.height - 1) {
+        throw new Error("Path must end on the bottom row");
+      }
+      if (goalColumn !== undefined && last.x !== goalColumn) {
+        throw new Error("Path must reach the chosen goal column");
+      }
+
+      const solution = (block.solution ?? {}) as {
+        path?: Array<{ x?: number; y?: number }>;
+        startColumn?: number;
+        goalColumn?: number;
+      };
+      const solutionPath = Array.isArray(solution.path)
+        ? solution.path.map((entry, idx) => {
+            const x = Number(entry?.x);
+            const y = Number(entry?.y);
+            if (!Number.isInteger(x) || !Number.isInteger(y)) {
+              throw new Error(`Puzzle is misconfigured at solution entry ${idx + 1}`);
+            }
+            return { x, y };
+          })
+        : [];
+      if (!solutionPath.length) {
+        throw new Error("Puzzle is misconfigured");
+      }
+
+      const matches =
+        solutionPath.length === boundsChecked.length &&
+        solutionPath.every((step, idx) => step.x === boundsChecked[idx]?.x && step.y === boundsChecked[idx]?.y);
+
+      return matches;
     }
     default:
       throw new Error("Unsupported puzzle type for answer evaluation");

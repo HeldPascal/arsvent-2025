@@ -78,6 +78,26 @@ type TranslationKey =
   | "memoryReset"
   | "memoryMisses"
   | "matchAllPairs"
+  | "gridPathHint"
+  | "gridPathGoalHint"
+  | "gridPathStartLabel"
+  | "gridPathGoalLabel"
+  | "gridPathCannotSwitchStart"
+  | "gridPathChooseStart"
+  | "gridPathNoRevisit"
+  | "gridPathStartTop"
+  | "gridPathStartMatchesColumn"
+  | "gridPathAdjacency"
+  | "gridPathChooseCells"
+  | "gridPathNeedBottom"
+  | "gridPathGoalColumn"
+  | "gridPathStepBack"
+  | "gridPathNothingToUndo"
+  | "gridPathNothingToReset"
+  | "gridPathResetDisabledSolved"
+  | "gridPathResetHintLocked"
+  | "gridPathAlreadySolved"
+  | "gridPathResetAfterIncorrect"
   | "selectItemsHint"
   | "selectItemsRequired"
   | "override"
@@ -164,6 +184,26 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     memoryReset: "Too many misses. The board has been reset and shuffled.",
     memoryMisses: "{count} tries left",
     matchAllPairs: "Match all pairs before submitting.",
+    gridPathHint: "Choose a start column, then trace a path through the grid.",
+    gridPathGoalHint: "Reach the bottom and click the matching goal to submit.",
+    gridPathStartLabel: "Start",
+    gridPathGoalLabel: "Goal",
+    gridPathCannotSwitchStart: "Reset before choosing a different start column.",
+    gridPathChooseStart: "Choose a start column first.",
+    gridPathNoRevisit: "You already stepped there.",
+    gridPathStartTop: "Start on the top row.",
+    gridPathStartMatchesColumn: "Enter the grid in your chosen column.",
+    gridPathAdjacency: "Moves must be to an unvisited orthogonal cell.",
+    gridPathChooseCells: "Build a path before finishing.",
+    gridPathNeedBottom: "Reach the bottom row before selecting a goal.",
+    gridPathGoalColumn: "Use the goal beneath your current column.",
+    gridPathStepBack: "Step back",
+    gridPathNothingToUndo: "Nothing to undo yet.",
+    gridPathNothingToReset: "Nothing to reset.",
+    gridPathResetDisabledSolved: "Already solved.",
+    gridPathResetHintLocked: "Reset to try again.",
+    gridPathAlreadySolved: "Puzzle already solved; actions are disabled.",
+    gridPathResetAfterIncorrect: "Incorrect submission. Use Reset to start over.",
     selectItemsHint: "Tap the items that belong to the answer. Tap again to unselect.",
     selectItemsRequired: "Select at least one item.",
     socketPlaceholder: "?",
@@ -250,6 +290,26 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     memoryReset: "Zu viele Fehlversuche. Das Feld wurde zurückgesetzt und neu gemischt.",
     memoryMisses: "{count} Versuche übrig",
     matchAllPairs: "Decke alle Paare auf, bevor du abschickst.",
+    gridPathHint: "Wähle eine Startspalte und zeichne deinen Weg durchs Raster.",
+    gridPathGoalHint: "Erreiche die unterste Reihe und klicke dann das Ziel in derselben Spalte.",
+    gridPathStartLabel: "Start",
+    gridPathGoalLabel: "Ziel",
+    gridPathCannotSwitchStart: "Setze erst zurück, bevor du eine andere Startspalte wählst.",
+    gridPathChooseStart: "Wähle zuerst eine Startspalte.",
+    gridPathNoRevisit: "Dieses Feld hast du schon betreten.",
+    gridPathStartTop: "Beginne in der obersten Reihe.",
+    gridPathStartMatchesColumn: "Steige in deiner gewählten Spalte ein.",
+    gridPathAdjacency: "Züge müssen orthogonal auf ein unbesuchtes Feld gehen.",
+    gridPathChooseCells: "Lege einen Pfad fest, bevor du abschließt.",
+    gridPathNeedBottom: "Erreiche die unterste Reihe, bevor du das Ziel wählst.",
+    gridPathGoalColumn: "Nutze das Ziel unter deiner aktuellen Spalte.",
+    gridPathStepBack: "Einen Schritt zurück",
+    gridPathNothingToUndo: "Nichts zum Rückgängig machen.",
+    gridPathNothingToReset: "Nichts zum Zurücksetzen.",
+    gridPathResetDisabledSolved: "Bereits gelöst.",
+    gridPathResetHintLocked: "Setze zurück, um neu zu starten.",
+    gridPathAlreadySolved: "Rätsel gelöst; Aktionen sind deaktiviert.",
+    gridPathResetAfterIncorrect: "Falsche Abgabe. Nutze Zurücksetzen für einen neuen Versuch.",
     selectItemsHint: "Tippe die passenden Elemente in der Szene an. Tippe erneut, um abzuwählen.",
     selectItemsRequired: "Wähle mindestens ein Element aus.",
     socketPlaceholder: "?",

@@ -9,6 +9,8 @@ import type {
   DragSocketSlot,
   DragShape,
   MemoryCard,
+  GridSize,
+  GridPathSolution,
 } from "./loader.js";
 
 export type WhenCondition =
@@ -137,6 +139,7 @@ const resolveType = (input?: string): RiddleType => {
   if (["select-items", "select", "mark"].includes(normalized)) return "select-items";
   if (["memory", "pairs", "card-pairs"].includes(normalized)) return "memory";
   if (["drag-sockets", "drag", "sockets"].includes(normalized)) return "drag-sockets";
+  if (["grid-path", "path-grid", "gridpath"].includes(normalized)) return "grid-path";
   return "text";
 };
 
@@ -647,6 +650,100 @@ const normalizeFlipBackMs = (value: unknown, fallback: number): number => {
   return Math.floor(num);
 };
 
+const normalizeGridSize = (value: unknown): GridSize => {
+  const raw = value && typeof value === "object" && !Array.isArray(value) ? (value as { width?: unknown; height?: unknown }) : {};
+  const width = Number(raw.width ?? 9);
+  const height = Number(raw.height ?? 9);
+  if (!Number.isInteger(width) || width <= 0) {
+    throw new Error("Grid width must be a positive integer");
+  }
+  if (!Number.isInteger(height) || height <= 0) {
+    throw new Error("Grid height must be a positive integer");
+  }
+  return { width, height };
+};
+
+const normalizeGridPathSolution = (value: unknown, grid: GridSize): GridPathSolution => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Grid-path puzzles require a solution");
+  }
+  const { path, startColumn, goalColumn } = value as { path?: unknown; startColumn?: unknown; goalColumn?: unknown };
+  if (!Array.isArray(path) || path.length === 0) {
+    throw new Error("Grid-path puzzles require a solution path");
+  }
+
+  const normalizeCoord = (entry: unknown, idx: number) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      throw new Error("Solution path entries must be coordinate objects");
+    }
+    const { x, y } = entry as { x?: unknown; y?: unknown };
+    const coordX = Number(x);
+    const coordY = Number(y);
+    if (!Number.isInteger(coordX) || !Number.isInteger(coordY)) {
+      throw new Error(`Path entry ${idx + 1} must use integer coordinates`);
+    }
+    if (coordX <= 0 || coordX > grid.width || coordY <= 0 || coordY > grid.height) {
+      throw new Error(`Path entry ${idx + 1} is out of bounds`);
+    }
+    return { x: coordX - 1, y: coordY - 1 };
+  };
+
+  const normalizedPath = path.map((entry, idx) => normalizeCoord(entry, idx));
+  const seen = new Set<string>();
+  normalizedPath.forEach(({ x, y }) => {
+    const key = `${x}:${y}`;
+    if (seen.has(key)) {
+      throw new Error("Path cannot visit the same cell twice");
+    }
+    seen.add(key);
+  });
+
+  normalizedPath.forEach((coord, idx) => {
+    if (idx === 0) return;
+    const prev = normalizedPath[idx - 1]!;
+    const dx = Math.abs(coord.x - prev.x);
+    const dy = Math.abs(coord.y - prev.y);
+    if (dx + dy !== 1) {
+      throw new Error("Path steps must be orthogonally adjacent");
+    }
+  });
+
+  if (normalizedPath[0]?.y !== 0) {
+    throw new Error("Path must start on the top row (y = 1 in the specification)");
+  }
+  const startRaw = startColumn === undefined ? undefined : Number(startColumn);
+  if (startRaw !== undefined) {
+    if (!Number.isInteger(startRaw) || startRaw <= 0 || startRaw > grid.width) {
+      throw new Error("startColumn is out of bounds");
+    }
+    const start = startRaw - 1;
+    if (normalizedPath[0]?.x !== start) {
+      throw new Error("Path must start in the specified startColumn");
+    }
+  }
+
+  const last = normalizedPath[normalizedPath.length - 1];
+  if (!last || last.y !== grid.height - 1) {
+    throw new Error("Path must end on the bottom row");
+  }
+  const goalRaw = goalColumn === undefined ? undefined : Number(goalColumn);
+  if (goalRaw !== undefined) {
+    if (!Number.isInteger(goalRaw) || goalRaw <= 0 || goalRaw > grid.width) {
+      throw new Error("goalColumn is out of bounds");
+    }
+    const goal = goalRaw - 1;
+    if (last.x !== goal) {
+      throw new Error("Path must end in the specified goalColumn");
+    }
+  }
+
+  return {
+    path: normalizedPath,
+    ...(startRaw !== undefined ? { startColumn: startRaw - 1 } : {}),
+    ...(goalRaw !== undefined ? { goalColumn: goalRaw - 1 } : {}),
+  };
+};
+
 const segmentBlocks = (blocks: StructuredBlock[]) => {
   const segments: Array<{ required: WhenCondition | null; blocks: StructuredBlock[] }> = [
     { required: null, blocks: [] },
@@ -878,6 +975,30 @@ const mapToDayBlocks = (
           items,
           sockets,
           shape,
+          solved,
+          ...(block.title ? { title: block.title } : {}),
+        };
+      }
+
+      if (type === "grid-path") {
+        const rawDef = block.definition.raw as Record<string, unknown>;
+        const backgroundImageCandidate = rawDef.backgroundImage ?? rawDef["background-image"];
+        const backgroundImage =
+          typeof backgroundImageCandidate === "string" ? backgroundImageCandidate : undefined;
+        if (!backgroundImage) {
+          throw new Error("Grid-path puzzles require a background image");
+        }
+        const grid = normalizeGridSize(rawDef.grid);
+        const solution = normalizeGridPathSolution(block.definition.solution, grid);
+        return {
+          kind: "puzzle",
+          id: block.id,
+          html: block.html,
+          visible: visibleSet.has(block) || includeHidden,
+          type,
+          backgroundImage,
+          grid,
+          solution,
           solved,
           ...(block.title ? { title: block.title } : {}),
         };

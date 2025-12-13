@@ -9,7 +9,16 @@ import { loadInventory, invalidateInventoryCache } from "./inventory.js";
 
 export type Locale = "en" | "de";
 export type Mode = "NORMAL" | "VETERAN";
-export type RiddleType = "text" | "single-choice" | "multi-choice" | "sort" | "group" | "drag-sockets" | "select-items" | "memory";
+export type RiddleType =
+  | "text"
+  | "single-choice"
+  | "multi-choice"
+  | "sort"
+  | "group"
+  | "drag-sockets"
+  | "select-items"
+  | "memory"
+  | "grid-path";
 export type DragShape = "circle" | "square" | "hex";
 
 export interface IntroContent {
@@ -50,6 +59,17 @@ export interface MemoryCard {
   id: string;
   image: string;
   label?: string;
+}
+
+export interface GridSize {
+  width: number;
+  height: number;
+}
+
+export interface GridPathSolution {
+  path: Array<{ x: number; y: number }>;
+  startColumn?: number;
+  goalColumn?: number;
 }
 
 export interface RiddleReward {
@@ -96,6 +116,7 @@ export interface PuzzleBlock {
   missIndicator?: "deplete" | "fill";
   missIndicatorAnimation?: "burst" | "shatter";
   flipBackMs?: number;
+  grid?: GridSize;
   solved: boolean;
   solution: unknown;
 }

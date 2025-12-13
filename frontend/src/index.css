@@ -271,6 +271,10 @@ a {
   cursor: pointer;
   font-weight: 600;
 }
+.ghost:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 
 .lang-btn {
   display: inline-flex;
@@ -1097,6 +1101,318 @@ a {
     transform: scale(1);
     opacity: 1;
   }
+}
+
+.grid-path-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.grid-path-board {
+  position: relative;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.grid-path-board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.4));
+  pointer-events: none;
+}
+
+.grid-path-board > * {
+  position: relative;
+  z-index: 1;
+}
+
+.grid-path-surface {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+  background-color: #000;
+  display: flex;
+  flex-direction: column;
+  gap: var(--grid-path-gap, 6px);
+  padding: var(--grid-path-gap, 6px);
+}
+
+.grid-path-grid {
+  --grid-path-gap: 6px;
+  display: grid;
+  gap: var(--grid-path-gap);
+  padding: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: #000;
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.4);
+  width: 100%;
+}
+
+.grid-path-cell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 42px;
+  border-radius: 6px;
+  border: 2px solid rgba(0, 0, 0, 0.75);
+  background-color: transparent;
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.12s ease, background 0.12s ease;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.14),
+    inset 0 0 12px rgba(0, 0, 0, 0.5);
+}
+
+.grid-path-cell:not(:disabled):hover {
+  border-color: rgba(247, 208, 70, 0.9);
+  transform: translateY(-1px) scale(1.015);
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+.grid-path-cell.is-in-path {
+  border-color: #f7d046;
+  box-shadow:
+    inset 0 0 0 3px rgba(0, 0, 0, 0.65),
+    0 0 0 3px rgba(247, 208, 70, 0.28),
+    0 10px 18px rgba(0, 0, 0, 0.45);
+}
+
+.grid-path-cell.is-in-path::after {
+  content: attr(data-step);
+  position: absolute;
+  inset: 8px auto auto 8px;
+  border-radius: 4px;
+  padding: 4px 7px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fef9e2;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.45);
+}
+
+.grid-path-cell.is-current {
+  outline: 2px solid #f7d046;
+  box-shadow: 0 0 0 3px rgba(247, 208, 70, 0.22), 0 14px 26px rgba(0, 0, 0, 0.55);
+}
+
+.grid-path-board.status-incorrect .grid-path-cell.is-in-path {
+  border-color: #d85959;
+  background: rgba(216, 89, 89, 0.25);
+  box-shadow: 0 0 0 2px rgba(216, 89, 89, 0.18), 0 12px 22px rgba(0, 0, 0, 0.4);
+  color: #ffd7d7;
+}
+
+.grid-path-board.status-incorrect .grid-path-start.is-selected {
+  border-color: #d85959;
+  box-shadow: 0 0 0 2px rgba(216, 89, 89, 0.25);
+  background: linear-gradient(180deg, rgba(216, 89, 89, 0.22), rgba(216, 89, 89, 0.08));
+  color: #ffd7d7;
+}
+
+.grid-path-board.status-incorrect .grid-path-cell.is-current {
+  outline-color: #d85959;
+  box-shadow: 0 0 0 3px rgba(216, 89, 89, 0.22), 0 14px 26px rgba(0, 0, 0, 0.55);
+}
+
+.grid-path-board.status-incorrect .grid-path-goal.is-in-path {
+  border-color: #d85959;
+  box-shadow: 0 0 0 2px rgba(216, 89, 89, 0.25);
+  background: linear-gradient(180deg, rgba(216, 89, 89, 0.22), rgba(216, 89, 89, 0.08));
+  color: #ffd7d7;
+}
+
+.grid-path-board.status-correct .grid-path-start.is-selected {
+  border-color: #5bd18a;
+  box-shadow: 0 0 0 2px rgba(91, 209, 138, 0.25);
+  background: linear-gradient(180deg, rgba(91, 209, 138, 0.22), rgba(91, 209, 138, 0.06));
+  color: var(--text);
+}
+
+.grid-path-board.status-correct .grid-path-cell.is-in-path {
+  border-color: #5bd18a;
+  box-shadow:
+    inset 0 0 0 3px rgba(0, 0, 0, 0.65),
+    0 0 0 3px rgba(91, 209, 138, 0.28),
+    0 10px 18px rgba(0, 0, 0, 0.45);
+}
+
+.grid-path-board.status-correct .grid-path-cell.is-in-path::after {
+  color: #fef9e2;
+}
+
+.grid-path-board.is-locked .grid-path-cell {
+  cursor: default;
+}
+
+.has-start .grid-path-cell.is-blocked:not(.is-in-path) {
+  filter: grayscale(0.8);
+  opacity: 0.55;
+}
+
+.grid-path-rails {
+  display: none;
+}
+
+.grid-path-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: stretch;
+}
+
+.grid-path-row-label {
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  text-align: center;
+}
+
+.grid-path-row-cells {
+  display: grid;
+  gap: var(--grid-path-gap, 6px);
+  width: 100%;
+}
+
+.grid-path-start,
+.grid-path-goal {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.12s ease, background 0.12s ease;
+  position: relative;
+  overflow: visible;
+}
+
+.grid-path-start.is-selected:not(.is-locked),
+.grid-path-goal.is-selected:not(.is-locked) {
+  outline: none;
+}
+
+.grid-path-start.is-selected {
+  color: var(--text);
+}
+
+.grid-path-goal {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.grid-path-goal.is-selected {
+  color: var(--text);
+}
+
+.has-start .grid-path-start {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.has-start .grid-path-start.is-selected {
+  color: var(--text);
+}
+
+.grid-path-start:not(:disabled):hover,
+.grid-path-goal:not(:disabled):hover {
+  border-color: #f7d046;
+  transform: translateY(-1px);
+}
+
+.grid-path-start.is-selected {
+  border-color: #f7d046;
+  box-shadow: 0 0 0 2px rgba(247, 208, 70, 0.35);
+  background: linear-gradient(180deg, rgba(247, 208, 70, 0.2), rgba(247, 208, 70, 0.05));
+}
+
+.grid-path-goal.is-selected {
+  border-style: solid;
+  border-color: #5bd18a;
+  box-shadow: 0 0 0 2px rgba(91, 209, 138, 0.25);
+  background: linear-gradient(180deg, rgba(91, 209, 138, 0.22), rgba(91, 209, 138, 0.06));
+}
+.grid-path-goal.is-selected.is-available {
+  border-style: solid;
+}
+
+@property --grid-path-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes grid-path-border-spin {
+  from {
+    --grid-path-angle: 0deg;
+  }
+  to {
+    --grid-path-angle: 360deg;
+  }
+}
+
+.grid-path-start.is-hint:not(.is-selected)::after,
+.grid-path-goal.is-hint:not(.is-selected)::after,
+.grid-path-start.is-hint:not(.is-selected)::before,
+.grid-path-goal.is-hint:not(.is-selected)::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(
+    from var(--grid-path-angle),
+    transparent 80%,
+    rgba(247, 208, 70, 0.52)
+  );
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+  z-index: 1;
+  animation: grid-path-border-spin 4.2s linear infinite;
+}
+
+.grid-path-start.is-hint:not(.is-selected)::before,
+.grid-path-goal.is-hint:not(.is-selected)::before {
+  filter: blur(10px);
+  opacity: 0.4;
+  z-index: 0;
+}
+
+.grid-path-goal.is-available:not(.is-selected) {
+  border-style: dashed;
+  border-color: #f7d046;
+  background: rgba(247, 208, 70, 0.08);
+}
+
+.grid-path-goal:disabled,
+.grid-path-start:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.grid-path-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .sr-only {

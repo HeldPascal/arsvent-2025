@@ -382,6 +382,43 @@ solution:
 
 ---
 
+## 7.7 Grid Path Puzzle
+
+Players pick a start column, trace a path through a grid on top of a background image, and finish by clicking the goal in the same column on the bottom.
+
+### Fields
+- **type:** `"grid-path"`
+- **grid:** optional `{ width, height }` (default `9x9`)
+- **backgroundImage:** path to the background image
+- **solution:** required path definition  
+  - `path`: ordered `{ x, y }` coordinates (1-based; main grid rows are `1..height`, start row is `0`, goal row is `height+1`; no repeats, orthogonal steps only)  
+  - `startColumn` and `goalColumn` (optional): 1-based columns that must match the first/last path column if provided
+
+### Example
+
+```yaml
+type: "grid-path"
+grid: { width: 9, height: 9 }
+backgroundImage: "/assets/25_13_background.png"
+solution:
+  startColumn: 5
+  goalColumn: 3
+  path:
+    - { x: 5, y: 1 }
+    - { x: 5, y: 2 }
+    - { x: 4, y: 2 }
+    - { x: 3, y: 2 }
+    - { x: 3, y: 3 }
+    - { x: 3, y: 4 }
+    - { x: 3, y: 5 }
+    - { x: 3, y: 6 }
+    - { x: 3, y: 7 }
+    - { x: 3, y: 8 }
+    - { x: 3,  y: 9 }
+```
+
+---
+
 # 8. Reward Block
 
 Rewards are defined separately from puzzles.

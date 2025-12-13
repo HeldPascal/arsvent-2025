@@ -4,6 +4,7 @@ import { useI18n } from "../../i18n";
 import DragSocketsPuzzle from "./drag/DragSocketsPuzzle";
 import SelectItemsPuzzle from "./drag/SelectItemsPuzzle";
 import MemoryPuzzle from "./memory/MemoryPuzzle";
+import GridPathPuzzle from "./grid-path/GridPathPuzzle";
 
 interface Props {
   block: Extract<DayBlock, { kind: "puzzle" }>;
@@ -296,18 +297,26 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
       return;
     }
 
+    if (block.type === "grid-path") {
+      return;
+    }
+
     setLocalError("Unsupported puzzle type");
   };
 
   const statusClass =
     status === "correct" ? "choice-correct" : status === "incorrect" ? "choice-error" : submitting ? "choice-pending" : "";
   const effectiveStatus =
-    (block.type === "drag-sockets" || block.type === "select-items" || block.type === "memory") && localError ? "incorrect" : status;
+    (block.type === "drag-sockets" || block.type === "select-items" || block.type === "memory" || block.type === "grid-path") && localError
+      ? "incorrect"
+      : status;
   const dragStatus: "correct" | "incorrect" | "idle" =
     effectiveStatus === "correct" ? "correct" : effectiveStatus === "incorrect" ? "incorrect" : "idle";
   const selectStatus: "correct" | "incorrect" | "idle" =
     effectiveStatus === "correct" ? "correct" : effectiveStatus === "incorrect" ? "incorrect" : "idle";
   const memoryStatus: "correct" | "incorrect" | "idle" =
+    effectiveStatus === "correct" ? "correct" : effectiveStatus === "incorrect" ? "incorrect" : "idle";
+  const gridPathStatus: "correct" | "incorrect" | "idle" =
     effectiveStatus === "correct" ? "correct" : effectiveStatus === "incorrect" ? "incorrect" : "idle";
   const optionSize = (block.kind === "puzzle" && "optionSize" in block && block.optionSize) || "small";
   const optionSizeClass = `option-size-${optionSize}`;
@@ -472,7 +481,26 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
         />
       )}
 
-      {!block.solved && block.type !== "memory" && (
+      {block.type === "grid-path" && (
+        <GridPathPuzzle
+          key={`${block.id}-${block.solved ? "solved" : "play"}`}
+          block={block as Extract<typeof block, { type: "grid-path" }>}
+          status={gridPathStatus}
+          disabled={submitting || block.solved}
+          resolveAsset={resolveImage}
+          onInteract={() => {
+            setLocalError(null);
+            onInteract?.(block.id);
+          }}
+          onSubmit={(answer) => {
+            setLocalError(null);
+            onInteract?.(block.id);
+            onSubmit({ puzzleId: block.id, type: "grid-path", answer });
+          }}
+        />
+      )}
+
+      {!block.solved && block.type !== "memory" && block.type !== "grid-path" && (
         <div className="actions">
           <button type="submit" className="primary wide" disabled={submitting}>
             {submitting ? "…" : t("submit")}
