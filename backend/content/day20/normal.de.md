@@ -1,30 +1,27 @@
 ---
-id: "25-day05-normal-de"
+id: "25-day20-normal-de"
 version: 1
-release: "2025-12-05T00:00:00Z"
+release: "2025-12-20T00:00:00Z"
 language: "de"
 mode: "normal"
 solved:
   when: "all"
 ---
 
-# 5
+# 20
 
 ## Story
-Von der Arena wirst du in einen Vorbereitungsraum versetzt.
-Die Wände hängen voller Karten.
-Überall liegen Berichte und Briefe verstreut umher.
+Du blickst aus dem Fenster und draußen ist die Nacht hereingebrochen.
+Hell leuchten die Sterne im Sternbild der Magierin.
 
-> Meine Heimat war das schöne Cyrodiil.
-  Das Herzland.
-  Ich war glücklich.
-  Doch dann, Zerstörung.
-  Waren es die Daedra?
-  Nein, da war ein Krieg… was ist nur geschehen?
+> Immer wenn ich Angst hatte, erfüllten mich die Sterne mit Kraft.
+  Immer wenn ich einsam war, erfüllten mich die Sterne mit Hoffnung.
+  Doch nun weiß ich nicht mehr, welchen Stern ich um Hilfe bitten muss...
+  Was soll ich nur tun?
 
 ## Puzzle
-id: "cyrodiil"
-Lege die Embleme der Allianzen auf die korrekten Bereiche der Karte.
+id: "CP"
+Finde die beschriebenen Sterne im blauen CP-Baum.
 
 ```yaml puzzle
 type: "drag-sockets"
@@ -62,16 +59,14 @@ solution:
     itemId: "shield-1"
 ```
 
-## Wait for: cyrodiil
+## Wait for: cp
 
 ## Story
-> Ein Krieg?
-  Natürlich, der Krieg der drei Banner!
-  Und ich, Ciira Imutis, inmitten von allem.
-  Ich half den Menschen bei der Flucht, so gut ich konnte.
-  Am Ende floh auch ich.
-  Von meinem geliebten Cyrodiil blieb mir nur dieser Stein.
-  Nehmt ihn, ich brauche ihn nicht mehr.
+> Die Sterne, ich erinnere mich an ihre Namen!
+  Und ich erinnere mich auch an meinen: Gin-Ei Xeirdes.
+  Und ich habe keine Angst mehr.
+  Wir sind Wurzelgeschwister, Ihr und ich.
+  Bitte, nehmt meine Waffen und rettet uns.
 
 ## Reward
-inventoryId: "nickel"
+inventoryId: "weapons"

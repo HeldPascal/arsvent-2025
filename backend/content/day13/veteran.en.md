@@ -1,0 +1,42 @@
+---
+id: "25-day13-veteran-en"
+version: 1
+release: "2025-12-13T00:00:00Z"
+language: "en"
+mode: "veteran"
+solved:
+  when: "all"
+---
+
+# 13
+
+## Story
+The walls around you are shifting.
+The small room turns into a huge hall.
+The entire floor is covered with symbols and you are standing at the edge of a large grid.
+
+> I once had many skills.
+  I was neither a knight nor a sorcerer, neither a necromancer nor an arcanist.
+  I was not a templar and I did not wield a blade in the night.
+  But what was I then?
+
+## Puzzle
+id: "skills"
+Select all the abilities of the class Warden.
+First select the correct number in the row containing the start.
+Then choose the skill that is directly adjacent to it.
+Work your way through until you reach the correct number in the row with the end.
+
+```yaml puzzle
+
+```
+
+## Wait for: skills
+
+## Story
+> It's true, I was Logorok Mogdza, and I was a Warden.
+  I loved all the animals and plants.
+  Pay close attention, and I'll teach you my most important skills!
+
+## Reward
+inventoryId: "wardenskills"
