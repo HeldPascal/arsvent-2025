@@ -1,0 +1,40 @@
+---
+id: "25-day14-normal-en"
+version: 1
+release: "2025-12-14T00:00:00Z"
+language: "en"
+mode: "normal"
+solved:
+  when: "all"
+---
+
+# 14
+
+## Story
+You cross the hall and at the other end there are several roughly hewn sculptures.
+You recognize that these are Mundus Stones.
+
+> My quest... my final quest.
+  Did I complete it?
+  First, enter the tower, then perform the ritual there, and finally rescue the lady.
+  That was my quest.
+  Did I do it?
+
+## Puzzle
+id: "mundus"
+First find the constellation of the Tower, then the Ritual and finally the Lady.
+
+```yaml puzzle
+
+```
+
+## Wait for: mundus
+
+## Story
+> My quest was completed.
+  I rescued the lady and returned to the College of Winterhold.
+  There, I, Hilthe Snowdaughter, was welcomed with mead and a feast.
+  My mentor there once taught me this skill, and now I wish to pass my knowledge on to you.
+
+## Reward
+inventoryId: "soultrap"

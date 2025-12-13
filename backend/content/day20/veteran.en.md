@@ -1,30 +1,27 @@
 ---
-id: "25-day05-veteran-en"
+id: "25-day20-veteran-en"
 version: 1
-release: "2025-12-05T00:00:00Z"
+release: "2025-12-20T00:00:00Z"
 language: "en"
 mode: "veteran"
 solved:
   when: "all"
 ---
 
-# 5
+# 20
 
 ## Story
-From the arena you are shifted into a preparation room.
-The walls are covered in maps.
-Reports and letters are scattered everywhere.
+You look out of the window and night has fallen outside.
+The stars shine brightly in the constellation of the Mage.
 
-> My homeland was beautiful Cyrodiil.
-  The Heartland.
-  I was happy.
-  But then, destruction.
-  Was it the Daedra?
-  No, there was a war… what happened?
+> Whenever I was afraid, the stars filled me with strength.
+  Whenever I was lonely, the stars filled me with hope.
+  But now I do not know which star to ask for help...
+  Whatever should I do?
 
 ## Puzzle
-id: "cyrodiil"
-Place the alliance emblems on the correct regions of the map.
+id: "CP"
+Find the described stars in the blue CP tree.
 
 ```yaml puzzle
 type: "drag-sockets"
@@ -62,16 +59,14 @@ solution:
     itemId: "shield-1"
 ```
 
-## Wait for: cyrodiil
+## Wait for: cp
 
 ## Story
-> A war?
-  Of course—the Three Banners War!
-  And I, Ciira Imutis, in the middle of it all.
-  I helped the people flee as best I could.
-  In the end, I fled as well.
-  All that remains of my beloved Cyrodiil is this stone.
-  Take it, I no longer need it.
+> The stars, I remember their names!
+  And I remember mine too: Gin-Ei Xeirdes.
+  And I am no longer afraid.
+  We are root-siblings, you and I.
+  Please, take my weapons and save us.
 
 ## Reward
-inventoryId: "nickel"
+inventoryId: "weapons"
