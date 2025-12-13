@@ -28,7 +28,32 @@ Wähle dann die Fähigkeit, die direkt daran angenzt.
 Arbeite dich so bis zur hervorgehobenen Zahl am Ende vor.
 
 ```yaml puzzle
+type: "grid-path"
+grid: { width: 9, height: 9 }
+backgroundImage: "/assets/25_13_background.png"
 
+solution:
+  startColumn: 5
+  goalColumn: 4
+  path:
+    - { x: 5, y: 1 }
+    - { x: 5, y: 2 }
+    - { x: 5, y: 3 }
+    - { x: 5, y: 4 }
+    - { x: 4, y: 4 }
+    - { x: 3, y: 4 }
+    - { x: 3, y: 5 }
+    - { x: 3, y: 6 }
+    - { x: 3, y: 7 }
+    - { x: 4, y: 7 }
+    - { x: 5, y: 7 }
+    - { x: 6, y: 7 }
+    - { x: 7, y: 7 }
+    - { x: 7, y: 8 }
+    - { x: 7, y: 9 }
+    - { x: 6, y: 9 }
+    - { x: 5, y: 9 }
+    - { x: 4, y: 9 }
 ```
 
 ## Wait for: skills
