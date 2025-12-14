@@ -727,16 +727,12 @@ a {
 
 .choice-order {
   position: absolute;
-  top: -6px;
-  left: -6px;
-  background: #f7d046;
-  color: #2a2314;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  top: 6px;
+  left: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fef9e2;
   font-weight: 800;
   font-size: 14px;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
