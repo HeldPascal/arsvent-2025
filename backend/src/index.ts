@@ -550,7 +550,12 @@ const evaluatePuzzleAnswer = (block: Extract<DayBlock, { kind: "puzzle" }>, answ
         if (uniqueChoices.has(choice)) throw new Error("Duplicate choices are not allowed");
         uniqueChoices.add(choice);
       });
-      const expected = new Set(block.solution as string[]);
+      const solution = block.solution as string[];
+      if (block.ordered) {
+        if (choices.length !== solution.length) return false;
+        return choices.every((choice, idx) => choice === solution[idx]);
+      }
+      const expected = new Set(solution);
       return uniqueChoices.size === expected.size && choices.every((choice) => expected.has(choice));
     }
     case "select-items": {

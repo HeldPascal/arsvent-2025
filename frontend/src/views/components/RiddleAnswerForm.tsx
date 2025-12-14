@@ -363,15 +363,16 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
     }
 
     if (block.type === "multi-choice") {
+      const isOrdered = Boolean(block.ordered);
       return (
         <>
           <div className="puzzle-hint">
-            {t("chooseMany")}
+            {isOrdered ? t("chooseManyOrdered") : t("chooseMany")}
             {block.minSelections && block.minSelections > 1 ? ` (${block.minSelections}+)` : ""}
           </div>
           {localError && <div className="banner error">{localError}</div>}
           <div style={{ height: "8px" }} />
-          <div className="choice-list">
+          <div className={`choice-list ${isOrdered ? "ordered" : ""}`}>
             {(block.options ?? []).map((opt) => (
               <label
                 key={opt.id}
@@ -382,12 +383,17 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
                   value={opt.id}
                   checked={multiChoices.includes(opt.id)}
                   onChange={() => {
-                    setMultiChoices((prev) => (prev.includes(opt.id) ? prev.filter((item) => item !== opt.id) : [...prev, opt.id]));
+                    setMultiChoices((prev) =>
+                      prev.includes(opt.id) ? prev.filter((item) => item !== opt.id) : [...prev, opt.id],
+                    );
                     onInteract?.(block.id);
                   }}
                   disabled={submitting || block.solved}
                 />
                 <div className="choice-visual">
+                  {isOrdered && multiChoices.includes(opt.id) && (
+                    <span className="choice-order">{multiChoices.indexOf(opt.id) + 1}</span>
+                  )}
                   {opt.image && (
                     <img src={resolveImage(opt.image)} alt={plainText(opt.label) || opt.id} className={`choice-image ${optionSizeClass}`} />
                   )}

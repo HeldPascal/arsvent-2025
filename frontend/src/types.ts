@@ -114,6 +114,7 @@ export type DayBlock =
       solved: boolean;
       options?: RiddleOption[];
       minSelections?: number;
+      ordered?: boolean;
       optionSize?: "small" | "medium" | "large";
       backgroundImage?: string;
       items?: DragSocketItem[];

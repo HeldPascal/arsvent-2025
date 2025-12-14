@@ -838,10 +838,17 @@ const mapToDayBlocks = (
         const solution = ensureStringArray(block.definition.solution, "Solution must list the correct options");
         if (solution.length === 0) throw new Error("Solution must include at least one correct option");
         const optionIds = new Set(options.map((opt) => opt.id));
+        const orderedRaw = (block.definition.raw as { ordered?: unknown }).ordered;
+        const ordered = typeof orderedRaw === "boolean" ? orderedRaw : typeof orderedRaw === "string" ? orderedRaw.toLowerCase() === "true" : false;
+        const solutionIds = new Set<string>();
         solution.forEach((id) => {
           if (!optionIds.has(id)) {
             throw new Error("Solution references an unknown option id");
           }
+          if (solutionIds.has(id)) {
+            throw new Error("Solution cannot contain duplicate options");
+          }
+          solutionIds.add(id);
         });
         const rawMin = (block.definition.raw as { minSelections?: unknown }).minSelections;
         const parsedMin =
@@ -863,6 +870,7 @@ const mapToDayBlocks = (
           solution,
           options,
           minSelections,
+          ...(ordered ? { ordered } : {}),
           ...(optionSize ? { optionSize } : {}),
           solved,
           ...(block.title ? { title: block.title } : {}),

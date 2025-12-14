@@ -50,6 +50,7 @@ type TranslationKey =
   | "calendarLink"
   | "chooseOne"
   | "chooseMany"
+  | "chooseManyOrdered"
   | "sortInstruction"
   | "moveUp"
   | "moveDown"
@@ -158,6 +159,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     calendarLink: "Calendar",
     chooseOne: "Select exactly one answer.",
     chooseMany: "Select one or more answers.",
+    chooseManyOrdered: "Select the answers in the correct order.",
     sortInstruction: "Arrange the options in the correct order.",
     moveUp: "Move up",
     moveDown: "Move down",
@@ -264,6 +266,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     calendarLink: "Kalender",
     chooseOne: "Wähle genau eine Antwort.",
     chooseMany: "Wähle eine oder mehrere Antworten.",
+    chooseManyOrdered: "Wähle die Antworten in der richtigen Reihenfolge.",
     sortInstruction: "Bringe die Optionen in die richtige Reihenfolge.",
     moveUp: "Nach oben",
     moveDown: "Nach unten",
