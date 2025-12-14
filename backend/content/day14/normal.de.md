@@ -25,7 +25,24 @@ id: "mundus"
 Finde zuerst das Sternbild Turm, dann das Ritual und dann die Fürstin.
 
 ```yaml puzzle
-
+type: "multi-choice"
+size: "large"
+options:
+  - id: "1"
+    label: ""
+    image: "/assets/25_14_option_1.png"
+  - id: "3"
+    label: ""
+    image: "/assets/25_14_option_3.png"
+  - id: "4"
+    label: ""
+    image: "/assets/25_14_option_4.png"
+minSelections: 2
+ordered: true
+solution:
+  - "3"
+  - "4"
+  - "1"
 ```
 
 ## Wait for: mundus
