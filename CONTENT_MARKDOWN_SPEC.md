@@ -252,7 +252,8 @@ Multiple correct options; player can select several.
 - **type:** `"multi-choice"`
 - **options:** list of options (id, label, image)
 - **minSelections:** optional minimum required (defaults to 1)
-- **solution:** array of correct option ids
+- **ordered:** optional `true` to require the exact selection order (defaults to unordered)
+- **solution:** array of correct option ids (treated as a list when `ordered: true`, as a set otherwise)
 - **size:** optional (`small`, `medium`, `large`) to adjust rendering
 - **consumesInventory:** optional list of required items
 
@@ -261,6 +262,7 @@ Multiple correct options; player can select several.
 ```yaml
 type: "multi-choice"
 minSelections: 2
+ordered: true
 options:
   - id: "1"
     label: "Rune"
