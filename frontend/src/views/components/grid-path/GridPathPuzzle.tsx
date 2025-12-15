@@ -155,23 +155,12 @@ export default function GridPathPuzzle({ block, status, disabled = false, resolv
     onInteract?.();
   };
 
-  const handleReset = () => {
-    if (disabled) return;
-    setPath([]);
-    setStartColumn(null);
-    setGoalColumn(null);
-    setLocked(false);
-    setError(null);
-    onInteract?.();
-  };
-
   const isAtBottom = path[path.length - 1]?.y === grid.height - 1;
   const currentKey = path.length && !locked ? `${path[path.length - 1]?.x}:${path[path.length - 1]?.y}` : null;
   const boardStyle = {};
 
   const hasChanges = path.length > 0 || startColumn !== null || goalColumn !== null;
   const canStepBack = !disabled && !actionLocked && (path.length > 0 || startColumn !== null);
-  const canReset = !disabled && !isSolved && (hasChanges || locked || isIncorrect);
 
   const stepBackTitle =
     !canStepBack && isIncorrect
@@ -181,13 +170,6 @@ export default function GridPathPuzzle({ block, status, disabled = false, resolv
       : !canStepBack && !hasChanges
         ? t("gridPathNothingToUndo")
         : undefined;
-
-  const resetTitle =
-    !canReset && isSolved
-      ? t("gridPathResetDisabledSolved")
-    : !canReset && !hasChanges
-      ? t("gridPathNothingToReset")
-      : undefined;
 
   const canSelectCell = (row: number, col: number) => {
     if (actionLocked || disabled) return false;
@@ -316,15 +298,6 @@ export default function GridPathPuzzle({ block, status, disabled = false, resolv
           title={stepBackTitle}
         >
           {t("gridPathStepBack")}
-        </button>
-        <button
-          type="button"
-          className="ghost"
-          onClick={handleReset}
-          disabled={!canReset}
-          title={resetTitle}
-        >
-          {t("reset")}
         </button>
       </div>
     </div>

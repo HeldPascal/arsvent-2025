@@ -107,7 +107,8 @@ type TranslationKey =
   | "funSettingDescription"
   | "funSettingToggle"
   | "funSettingSaved"
-  | "reset";
+  | "reset"
+  | "solveNow";
 
 const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -216,6 +217,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     funSettingToggle: "Swap gryphon ↔ dragon",
     funSettingSaved: "Fun setting updated.",
     reset: "Reset",
+    solveNow: "Solve now",
   },
   de: {
     brand: "Arsvent",
@@ -323,6 +325,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     funSettingToggle: "Greif ↔ Drache tauschen",
     funSettingSaved: "Spaß-Einstellung aktualisiert.",
     reset: "Zurücksetzen",
+    solveNow: "Jetzt lösen",
   },
 };
 

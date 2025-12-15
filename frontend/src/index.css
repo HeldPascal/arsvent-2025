@@ -406,25 +406,56 @@ a {
   gap: 6px;
 }
 
+.day-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.preview-anchor {
+  display: block;
+}
+
+.preview-panel {
+  position: sticky;
+  top: 12px;
+  align-self: flex-start;
+}
+
 .preview-toggles {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
   background: #1e2328;
   border: 1px solid var(--line);
   border-radius: 12px;
 }
 
 .preview-toggle-group {
-  display: inline-flex;
+  display: grid;
   gap: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
 }
 
 .preview-toggle-group .small-btn {
-  min-width: 68px;
+  width: 100%;
+  min-width: 0;
   padding: 8px 12px;
+}
+
+.puzzle-quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.puzzle-quick-actions .ghost,
+.puzzle-quick-actions .primary,
+.puzzle-quick-actions .wide {
+  width: 100%;
+  justify-content: center;
 }
 
 .creature-swap {
@@ -884,6 +915,32 @@ a {
   .memory-card {
     border-radius: 10px;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  }
+}
+
+@media (min-width: 1250px) {
+  .day-layout.has-preview-panel {
+    position: relative;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .day-panel {
+    max-width: 960px;
+  }
+
+  .preview-anchor {
+    display: block;
+  }
+
+  .preview-panel {
+    position: fixed;
+    top: clamp(24px, 50vh - 200px, 400px);
+    left: clamp(16px, calc(50% + 480px + 20px), calc(100vw - 16px - 260px));
+    width: 260px;
+    align-self: auto;
+    transform: translateZ(0);
+    z-index: 5;
   }
 }
 

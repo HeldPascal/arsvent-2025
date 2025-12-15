@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { fetchDay, submitAnswer } from "../services/api";
+import { fetchDay, submitAnswer, resetPuzzle, solvePuzzle } from "../services/api";
 import type { DayDetail, DayBlock, RiddleAnswerPayload, User } from "../types";
 import { useI18n } from "../i18n";
 import ConfirmDialog from "./components/ConfirmDialog";
@@ -21,6 +21,8 @@ export default function DayPage({ user, version }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [puzzleBusy, setPuzzleBusy] = useState<Record<string, boolean>>({});
+  const [resetSignals, setResetSignals] = useState<Record<string, number>>({});
   const [resetPreviewRequested, setResetPreviewRequested] = useState(false);
   const [warned, setWarned] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -31,6 +33,7 @@ export default function DayPage({ user, version }: Props) {
     return params.get("override") === "1";
   }, [location.search]);
   const useOverride = isOverrideParam;
+  const showPreviewControls = useOverride && (user.isAdmin || user.isSuperAdmin);
   const [previewLocale, setPreviewLocale] = useState<"en" | "de">(user.locale);
   const [previewMode, setPreviewMode] = useState<"NORMAL" | "VETERAN">(user.mode);
   const backendBase =
@@ -107,6 +110,19 @@ export default function DayPage({ user, version }: Props) {
             }
           : current,
       );
+      if (resp.correct && resetSignals[block.id]) {
+        const refreshed = await fetchDay(detail.day, {
+          override: useOverride,
+          locale: previewLocale,
+          mode: previewMode,
+        });
+        setDetail(refreshed);
+        setResetSignals((prev) => {
+          const next = { ...prev };
+          delete next[block.id];
+          return next;
+        });
+      }
       if (!resp.correct) {
         window.dispatchEvent(
           new CustomEvent("app:toast", {
@@ -123,6 +139,86 @@ export default function DayPage({ user, version }: Props) {
       );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handlePuzzleReset = async (puzzleId: string) => {
+    if (!detail) return;
+    setPuzzleBusy((prev) => ({ ...prev, [puzzleId]: true }));
+    try {
+      const resp = await resetPuzzle(detail.day, puzzleId, {
+        override: useOverride,
+        locale: previewLocale,
+        mode: previewMode,
+      });
+      setLastResults((prev) => {
+        const next = { ...prev };
+        delete next[puzzleId];
+        return next;
+      });
+      setDetail((current) =>
+        current
+          ? {
+              ...current,
+              isSolved: resp.isSolved ?? current.isSolved,
+              blocks: resp.blocks ?? current.blocks,
+            }
+          : current,
+      );
+      setResetSignals((prev) => ({ ...prev, [puzzleId]: (prev[puzzleId] ?? 0) + 1 }));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t("submissionFailed");
+      window.dispatchEvent(
+        new CustomEvent("app:toast", {
+          detail: { type: "error", message, durationMs: 3000 },
+        }),
+      );
+    } finally {
+      setPuzzleBusy((prev) => ({ ...prev, [puzzleId]: false }));
+    }
+  };
+
+  const handlePuzzleSolveNow = async (puzzleId: string) => {
+    if (!detail || !showPreviewControls) return;
+    setPuzzleBusy((prev) => ({ ...prev, [puzzleId]: true }));
+    try {
+      const resp = await solvePuzzle(detail.day, puzzleId, {
+        override: useOverride,
+        locale: previewLocale,
+        mode: previewMode,
+      });
+      setLastResults((prev) => ({ ...prev, [puzzleId]: { correct: true } }));
+      setDetail((current) =>
+        current
+          ? {
+              ...current,
+              isSolved: resp.isSolved ?? current.isSolved,
+              blocks: resp.blocks ?? current.blocks,
+            }
+          : current,
+      );
+      if (resetSignals[puzzleId]) {
+        const refreshed = await fetchDay(detail.day, {
+          override: useOverride,
+          locale: previewLocale,
+          mode: previewMode,
+        });
+        setDetail(refreshed);
+        setResetSignals((prev) => {
+          const next = { ...prev };
+          delete next[puzzleId];
+          return next;
+        });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t("submissionFailed");
+      window.dispatchEvent(
+        new CustomEvent("app:toast", {
+          detail: { type: "error", message, durationMs: 3000 },
+        }),
+      );
+    } finally {
+      setPuzzleBusy((prev) => ({ ...prev, [puzzleId]: false }));
     }
   };
 
@@ -180,9 +276,11 @@ export default function DayPage({ user, version }: Props) {
         {block.title && <h3 className="puzzle-title">{block.title}</h3>}
         <article className="riddle-body" dangerouslySetInnerHTML={{ __html: rewriteAssets(block.html) }} />
         <RiddleAnswerForm
+          key={`${block.id}-${resetSignals[block.id] ?? 0}`}
           block={block as Extract<DayBlock, { kind: "puzzle" }>}
           submitting={submitting}
           status={status}
+          resetSignal={resetSignals[block.id] ?? 0}
           onInteract={(puzzleId) =>
             setLastResults((prev) => {
               const next = { ...prev };
@@ -191,25 +289,41 @@ export default function DayPage({ user, version }: Props) {
             })
           }
           onSubmit={(payload) => onSubmit(block, payload)}
-          canResetDefaults={useOverride}
         />
+        <div className="puzzle-quick-actions">
+          {!block.solved || showPreviewControls ? (
+            <button
+              className="ghost wide"
+              type="button"
+              onClick={() => handlePuzzleReset(block.id)}
+              disabled={puzzleBusy[block.id] || submitting}
+            >
+              {puzzleBusy[block.id] ? t("loading") : t("reset")}
+            </button>
+          ) : null}
+          {showPreviewControls ? (
+            <button
+              className="primary wide"
+              type="button"
+              onClick={() => handlePuzzleSolveNow(block.id)}
+              disabled={puzzleBusy[block.id] || submitting || block.solved}
+            >
+              {puzzleBusy[block.id] ? t("loading") : t("solveNow")}
+            </button>
+          ) : null}
+        </div>
       </div>
     );
   };
 
   return (
-    <div className="panel">
-      <header className="panel-header">
-        <div>
-          <div className="eyebrow">
-            {t("day")} {detail.day} · {displayLocale} · {displayMode}
-          </div>
-          <h2>{detail.title}</h2>
-        </div>
-        <div className="panel-actions" style={{ flexWrap: "wrap", gap: 8 }}>
-          {useOverride && (user.isAdmin || user.isSuperAdmin) ? (
+    <div className={`day-layout ${showPreviewControls ? "has-preview-panel" : ""}`}>
+      {showPreviewControls ? (
+        <div className="preview-anchor">
+          <aside className="panel preview-panel">
+            <div className="muted uppercase small">Preview</div>
             <div className="preview-toggles">
-              <div className="muted small">Preview</div>
+              <div className="muted small">Language</div>
               <div className="preview-toggle-group">
                 {(["en", "de"] as const).map((loc) => (
                   <button
@@ -221,6 +335,7 @@ export default function DayPage({ user, version }: Props) {
                   </button>
                 ))}
               </div>
+              <div className="muted small">Difficulty</div>
               <div className="preview-toggle-group">
                 {(["NORMAL", "VETERAN"] as const).map((mode) => (
                   <button
@@ -242,42 +357,55 @@ export default function DayPage({ user, version }: Props) {
                 {t("reset")}
               </button>
             </div>
-          ) : null}
-          <button className="ghost nav-link" onClick={() => navigate("/calendar")}>
-            {t("backToCalendar")}
-          </button>
+          </aside>
         </div>
-      </header>
+      ) : null}
 
-      {detail.canPlay ? (
-        <>
-          {detail.blocks.map((block, idx) => renderBlock(block, idx))}
-          {detail.isSolved && !useOverride && (
-            <div className="banner success">
-              <div className="banner-title">{t("solved")}</div>
-              <div className="banner-body">{t("answerCorrect")}</div>
+      <div className="panel day-panel">
+        <header className="panel-header">
+          <div>
+            <div className="eyebrow">
+              {t("day")} {detail.day} · {displayLocale} · {displayMode}
             </div>
-          )}
-        </>
-      ) : (
-        <div className="muted">{detail.message ?? t("notAvailable")}</div>
-      )}
+            <h2>{detail.title}</h2>
+          </div>
+          <div className="panel-actions" style={{ flexWrap: "wrap", gap: 8 }}>
+            <button className="ghost nav-link" onClick={() => navigate("/calendar")}>
+              {t("backToCalendar")}
+            </button>
+          </div>
+        </header>
 
-      {showConfirm && (
-        <ConfirmDialog
-          message={t("warnNormalLock")}
-          confirmLabel={t("confirm")}
-          cancelLabel={t("cancel")}
-          onConfirm={() => {
-            setWarned(true);
-            setShowConfirm(false);
-            if (pendingPayload) {
-              void performSubmit(pendingPayload.block, pendingPayload.payload);
-            }
-          }}
-          onCancel={() => setShowConfirm(false)}
-        />
-      )}
+        {detail.canPlay ? (
+          <>
+            {detail.blocks.map((block, idx) => renderBlock(block, idx))}
+            {detail.isSolved && !useOverride && (
+              <div className="banner success">
+                <div className="banner-title">{t("solved")}</div>
+                <div className="banner-body">{t("answerCorrect")}</div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="muted">{detail.message ?? t("notAvailable")}</div>
+        )}
+
+        {showConfirm && (
+          <ConfirmDialog
+            message={t("warnNormalLock")}
+            confirmLabel={t("confirm")}
+            cancelLabel={t("cancel")}
+            onConfirm={() => {
+              setWarned(true);
+              setShowConfirm(false);
+              if (pendingPayload) {
+                void performSubmit(pendingPayload.block, pendingPayload.payload);
+              }
+            }}
+            onCancel={() => setShowConfirm(false)}
+          />
+        )}
+      </div>
     </div>
   );
 }

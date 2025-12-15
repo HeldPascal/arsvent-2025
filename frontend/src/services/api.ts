@@ -90,6 +90,38 @@ export const submitAnswer = (
   );
 };
 
+export const resetPuzzle = (
+  day: number,
+  puzzleId: string,
+  opts?: { override?: boolean; locale?: "en" | "de"; mode?: "NORMAL" | "VETERAN" },
+) => {
+  const params = new URLSearchParams();
+  if (opts?.override) params.set("override", "1");
+  if (opts?.locale) params.set("locale", opts.locale);
+  if (opts?.mode) params.set("mode", opts.mode);
+  const suffix = params.toString();
+  return apiFetch<{ day: number; isSolved?: boolean; blocks: DayDetail["blocks"] }>(
+    `/api/days/${day}/puzzle/${puzzleId}/reset${suffix ? `?${suffix}` : ""}`,
+    { method: "POST" },
+  );
+};
+
+export const solvePuzzle = (
+  day: number,
+  puzzleId: string,
+  opts?: { override?: boolean; locale?: "en" | "de"; mode?: "NORMAL" | "VETERAN" },
+) => {
+  const params = new URLSearchParams();
+  if (opts?.override) params.set("override", "1");
+  if (opts?.locale) params.set("locale", opts.locale);
+  if (opts?.mode) params.set("mode", opts.mode);
+  const suffix = params.toString();
+  return apiFetch<{ day: number; isSolved?: boolean; blocks: DayDetail["blocks"] }>(
+    `/api/days/${day}/puzzle/${puzzleId}/solve${suffix ? `?${suffix}` : ""}`,
+    { method: "POST" },
+  );
+};
+
 export const updateLocale = (locale: Locale) =>
   apiFetch<{ id: string; locale: Locale }>("/api/user/locale", {
     method: "POST",

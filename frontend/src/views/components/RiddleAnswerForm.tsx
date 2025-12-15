@@ -12,10 +12,17 @@ interface Props {
   status?: "correct" | "incorrect" | "idle";
   onInteract?: (puzzleId: string) => void;
   onSubmit: (payload: RiddleAnswerPayload) => void;
-  canResetDefaults?: boolean;
+  resetSignal?: number;
 }
 
-export default function RiddleAnswerForm({ block, submitting, status = "idle", onInteract, onSubmit, canResetDefaults = false }: Props) {
+export default function RiddleAnswerForm({
+  block,
+  submitting,
+  status = "idle",
+  onInteract,
+  onSubmit,
+  resetSignal = 0,
+}: Props) {
   const { t } = useI18n();
   const backendBase =
     import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ||
@@ -32,6 +39,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
   const [localError, setLocalError] = useState<string | null>(null);
   const [initializedDefaults, setInitializedDefaults] = useState(false);
   const prevBlockId = useRef<string | null>(null);
+  const prevSolvedRef = useRef<boolean>(false);
   const memorySubmittedRef = useRef(false);
   const defaultAssignments = useMemo(() => {
     if (block.type !== "drag-sockets") return {};
@@ -143,15 +151,21 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
       } else {
         setDragAssignments({});
       }
-    } else if (block.id !== prevBlockId.current) {
-      // Reset on first load of a new puzzle
+    } else if (block.id !== prevBlockId.current || (prevSolvedRef.current && !block.solved)) {
+      // Reset on first load of a new puzzle or when a solved puzzle is reset
+      setTextAnswer("");
+      setSingleChoice("");
+      setMultiChoices([]);
       setSelectedItems([]);
-      setDragAssignments(defaultAssignments);
       setMemoryPairs([]);
+      if (block.type !== "drag-sockets") {
+        setDragAssignments(defaultAssignments);
+      }
     }
     setLocalError(null);
     setInitializedDefaults(false);
     prevBlockId.current = block.id;
+    prevSolvedRef.current = Boolean(block.solved);
     memorySubmittedRef.current = false;
   }, [block.id, block.solution, block.solved, block.type, defaultAssignments]);
 
@@ -184,6 +198,22 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memoryPairs]);
+
+  // Clear local state on explicit reset signal (per puzzle); drag-sockets keep placements
+  useEffect(() => {
+    if (!resetSignal) return;
+    if (block.type !== "drag-sockets") {
+      setTextAnswer("");
+      setSingleChoice("");
+      setMultiChoices([]);
+      setSelectedItems([]);
+      setMemoryPairs([]);
+      setDragAssignments(defaultAssignments);
+    }
+    setLocalError(null);
+    setInitializedDefaults(false);
+    memorySubmittedRef.current = false;
+  }, [resetSignal, block.type, defaultAssignments]);
 
   useEffect(() => {
     if (block.type !== "memory") return;
@@ -470,7 +500,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
 
       {block.type === "memory" && (
         <MemoryPuzzle
-          key={`${block.id}-${block.solved ? "solved" : "play"}`}
+          key={`${block.id}-${block.solved ? "solved" : "play"}-${resetSignal}`}
           block={block as Extract<typeof block, { type: "memory" }>}
           onChange={(pairs) => {
             setMemoryPairs(pairs);
@@ -489,7 +519,7 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
 
       {block.type === "grid-path" && (
         <GridPathPuzzle
-          key={`${block.id}-${block.solved ? "solved" : "play"}`}
+          key={`${block.id}-${block.solved ? "solved" : "play"}-${resetSignal}`}
           block={block as Extract<typeof block, { type: "grid-path" }>}
           status={gridPathStatus}
           disabled={submitting || block.solved}
@@ -511,19 +541,6 @@ export default function RiddleAnswerForm({ block, submitting, status = "idle", o
           <button type="submit" className="primary wide" disabled={submitting}>
             {submitting ? "…" : t("submit")}
           </button>
-          {block.type === "drag-sockets" && canResetDefaults && (
-            <button
-              type="button"
-              className="ghost wide"
-              style={{ marginTop: 10 }}
-              onClick={() => {
-                setDragAssignments(defaultAssignments);
-                setLocalError(null);
-              }}
-            >
-              {t("reset")}
-            </button>
-          )}
         </div>
       )}
     </form>

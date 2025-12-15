@@ -1166,6 +1166,130 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
   }
 });
 
+app.post("/api/days/:day/puzzle/:puzzleId/reset", requireAuth, requireIntroComplete, async (req, res, next) => {
+  const day = Number(req.params.day);
+  const puzzleId = String(req.params.puzzleId);
+  if (!Number.isInteger(day) || day < 1 || day > MAX_DAY) {
+    return res.status(400).json({ error: "Day must be between 1 and 24" });
+  }
+  try {
+    const isAdminOverride = Boolean(
+      (req.user?.isAdmin || req.user?.isSuperAdmin) &&
+        (req.query.override === "1" || req.query.override === "true" || req.query.override === "yes"),
+    );
+    const funSwap = Boolean(req.user?.creatureSwap);
+    const unlockedDay = await getUnlockedDay();
+    if (!isAdminOverride && day > unlockedDay) {
+      return res.status(400).json({ error: "This day is not available yet." });
+    }
+    const lastSolved = req.user!.lastSolvedDay ?? 0;
+    if (!isAdminOverride && day > lastSolved + 1) {
+      return res.status(400).json({ error: "Solve previous days first." });
+    }
+
+    const requestedLocale =
+      typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
+        ? normalizeLocale(req.query.locale)
+        : null;
+    const requestedMode = typeof req.query.mode === "string" ? normalizeModeValue(req.query.mode) : null;
+
+    const locale = isAdminOverride && requestedLocale ? requestedLocale : getUserLocale(req.user as PrismaUser);
+    const mode = isAdminOverride && requestedMode ? requestedMode : getUserMode(req.user as PrismaUser);
+    const sessionScope: ProgressScope = isAdminOverride ? "preview" : "default";
+    const progressKey = buildProgressKey(day, sessionScope, locale, mode);
+    const sessionSolved = getSessionPuzzleProgress(req, progressKey, sessionScope);
+    const content = await loadDayContent(day, locale, mode, sessionSolved, false);
+    const puzzleBlock = content.blocks.find(
+      (block): block is Extract<DayBlock, { kind: "puzzle" }> => block.kind === "puzzle" && block.id === puzzleId,
+    );
+    if (!puzzleBlock) {
+      return res.status(400).json({ error: "Puzzle not found or not available yet" });
+    }
+    if (puzzleBlock.visible === false) {
+      return res.status(400).json({ error: "Puzzle is not available yet" });
+    }
+
+    const updatedSolved = new Set(sessionSolved);
+    updatedSolved.delete(puzzleId);
+    setSessionPuzzleProgress(req, progressKey, updatedSolved, sessionScope);
+
+    const nextContent = await loadDayContent(day, locale, mode, updatedSolved, false);
+    const solvedCondition = nextContent.solvedCondition ?? { kind: "all" as const };
+    const allPuzzleIds = new Set(nextContent.puzzleIds);
+    const daySolved = evaluateCondition(solvedCondition, updatedSolved, allPuzzleIds);
+
+    return res.json({
+      day,
+      isSolved: daySolved,
+      blocks: applyCreatureSwapToDay(nextContent, locale, funSwap).blocks,
+    });
+  } catch (error) {
+    if (error instanceof RiddleNotFoundError) {
+      return res.status(404).json({ error: "Riddle not found" });
+    }
+    return next(error);
+  }
+});
+
+app.post("/api/days/:day/puzzle/:puzzleId/solve", requireAuth, requireIntroComplete, async (req, res, next) => {
+  const day = Number(req.params.day);
+  const puzzleId = String(req.params.puzzleId);
+  if (!Number.isInteger(day) || day < 1 || day > MAX_DAY) {
+    return res.status(400).json({ error: "Day must be between 1 and 24" });
+  }
+  try {
+    const isAdminOverride = Boolean(
+      (req.user?.isAdmin || req.user?.isSuperAdmin) &&
+        (req.query.override === "1" || req.query.override === "true" || req.query.override === "yes"),
+    );
+    if (!isAdminOverride) {
+      return res.status(403).json({ error: "Admin override required" });
+    }
+    const funSwap = Boolean(req.user?.creatureSwap);
+    const requestedLocale =
+      typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
+        ? normalizeLocale(req.query.locale)
+        : null;
+    const requestedMode = typeof req.query.mode === "string" ? normalizeModeValue(req.query.mode) : null;
+
+    const locale = isAdminOverride && requestedLocale ? requestedLocale : getUserLocale(req.user as PrismaUser);
+    const mode = isAdminOverride && requestedMode ? requestedMode : getUserMode(req.user as PrismaUser);
+    const sessionScope: ProgressScope = "preview";
+    const progressKey = buildProgressKey(day, sessionScope, locale, mode);
+    const sessionSolved = getSessionPuzzleProgress(req, progressKey, sessionScope);
+    const content = await loadDayContent(day, locale, mode, sessionSolved, false);
+    const puzzleBlock = content.blocks.find(
+      (block): block is Extract<DayBlock, { kind: "puzzle" }> => block.kind === "puzzle" && block.id === puzzleId,
+    );
+    if (!puzzleBlock) {
+      return res.status(400).json({ error: "Puzzle not found or not available yet" });
+    }
+    if (puzzleBlock.visible === false) {
+      return res.status(400).json({ error: "Puzzle is not available yet" });
+    }
+
+    const updatedSolved = new Set(sessionSolved);
+    updatedSolved.add(puzzleId);
+    setSessionPuzzleProgress(req, progressKey, updatedSolved, sessionScope);
+
+    const nextContent = await loadDayContent(day, locale, mode, updatedSolved, false);
+    const solvedCondition = nextContent.solvedCondition ?? { kind: "all" as const };
+    const allPuzzleIds = new Set(nextContent.puzzleIds);
+    const daySolved = evaluateCondition(solvedCondition, updatedSolved, allPuzzleIds);
+
+    return res.json({
+      day,
+      isSolved: daySolved,
+      blocks: applyCreatureSwapToDay(nextContent, locale, funSwap).blocks,
+    });
+  } catch (error) {
+    if (error instanceof RiddleNotFoundError) {
+      return res.status(404).json({ error: "Riddle not found" });
+    }
+    return next(error);
+  }
+});
+
 app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next) => {
   try {
     const [

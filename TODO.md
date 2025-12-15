@@ -3,10 +3,6 @@ Ideas and improvements to tackle
 (unpolished)
 - Puzzle obfuscation (obfuscate ids, assets and so on)
 
-- In admin preview use preview language consistently
-- In admin preview provide a solve now button for puzzles
-- The preview panel is jumping when switching lanuguages
-
 - Pairbuilding puzzle type (Duolingo style; verify on selection and move to list below)
 - Select items enable partial solutions for normal (e.g. 3 instead of 6) also make sure background is transparent without item and label
 - dummy placeholder puzzle type
