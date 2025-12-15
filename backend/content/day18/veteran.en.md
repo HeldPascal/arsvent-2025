@@ -1,9 +1,9 @@
 ---
-id: "25-day18-normal-en"
+id: "25-day18-veteran-en"
 version: 1
 release: "2025-12-18T00:00:00Z"
 language: "en"
-mode: "normal"
+mode: "veteran"
 solved:
   when: "all"
 ---
