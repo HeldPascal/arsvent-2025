@@ -26,7 +26,27 @@ id: "archive"
 In what order do you encounter these aspects of Tho'at Replicanum?
 
 ```yaml puzzle
-
+type: "multi-choice"
+size: "large"
+options:
+  - id: "1"
+    label: ""
+    image: "/assets/25_15_option_1.png"
+  - id: "2"
+    label: ""
+    image: "/assets/25_15_option_2.png"
+  - id: "3"
+    label: ""
+    image: "/assets/25_15_option_3.png"
+  - id: "4"
+    label: ""
+    image: "/assets/25_15_option_4.png"
+minSelections: 2
+ordered: true
+solution:
+  - "3"
+  - "4"
+  - "1"
 ```
 
 ## Wait for: archive
