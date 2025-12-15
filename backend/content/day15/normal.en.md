@@ -41,9 +41,10 @@ options:
   - id: "4"
     label: ""
     image: "/assets/25_15_option_4.png"
-minSelections: 2
+minSelections: 4
 ordered: true
 solution:
+  - "2"
   - "3"
   - "4"
   - "1"

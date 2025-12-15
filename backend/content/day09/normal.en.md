@@ -44,7 +44,6 @@ options:
   - id: "5"
     label: ""
     image: "/assets/25_09_option_5.png"
-minSelections: 1
 solution:
   - "3"
 ```

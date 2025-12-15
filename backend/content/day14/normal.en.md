@@ -37,7 +37,7 @@ options:
   - id: "4"
     label: ""
     image: "/assets/25_14_option_4.png"
-minSelections: 2
+minSelections: 3
 ordered: true
 solution:
   - "3"
