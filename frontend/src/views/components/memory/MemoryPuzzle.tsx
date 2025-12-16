@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DayBlock, MemoryCard } from "../../../types";
 import { useI18n } from "../../../i18n";
+import { checkMemoryPair } from "../../../services/api";
 
 type MemoryBlock = Extract<DayBlock, { kind: "puzzle" }> & {
   type: "memory";
@@ -19,6 +20,7 @@ interface Props {
   disabled?: boolean;
   errorMessage?: string;
   onStartInteraction?: () => void;
+  requestContext?: { day: number; override?: boolean; locale?: "en" | "de"; mode?: "NORMAL" | "VETERAN" };
 }
 
 const shuffleCards = (cards: MemoryCard[]) => {
@@ -51,6 +53,7 @@ export default function MemoryPuzzle({
   disabled = false,
   errorMessage,
   onStartInteraction,
+  requestContext,
 }: Props) {
   const { t } = useI18n();
   const cards: MemoryCard[] = useMemo(() => block.cards ?? [], [block.cards]);
@@ -68,6 +71,7 @@ export default function MemoryPuzzle({
   const [aspectRatio, setAspectRatio] = useState<number | null>(null);
   const [burstLost, setBurstLost] = useState<Map<number, string>>(new Map());
   const [burstGain, setBurstGain] = useState<Map<number, string>>(new Map());
+  const [checkingPair, setCheckingPair] = useState(false);
   const prevMissesRef = useRef(0);
 
   const pairsFromSolution = useMemo(
@@ -80,24 +84,6 @@ export default function MemoryPuzzle({
         : [],
     [block.solution],
   );
-
-  const pairKeyByCard = useMemo(() => {
-    const map = new Map<string, string>();
-    pairsFromSolution.forEach((pair, idx) => {
-      const key = `pair-${idx}`;
-      if (pair.a) map.set(pair.a, key);
-      if (pair.b) map.set(pair.b, key);
-    });
-    return map;
-  }, [pairsFromSolution]);
-
-  const pairByKey = useMemo(() => {
-    const map = new Map<string, { a: string; b: string }>();
-    pairsFromSolution.forEach((pair, idx) => {
-      map.set(`pair-${idx}`, { a: pair.a, b: pair.b });
-    });
-    return map;
-  }, [pairsFromSolution]);
 
   const solvedMode = block.solved;
   const displayMatched = solvedMode ? new Set(cards.map((card) => card.id)) : matched;
@@ -235,7 +221,7 @@ export default function MemoryPuzzle({
     prevMissesRef.current = misses;
   }, [misses, block.missIndicator, maxMisses, missAnimation, solvedMode]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setMatched(new Set());
     setFoundPairs([]);
     setFlipped([]);
@@ -243,47 +229,71 @@ export default function MemoryPuzzle({
     setShuffled(shuffleCards(cards));
     setJustReset(true);
     onChange([]);
-  };
+  }, [cards, onChange]);
 
   const tryMatch = (cardId: string) => {
-    if (disabled || block.solved) return;
+    if (disabled || block.solved || checkingPair) return;
     if (matched.has(cardId) || flipped.includes(cardId)) return;
     if (flipped.length === 2) return;
     if (justReset) setJustReset(false);
     onStartInteraction?.();
-    const nextFlipped = [...flipped, cardId];
-    setFlipped(nextFlipped);
-    if (nextFlipped.length === 2) {
-      const [first, second] = nextFlipped;
-      const firstKey = pairKeyByCard.get(first);
-      const secondKey = pairKeyByCard.get(second);
-      const isMatch = firstKey && secondKey && firstKey === secondKey;
-      if (isMatch) {
-        setTimeout(() => {
+    setFlipped((prev) => [...prev, cardId]);
+  };
+
+  useEffect(() => {
+    if (solvedMode) return;
+    if (flipped.length !== 2) return;
+    const [first, second] = flipped;
+    let cancelled = false;
+    const ctx = requestContext;
+    if (!ctx?.day) {
+      setFlipped([]);
+      return undefined;
+    }
+    setCheckingPair(true);
+    const handle = async () => {
+      try {
+        const resp = await checkMemoryPair(
+          ctx.day,
+          { puzzleId: block.id, cards: [first, second] },
+          { override: ctx.override, locale: ctx.locale, mode: ctx.mode },
+        );
+        if (cancelled) return;
+        if (resp.match) {
           setMatched((prev) => new Set([...prev, first, second]));
-          const canonical = firstKey ? pairByKey.get(firstKey) : null;
-          const pairForRecord = canonical ?? { a: first, b: second };
-          const pairKey = [pairForRecord.a, pairForRecord.b].sort().join("|");
+          const pairKey = [first, second].sort().join("|");
           setFoundPairs((prev) => {
             if (prev.some((p) => [p.a, p.b].sort().join("|") === pairKey)) return prev;
-            return [...prev, { a: pairForRecord.a, b: pairForRecord.b }];
+            return [...prev, { a: first, b: second }];
           });
           setFlipped([]);
-        }, 250);
-      } else {
-        setTimeout(() => {
+        } else {
+          setTimeout(() => {
+            if (!cancelled) {
+              setFlipped([]);
+            }
+          }, flipBackMs);
+          setMisses((prev) => {
+            const next = prev + 1;
+            if (maxMisses !== null && next >= maxMisses) {
+              setTimeout(handleReset, 750);
+            }
+            return next;
+          });
+        }
+      } catch {
+        if (!cancelled) {
           setFlipped([]);
-        }, flipBackMs);
-        setMisses((prev) => {
-          const next = prev + 1;
-          if (maxMisses !== null && next >= maxMisses) {
-            setTimeout(handleReset, 750);
-          }
-          return next;
-        });
+        }
+      } finally {
+        if (!cancelled) setCheckingPair(false);
       }
-    }
-  };
+    };
+    void handle();
+    return () => {
+      cancelled = true;
+    };
+  }, [flipped, solvedMode, requestContext, block.id, flipBackMs, maxMisses, handleReset]);
 
   const renderMissIndicator = () => {
     if (maxMisses === null) return null;

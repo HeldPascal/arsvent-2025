@@ -12,6 +12,7 @@ interface Props {
   status?: "correct" | "incorrect" | "idle";
   onInteract?: (puzzleId: string) => void;
   onSubmit: (payload: RiddleAnswerPayload) => void;
+  requestContext?: { day: number; override?: boolean; locale?: "en" | "de"; mode?: "NORMAL" | "VETERAN" };
   resetSignal?: number;
 }
 
@@ -21,6 +22,7 @@ export default function RiddleAnswerForm({
   status = "idle",
   onInteract,
   onSubmit,
+  requestContext,
   resetSignal = 0,
 }: Props) {
   const { t } = useI18n();
@@ -28,7 +30,13 @@ export default function RiddleAnswerForm({
     import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ||
     (window.location.origin.includes("localhost:5173") ? "http://localhost:4000" : window.location.origin);
   const resolveImage = (src?: string) =>
-    src && src.startsWith("/assets/") && backendBase ? `${backendBase}/content-${src.slice(1)}` : src ?? "";
+    src && backendBase
+      ? src.startsWith("/assets/")
+        ? `${backendBase}/content-${src.slice(1)}`
+        : src.startsWith("/content-asset/")
+          ? `${backendBase}${src}`
+          : src
+      : src ?? "";
 
   const [textAnswer, setTextAnswer] = useState("");
   const [singleChoice, setSingleChoice] = useState("");
@@ -502,6 +510,7 @@ export default function RiddleAnswerForm({
         <MemoryPuzzle
           key={`${block.id}-${block.solved ? "solved" : "play"}-${resetSignal}`}
           block={block as Extract<typeof block, { type: "memory" }>}
+          requestContext={requestContext}
           onChange={(pairs) => {
             setMemoryPairs(pairs);
             onInteract?.(block.id);

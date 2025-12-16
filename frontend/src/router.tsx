@@ -6,7 +6,7 @@ import DayPage from "./views/DayPage";
 import SettingsPage from "./views/SettingsPage";
 import AdminPage from "./views/AdminPage";
 import AdminAuditPage from "./views/AdminAuditPage";
-import { fetchMe } from "./services/api";
+import { fetchMe, updateLocale as apiUpdateLocale } from "./services/api";
 import type { Locale, User } from "./types";
 import Layout from "./views/Layout";
 import { I18nProvider } from "./i18n";
@@ -57,9 +57,14 @@ export default function AppRouter() {
         const u = await fetchMe();
         if (cancelled) return;
         const normalizedUser = { ...u, mode: normalizeMode(u.mode) };
-        setUser(normalizedUser);
         const nextLocale = (["en", "de"] as const).includes(locale) ? locale : normalizedUser.locale;
         setLocale(nextLocale);
+        const effectiveUser =
+          normalizedUser.locale === nextLocale ? normalizedUser : { ...normalizedUser, locale: nextLocale as Locale };
+        setUser(effectiveUser);
+        if (normalizedUser.locale !== nextLocale) {
+          void apiUpdateLocale(nextLocale).catch(() => undefined);
+        }
         try {
           localStorage.setItem("arsvent_locale", nextLocale);
         } catch {

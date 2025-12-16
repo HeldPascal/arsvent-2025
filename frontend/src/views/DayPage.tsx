@@ -40,15 +40,26 @@ export default function DayPage({ user, version }: Props) {
     import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ||
     (window.location.origin.includes("localhost:5173") ? "http://localhost:4000" : window.location.origin);
 
-  const rewriteAssets = (html: string) =>
-    backendBase
-      ? html.replace(
-          /src=(["'])(\/assets\/[^"']+)\1/g,
-          (_m, quote, path) => `src=${quote}${backendBase}/content-${path.slice(1)}${quote}`,
-        )
-      : html;
+  const rewriteAssets = (html: string) => {
+    if (!backendBase) return html;
+    let out = html.replace(
+      /src=(["'])(\/assets\/[^"']+)\1/g,
+      (_m, quote, path) => `src=${quote}${backendBase}/content-${path.slice(1)}${quote}`,
+    );
+    out = out.replace(
+      /src=(["'])(\/content-asset\/[^"']+)\1/g,
+      (_m, quote, path) => `src=${quote}${backendBase}${path}${quote}`,
+    );
+    return out;
+  };
   const resolveAsset = (src?: string) =>
-    src && src.startsWith("/assets/") && backendBase ? `${backendBase}/content-${src.slice(1)}` : src ?? "";
+    src && backendBase
+      ? src.startsWith("/assets/")
+        ? `${backendBase}/content-${src.slice(1)}`
+        : src.startsWith("/content-asset/")
+          ? `${backendBase}${src}`
+          : src
+      : src ?? "";
 
   // keep preview selection in sync when navigating to a new day or when user prefs change
   useEffect(() => {
@@ -280,6 +291,12 @@ export default function DayPage({ user, version }: Props) {
           block={block as Extract<DayBlock, { kind: "puzzle" }>}
           submitting={submitting}
           status={status}
+          requestContext={{
+            day: dayNumber,
+            override: useOverride,
+            locale: previewLocale,
+            mode: previewMode,
+          }}
           resetSignal={resetSignals[block.id] ?? 0}
           onInteract={(puzzleId) =>
             setLastResults((prev) => {

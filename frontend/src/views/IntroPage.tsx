@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default function IntroPage({ user, onModeChange, onIntroComplete }: Props) {
-  const { t } = useI18n();
+  const { t, locale, setLocale } = useI18n();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,19 +24,55 @@ export default function IntroPage({ user, onModeChange, onIntroComplete }: Props
     import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ||
     (window.location.origin.includes("localhost:5173") ? "http://localhost:4000" : window.location.origin);
 
+  useEffect(() => {
+    if (user.locale && user.locale !== locale) {
+      setLocale(user.locale);
+    }
+  }, [user.locale, locale, setLocale]);
+
   const rewriteAssets = useCallback(
-    (html: string) =>
-      backendBase
-        ? html.replace(
-            /src=(["'])(\/assets\/[^"']+)\1/g,
-            (_m, quote, path) => `src=${quote}${backendBase}/content-${path.slice(1)}${quote}`,
-          )
-        : html,
+    (html: string) => {
+      if (!backendBase) return html;
+      let out = html.replace(
+        /src=(["'])(\/assets\/[^"']+)\1/g,
+        (_m, quote, path) => `src=${quote}${backendBase}/content-${path.slice(1)}${quote}`,
+      );
+      out = out.replace(
+        /src=(["'])(\/content-asset\/[^"']+)\1/g,
+        (_m, quote, path) => `src=${quote}${backendBase}${path}${quote}`,
+      );
+      out = out.replace(
+        /srcset=(["'])([^"']+)\1/gi,
+        (_m, quote, val) => {
+          const rewritten = val
+            .split(",")
+            .map((part: string) => {
+              const [urlRaw, size] = part.trim().split(/\s+/, 2);
+              const url = urlRaw ?? "";
+              const masked = url.startsWith("/assets/")
+                ? `${backendBase}/content-${url.slice(1)}`
+                : url.startsWith("/content-asset/")
+                  ? `${backendBase}${url}`
+                  : url;
+              return size ? `${masked} ${size}` : masked;
+            })
+            .join(", ");
+          return `srcset=${quote}${rewritten}${quote}`;
+        },
+      );
+      out = out.replace(/url\((['"]?)(\/content-asset\/[^'")]+)\1\)/gi, (_m, quote, path) => {
+        return `url(${quote}${backendBase}${path}${quote})`;
+      });
+      out = out.replace(/url\((['"]?)(\/assets\/[^'")]+)\1\)/gi, (_m, quote, path) => {
+        return `url(${quote}${backendBase}/content-${path.slice(1)}${quote})`;
+      });
+      return out;
+    },
     [backendBase],
   );
 
   useEffect(() => {
-    fetchIntro()
+    fetchIntro(locale)
       .then((data) => {
         setTitle(data.title);
         setBody(rewriteAssets(data.body));
@@ -44,7 +80,7 @@ export default function IntroPage({ user, onModeChange, onIntroComplete }: Props
       })
       .catch(() => setError(t("dayLoadFailed")))
       .finally(() => setLoading(false));
-  }, [rewriteAssets, t]);
+  }, [locale, rewriteAssets, t]);
 
   const finishIntro = async () => {
     setSaving(true);

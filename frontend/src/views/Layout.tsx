@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import LanguageSwitcher from "./components/LanguageSwitcher";
+import { updateLocale as apiUpdateLocale } from "../services/api";
 import type { Locale, User } from "../types";
 import { useI18n } from "../i18n";
 import Toast from "./components/Toast";
@@ -15,7 +16,7 @@ interface Props {
 }
 
 export default function Layout({ user, loadingUser, onLogout, children, onLocaleChange }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -26,6 +27,7 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
   const [toasts, setToasts] = useState<
     Array<{ id: number; type: "success" | "error" | "info"; message?: string; key?: string; durationMs?: number }>
   >([]);
+  const syncedLocaleRef = useRef<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -49,6 +51,28 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
     document.addEventListener("mousedown", handleClickAway);
     return () => document.removeEventListener("mousedown", handleClickAway);
   }, [menuOpen]);
+
+  // Persist client-selected locale to the backend after login
+  useEffect(() => {
+    if (!user || !locale) return;
+    const key = `${user.id}:${locale}`;
+    if (syncedLocaleRef.current === key) return;
+    if (user.locale === locale) {
+      syncedLocaleRef.current = key;
+      return;
+    }
+    const persist = async () => {
+      try {
+        await apiUpdateLocale(locale as Locale);
+        onLocaleChange(locale as Locale);
+      } catch {
+        // ignore sync failures; UI locale stays
+      } finally {
+        syncedLocaleRef.current = key;
+      }
+    };
+    void persist();
+  }, [user, locale, onLocaleChange]);
 
   const closeMenuAnd = (cb: () => void) => {
     setMenuOpen(false);

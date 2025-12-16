@@ -122,6 +122,22 @@ export const solvePuzzle = (
   );
 };
 
+export const checkMemoryPair = (
+  day: number,
+  payload: { puzzleId: string; cards: [string, string] },
+  opts?: { override?: boolean; locale?: "en" | "de"; mode?: "NORMAL" | "VETERAN" },
+) => {
+  const params = new URLSearchParams();
+  if (opts?.override) params.set("override", "1");
+  if (opts?.locale) params.set("locale", opts.locale);
+  if (opts?.mode) params.set("mode", opts.mode);
+  const suffix = params.toString();
+  return apiFetch<{ match: boolean }>(`/api/days/${day}/memory/check${suffix ? `?${suffix}` : ""}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+};
+
 export const updateLocale = (locale: Locale) =>
   apiFetch<{ id: string; locale: Locale }>("/api/user/locale", {
     method: "POST",
@@ -184,6 +200,11 @@ export const fetchAudit = (limit?: number) =>
 export const deleteAuditEntry = (id: number) =>
   apiFetch<{ success: boolean }>(`/api/admin/audit/${id}`, { method: "DELETE" });
 
-export const fetchIntro = () => apiFetch<IntroPayload>("/api/intro");
+export const fetchIntro = (locale?: "en" | "de") => {
+  const params = new URLSearchParams();
+  if (locale) params.set("locale", locale);
+  const suffix = params.toString();
+  return apiFetch<IntroPayload>(`/api/intro${suffix ? `?${suffix}` : ""}`);
+};
 
 export const completeIntro = () => apiFetch<{ introCompleted: boolean }>("/api/intro/complete", { method: "POST" });

@@ -19,6 +19,8 @@ import type { User as PrismaUser } from "@prisma/client";
 import { loadIntro, loadDayContent, IntroNotFoundError, RiddleNotFoundError } from "./content/loader.js";
 import type { Locale, Mode, DayContent, DayBlock } from "./content/loader.js";
 import { evaluateCondition } from "./content/v1-loader.js";
+import { tokenizeDayContent, resolveAssetToken } from "./content/tokens.js";
+import { maskHtmlAssets } from "./content/tokens.js";
 
 dotenv.config();
 
@@ -108,8 +110,24 @@ app.use(
 app.use(cookieParser());
 app.use(express.json());
 const assetsPath = path.join(__dirname, "..", "content", "assets");
-app.use("/content-assets", express.static(assetsPath));
-app.use("/assets", express.static(assetsPath)); // alias for legacy references
+const enableStaticAssets = false;
+if (enableStaticAssets) {
+  app.use("/content-assets", express.static(assetsPath));
+  app.use("/assets", express.static(assetsPath)); // alias for legacy references
+}
+app.get("/content-asset/:token", async (req, res) => {
+  const token = req.params.token;
+  if (!token) return res.status(400).end();
+  const assetPath = await resolveAssetToken(token);
+  if (!assetPath) return res.status(404).end();
+  const normalized = assetPath.replace(/^\/+/, "");
+  const abs = path.join(__dirname, "..", "content", normalized);
+  return res.sendFile(abs, (err) => {
+    if (err) {
+      res.status(500).end();
+    }
+  });
+});
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -377,6 +395,87 @@ const ensureMemoryAnswer = (value: unknown) => {
     if (left === right) throw new Error("A pair must contain two different cards");
     return { a: left, b: right };
   });
+};
+
+const mapTokenId = (token: string, tokenMap: Map<string, string>, allowRaw = false) => {
+  if (typeof token !== "string") {
+    throw new Error("Invalid id token");
+  }
+  const mapped = tokenMap.get(token);
+  if (mapped) return mapped;
+  if (allowRaw) return token;
+  throw new Error("Unknown id token");
+};
+
+const translateAnswerTokens = (
+  block: Extract<DayBlock, { kind: "puzzle" }>,
+  answer: unknown,
+  tokenMap: Map<string, string>,
+) => {
+  switch (block.type) {
+    case "single-choice": {
+      if (typeof answer !== "string") throw new Error("Invalid answer");
+      return mapTokenId(answer, tokenMap, false);
+    }
+    case "multi-choice": {
+      if (!Array.isArray(answer)) throw new Error("Invalid answer");
+      return answer.map((entry) => mapTokenId(String(entry), tokenMap, false));
+    }
+    case "select-items": {
+      if (!Array.isArray(answer)) throw new Error("Invalid answer");
+      return answer.map((entry) => mapTokenId(String(entry), tokenMap, false));
+    }
+    case "memory": {
+      if (!Array.isArray(answer)) throw new Error("Invalid answer");
+      return answer.map((pair) => {
+        if (!pair || typeof pair !== "object" || Array.isArray(pair)) throw new Error("Invalid answer");
+        const { a, b, first, second } = pair as { a?: unknown; b?: unknown; first?: unknown; second?: unknown };
+        return {
+          a: mapTokenId(String(a ?? first ?? ""), tokenMap, false),
+          b: mapTokenId(String(b ?? second ?? ""), tokenMap, false),
+        };
+      });
+    }
+    case "drag-sockets": {
+      if (!Array.isArray(answer)) throw new Error("Invalid answer");
+      return answer.map((entry) => {
+        if (!entry || typeof entry !== "object" || Array.isArray(entry)) throw new Error("Invalid answer");
+        const { socketId, itemId, listId } = entry as { socketId?: unknown; itemId?: unknown; listId?: unknown };
+        return {
+          ...(socketId ? { socketId: mapTokenId(String(socketId), tokenMap, false) } : {}),
+          ...(itemId ? { itemId: mapTokenId(String(itemId), tokenMap, false) } : {}),
+          ...(listId ? { listId: mapTokenId(String(listId), tokenMap, false) } : {}),
+        };
+      });
+    }
+    case "text":
+    default:
+      return answer;
+  }
+};
+
+const redactSolutions = (content: DayContent): DayContent => {
+  const blocks = content.blocks.map((block) => {
+    if (block.kind !== "puzzle") return block;
+    if (block.solved) return block;
+    return { ...block, solution: undefined };
+  });
+  return { ...content, blocks };
+};
+
+const buildMemoryPairMap = (solution: unknown) => {
+  if (!Array.isArray(solution)) {
+    throw new Error("Memory puzzle misconfigured");
+  }
+  const pairKey = new Map<string, string>();
+  (solution as Array<{ a?: string; b?: string }>).forEach((entry, idx) => {
+    const key = `pair-${idx}`;
+    const a = String(entry?.a ?? "");
+    const b = String(entry?.b ?? "");
+    if (a) pairKey.set(a, key);
+    if (b) pairKey.set(b, key);
+  });
+  return pairKey;
 };
 
 const ensureGridPathAnswer = (value: unknown) => {
@@ -908,12 +1007,16 @@ app.post("/api/user/creature-swap", requireAuth, async (req: Request, res: Respo
 
 app.get("/api/intro", requireAuth, async (req, res, next) => {
   try {
-    const locale = normalizeLocale(getUserLocale(req.user as PrismaUser));
+    const requestedLocale =
+      typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
+        ? normalizeLocale(req.query.locale)
+        : null;
+    const locale = requestedLocale ?? normalizeLocale(getUserLocale(req.user as PrismaUser));
     const funSwap = Boolean((req.user as PrismaUser)?.creatureSwap);
     const content = await loadIntro(locale);
     return res.json({
       title: applyCreatureSwapText(content.title, locale, funSwap),
-      body: applyCreatureSwapText(content.body, locale, funSwap),
+      body: applyCreatureSwapText(maskHtmlAssets(content.body), locale, funSwap),
       introCompleted: Boolean(req.user?.introCompleted),
       mode: req.user?.mode ?? "NORMAL",
     });
@@ -1036,10 +1139,13 @@ app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, ne
       );
     }
 
+    const redacted = redactSolutions(content);
+    const tokenized = tokenizeDayContent(redacted, { day, locale, mode });
+
     return res.json({
       day,
-      title: content.title,
-      blocks: content.blocks,
+      title: tokenized.content.title,
+      blocks: tokenized.content.blocks,
       isSolved: daySolvedInDb,
       canPlay: true,
     });
@@ -1047,6 +1153,67 @@ app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, ne
     if (error instanceof RiddleNotFoundError) {
       return res.status(404).json({ error: "Riddle not found" });
     }
+    return next(error);
+  }
+});
+
+app.post("/api/days/:day/memory/check", requireAuth, requireIntroComplete, async (req, res, next) => {
+  const day = Number(req.params.day);
+  if (!Number.isInteger(day) || day < 1 || day > MAX_DAY) {
+    return res.status(400).json({ error: "Day must be between 1 and 24" });
+  }
+  const { puzzleId, cards } = req.body as { puzzleId?: string; cards?: unknown };
+  if (!puzzleId || !Array.isArray(cards) || cards.length !== 2) {
+    return res.status(400).json({ error: "Invalid payload" });
+  }
+  try {
+    const isAdminOverride = Boolean(
+      (req.user?.isAdmin || req.user?.isSuperAdmin) &&
+        (req.query.override === "1" || req.query.override === "true" || req.query.override === "yes"),
+    );
+    const unlockedDay = await getUnlockedDay();
+    const lastSolved = req.user!.lastSolvedDay ?? 0;
+    const orderAllowed = isAdminOverride || day <= lastSolved + 1;
+    const available = isAdminOverride || day <= unlockedDay;
+    if (!available) {
+      return res.status(400).json({ error: "This day is not available yet." });
+    }
+    if (!orderAllowed) {
+      return res.status(400).json({ error: "Solve previous days first." });
+    }
+
+    const requestedLocale =
+      typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
+        ? normalizeLocale(req.query.locale)
+        : null;
+    const requestedMode = typeof req.query.mode === "string" ? normalizeModeValue(req.query.mode) : null;
+    const locale = isAdminOverride && requestedLocale ? requestedLocale : normalizeLocale(getUserLocale(req.user as PrismaUser));
+    const mode = isAdminOverride && requestedMode ? requestedMode : getUserMode(req.user as PrismaUser);
+
+    const sessionScope: ProgressScope = isAdminOverride ? "preview" : "default";
+    const progressKey = buildProgressKey(day, sessionScope, locale, mode);
+    const sessionSolved = getSessionPuzzleProgress(req, progressKey, sessionScope);
+    const content = await loadDayContent(day, locale, mode, sessionSolved, false);
+    const tokenized = tokenizeDayContent(content, { day, locale, mode });
+
+    const resolvedPuzzleId = tokenized.tokenToId.get(String(puzzleId));
+    const puzzleBlock = content.blocks.find(
+      (block): block is Extract<DayBlock, { kind: "puzzle" }> =>
+        block.kind === "puzzle" && block.id === resolvedPuzzleId,
+    );
+    if (!puzzleBlock || puzzleBlock.type !== "memory") {
+      return res.status(400).json({ error: "Puzzle not found or not a memory puzzle" });
+    }
+    const pairMap = buildMemoryPairMap(puzzleBlock.solution);
+    const [firstToken, secondToken] = cards as [string, string];
+    const first = tokenized.tokenToId.get(String(firstToken));
+    const second = tokenized.tokenToId.get(String(secondToken));
+    if (!first || !second) {
+      return res.status(400).json({ error: "Unknown card token" });
+    }
+    const match = Boolean(pairMap.get(first) && pairMap.get(first) === pairMap.get(second));
+    return res.json({ match });
+  } catch (error) {
     return next(error);
   }
 });
@@ -1090,13 +1257,15 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
     const progressKey = buildProgressKey(day, sessionScope, locale, mode);
     const sessionSolved = getSessionPuzzleProgress(req, progressKey, sessionScope);
     const content = await loadDayContent(day, locale, mode, sessionSolved, false);
+    const tokenizedContent = tokenizeDayContent(redactSolutions(content), { day, locale, mode });
 
     if (!puzzleId) {
       return res.status(400).json({ error: "Missing puzzleId" });
     }
 
+    const resolvedPuzzleId = puzzleId ? tokenizedContent.tokenToId.get(puzzleId) ?? null : null;
     const puzzleBlock = content.blocks.find(
-      (block): block is Extract<DayBlock, { kind: "puzzle" }> => block.kind === "puzzle" && block.id === puzzleId,
+      (block): block is Extract<DayBlock, { kind: "puzzle" }> => block.kind === "puzzle" && block.id === resolvedPuzzleId,
     );
     if (!puzzleBlock) {
       return res.status(400).json({ error: "Puzzle not found or not available yet" });
@@ -1112,12 +1281,13 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
     if (!isAdminOverride && puzzleBlock.solved) {
       const funSwap = Boolean(req.user?.creatureSwap);
       const swapped = applyCreatureSwapToDay(content, locale, funSwap);
+      const responseContent = tokenizeDayContent(redactSolutions(swapped), { day, locale, mode });
       return res.json({
         day,
         isSolved: false,
         correct: true,
         message: "Already solved.",
-        blocks: swapped.blocks,
+        blocks: responseContent.content.blocks,
       });
     }
     if (submittedType && submittedType !== effectivePuzzle.type) {
@@ -1126,7 +1296,8 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
 
     let correct = false;
     try {
-      correct = evaluatePuzzleAnswer(effectivePuzzle, answer);
+      const translatedAnswer = translateAnswerTokens(effectivePuzzle, answer, tokenizedContent.tokenToId);
+      correct = evaluatePuzzleAnswer(effectivePuzzle, translatedAnswer);
     } catch (err) {
       return res.status(400).json({ error: (err as Error).message });
     }
@@ -1151,12 +1322,17 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
       nextContent = await loadDayContent(day, locale, mode, solvedAll, false);
     }
 
+    const responseContent = tokenizeDayContent(
+      redactSolutions(applyCreatureSwapToDay(nextContent, locale, funSwap)),
+      { day, locale, mode },
+    );
+
     return res.json({
       day,
       isSolved: daySolved,
       correct,
       message: correct ? "Correct! Well done." : "Incorrect answer. Try again.",
-      blocks: applyCreatureSwapToDay(nextContent, locale, funSwap).blocks,
+      blocks: responseContent.content.blocks,
     });
   } catch (error) {
     if (error instanceof RiddleNotFoundError) {
@@ -1199,8 +1375,10 @@ app.post("/api/days/:day/puzzle/:puzzleId/reset", requireAuth, requireIntroCompl
     const progressKey = buildProgressKey(day, sessionScope, locale, mode);
     const sessionSolved = getSessionPuzzleProgress(req, progressKey, sessionScope);
     const content = await loadDayContent(day, locale, mode, sessionSolved, false);
+    const tokenized = tokenizeDayContent(content, { day, locale, mode });
+    const resolvedPuzzleId = tokenized.tokenToId.get(puzzleId) ?? puzzleId;
     const puzzleBlock = content.blocks.find(
-      (block): block is Extract<DayBlock, { kind: "puzzle" }> => block.kind === "puzzle" && block.id === puzzleId,
+      (block): block is Extract<DayBlock, { kind: "puzzle" }> => block.kind === "puzzle" && block.id === resolvedPuzzleId,
     );
     if (!puzzleBlock) {
       return res.status(400).json({ error: "Puzzle not found or not available yet" });
@@ -1210,7 +1388,7 @@ app.post("/api/days/:day/puzzle/:puzzleId/reset", requireAuth, requireIntroCompl
     }
 
     const updatedSolved = new Set(sessionSolved);
-    updatedSolved.delete(puzzleId);
+    updatedSolved.delete(resolvedPuzzleId);
     setSessionPuzzleProgress(req, progressKey, updatedSolved, sessionScope);
 
     const nextContent = await loadDayContent(day, locale, mode, updatedSolved, false);
@@ -1218,10 +1396,15 @@ app.post("/api/days/:day/puzzle/:puzzleId/reset", requireAuth, requireIntroCompl
     const allPuzzleIds = new Set(nextContent.puzzleIds);
     const daySolved = evaluateCondition(solvedCondition, updatedSolved, allPuzzleIds);
 
+    const responseContent = tokenizeDayContent(
+      redactSolutions(applyCreatureSwapToDay(nextContent, locale, funSwap)),
+      { day, locale, mode },
+    );
+
     return res.json({
       day,
       isSolved: daySolved,
-      blocks: applyCreatureSwapToDay(nextContent, locale, funSwap).blocks,
+      blocks: responseContent.content.blocks,
     });
   } catch (error) {
     if (error instanceof RiddleNotFoundError) {
@@ -1258,8 +1441,10 @@ app.post("/api/days/:day/puzzle/:puzzleId/solve", requireAuth, requireIntroCompl
     const progressKey = buildProgressKey(day, sessionScope, locale, mode);
     const sessionSolved = getSessionPuzzleProgress(req, progressKey, sessionScope);
     const content = await loadDayContent(day, locale, mode, sessionSolved, false);
+    const tokenized = tokenizeDayContent(content, { day, locale, mode });
+    const resolvedPuzzleId = tokenized.tokenToId.get(puzzleId) ?? puzzleId;
     const puzzleBlock = content.blocks.find(
-      (block): block is Extract<DayBlock, { kind: "puzzle" }> => block.kind === "puzzle" && block.id === puzzleId,
+      (block): block is Extract<DayBlock, { kind: "puzzle" }> => block.kind === "puzzle" && block.id === resolvedPuzzleId,
     );
     if (!puzzleBlock) {
       return res.status(400).json({ error: "Puzzle not found or not available yet" });
@@ -1269,7 +1454,7 @@ app.post("/api/days/:day/puzzle/:puzzleId/solve", requireAuth, requireIntroCompl
     }
 
     const updatedSolved = new Set(sessionSolved);
-    updatedSolved.add(puzzleId);
+    updatedSolved.add(resolvedPuzzleId);
     setSessionPuzzleProgress(req, progressKey, updatedSolved, sessionScope);
 
     const nextContent = await loadDayContent(day, locale, mode, updatedSolved, false);
@@ -1277,10 +1462,15 @@ app.post("/api/days/:day/puzzle/:puzzleId/solve", requireAuth, requireIntroCompl
     const allPuzzleIds = new Set(nextContent.puzzleIds);
     const daySolved = evaluateCondition(solvedCondition, updatedSolved, allPuzzleIds);
 
+    const responseContent = tokenizeDayContent(
+      redactSolutions(applyCreatureSwapToDay(nextContent, locale, funSwap)),
+      { day, locale, mode },
+    );
+
     return res.json({
       day,
       isSolved: daySolved,
-      blocks: applyCreatureSwapToDay(nextContent, locale, funSwap).blocks,
+      blocks: responseContent.content.blocks,
     });
   } catch (error) {
     if (error instanceof RiddleNotFoundError) {

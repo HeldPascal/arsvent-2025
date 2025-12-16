@@ -16,18 +16,27 @@ export default function LanguageSwitcher({ user, onLocaleChange, persistOnly }: 
 
   const toggleLocale = async () => {
     const next = current === "en" ? "de" : "en";
+    const persistLocal = () => {
+      try {
+        localStorage.setItem("arsvent_locale", next);
+      } catch {
+        // ignore
+      }
+    };
     if (user && !persistOnly) {
       setSaving(true);
       try {
         await updateLocale(next);
         setLocale(next);
         onLocaleChange?.(next);
+        persistLocal();
       } finally {
         setSaving(false);
       }
     } else {
       setLocale(next);
       onLocaleChange?.(next);
+      persistLocal();
     }
   };
 
