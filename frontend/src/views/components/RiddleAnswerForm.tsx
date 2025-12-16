@@ -49,6 +49,7 @@ export default function RiddleAnswerForm({
   const prevBlockId = useRef<string | null>(null);
   const prevSolvedRef = useRef<boolean>(false);
   const memorySubmittedRef = useRef(false);
+  const isPlaceholder = block.type === "placeholder";
   const defaultAssignments = useMemo(() => {
     if (block.type !== "drag-sockets") return {};
     const items = block.items ?? [];
@@ -236,7 +237,7 @@ export default function RiddleAnswerForm({
   const handleSubmit = (evt: React.FormEvent) => {
     evt.preventDefault();
     setLocalError(null);
-    if (submitting || block.solved) return;
+    if (submitting || block.solved || isPlaceholder) return;
 
     if (block.type === "text") {
       const trimmed = textAnswer.trim();
@@ -448,6 +449,8 @@ export default function RiddleAnswerForm({
 
   return (
     <form className="riddle-answer" onSubmit={handleSubmit}>
+      {block.type === "placeholder" && <div className="banner info">{t("placeholderOnlySolveNow")}</div>}
+
       {block.type === "text" && (
         <>
           {localError && <div className="banner error">{localError}</div>}
@@ -545,7 +548,7 @@ export default function RiddleAnswerForm({
         />
       )}
 
-      {!block.solved && block.type !== "memory" && block.type !== "grid-path" && (
+      {!block.solved && block.type !== "memory" && block.type !== "grid-path" && block.type !== "placeholder" && (
         <div className="actions">
           <button type="submit" className="primary wide" disabled={submitting}>
             {submitting ? "…" : t("submit")}

@@ -132,6 +132,7 @@ const ensureStringArray = (value: unknown, message: string) => {
 
 const resolveType = (input?: string): RiddleType => {
   const normalized = (input ?? "text").toLowerCase();
+  if (["placeholder", "stub"].includes(normalized)) return "placeholder";
   if (["single-choice", "single", "choice"].includes(normalized)) return "single-choice";
   if (["multi-choice", "multiple", "multi"].includes(normalized)) return "multi-choice";
   if (["sort", "ordering", "order"].includes(normalized)) return "sort";
@@ -798,6 +799,19 @@ const mapToDayBlocks = (
     if (block.kind === "puzzle") {
       const type = resolveType(block.definition.type);
       const solved = solvedIds.has(block.id);
+
+      if (type === "placeholder") {
+        return {
+          kind: "puzzle",
+          id: block.id,
+          html: block.html,
+          visible: visibleSet.has(block) || includeHidden,
+          type,
+          solution: block.definition.solution ?? null,
+          solved,
+          ...(block.title ? { title: block.title } : {}),
+        };
+      }
 
       if (type === "text") {
         const solution = normalizeId(block.definition.solution, "Text puzzles require a solution");

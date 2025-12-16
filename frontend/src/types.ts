@@ -2,6 +2,7 @@ export type Locale = "en" | "de";
 export type Mode = "NORMAL" | "VETERAN";
 export type RiddleType =
   | "text"
+  | "placeholder"
   | "single-choice"
   | "multi-choice"
   | "sort"
