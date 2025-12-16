@@ -187,7 +187,19 @@ const dayIndex = new Map<DayIndexKey, string>();
 const dayIndexWarnings: string[] = [];
 let dayIndexStale = true;
 
-const warn = (...args: unknown[]) => console.warn("[content]", ...args);
+type ContentWarningHandler = ((message: string) => void) | null;
+let warningHandler: ContentWarningHandler = null;
+export const setContentWarningHandler = (handler: ContentWarningHandler) => {
+  warningHandler = handler;
+};
+const warn = (...args: unknown[]) => {
+  const message = args.map((a) => (typeof a === "string" ? a : String(a))).join(" ");
+  if (warningHandler) {
+    warningHandler(message);
+  } else {
+    console.warn("[content]", ...args);
+  }
+};
 const isProd = process.env.NODE_ENV === "production";
 let watcherStarted = false;
 

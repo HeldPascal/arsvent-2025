@@ -4,6 +4,17 @@ Ideas and improvements to tackle
 - Pairbuilding puzzle type (Duolingo style; verify on selection and move to list below)
 - Select items enable partial solutions for normal (e.g. 3 instead of 6) also make sure background is transparent without item and label
 
+- Admin content view:
+  - Inventory & Assets
+    - [x] Per-locale cards with locale code, item count, and any errors reading that inventory file
+    - [ ] Inventory consistency summary listing missing/extra IDs per locale pair
+    - [ ] Show count of missing asset files referenced by inventory (per locale)
+    - [ ] List the specific missing asset paths
+    - [ ] Surface cross-locale consistency issues (e.g., IDs present in one locale but not another) with counts and top offenders
+    - [ ] Link inventory issues to content issues (e.g., which rewards reference missing inventory IDs)
+    - [ ] Quick validity badge per locale (OK / warnings / errors)
+    - [ ] Last modified timestamp for each inventory YAML to spot stale files
+    - [ ] Summary totals: total items across locales, number of items missing assets, number of items mismatched across locales
 
 - Admin puzzle debug view  
   Provide an admin debug mode for any day that shows raw block data, validation details (solutions, min selections, socket shapes), and a way to simulate submissions. Goal: let admins verify puzzles before releasing or unlocking them.

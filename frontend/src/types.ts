@@ -204,6 +204,16 @@ export interface AdminOverview {
   recentAudit?: AdminAuditEntry[];
 }
 
+export type IssueSeverity = "info" | "warning" | "error";
+export type IssueSource = "inventory" | "asset" | "content" | "consistency" | "link";
+export interface ContentIssue {
+  severity: IssueSeverity;
+  source: IssueSource;
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
 export type ContentVariantStatus = "ok" | "missing" | "warning" | "error";
 
 export interface ContentVariantDiagnostics {
@@ -251,6 +261,7 @@ export interface ContentDiagnostics {
     emptyDays: number;
   };
   indexWarnings: string[];
+  issues: ContentIssue[];
   inventory: {
     locales: InventoryLocaleDiagnostics[];
     consistency: InventoryConsistencyDiagnostics[];
