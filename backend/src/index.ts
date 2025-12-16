@@ -413,6 +413,9 @@ const translateAnswerTokens = (
   tokenMap: Map<string, string>,
 ) => {
   switch (block.type) {
+    case "placeholder": {
+      throw new Error("This puzzle cannot accept answers");
+    }
     case "single-choice": {
       if (typeof answer !== "string") throw new Error("Invalid answer");
       return mapTokenId(answer, tokenMap, false);
@@ -628,6 +631,9 @@ const applyCreatureSwapToDay = (content: DayContent, locale: Locale, enabled: bo
 
 const evaluatePuzzleAnswer = (block: Extract<DayBlock, { kind: "puzzle" }>, answer: unknown) => {
   switch (block.type) {
+    case "placeholder": {
+      throw new Error("This puzzle is a placeholder and can only be solved via admin override");
+    }
     case "text": {
       const normalizedAnswer = normalizeAnswerId(answer, "Answer must be a string").toLowerCase();
       const normalizedSolution = String(block.solution).trim().toLowerCase();

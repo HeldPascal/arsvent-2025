@@ -23,10 +23,10 @@ Glittering and sparkling dragon scales lie scattered across it.
 id: "sunspire"
 Match the correctly color scales to the locations where you fight Lokkestiiz, Naviintaas, and Yolnahkriin.
 
-![Location](/assets/25_16_background.png)
+![Location](/assets/25_16_background_veteran.png)
 
 ```yaml puzzle
-
+type: "placeholder"
 ```
 
 ## Wait for: sunspire

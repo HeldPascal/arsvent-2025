@@ -101,6 +101,7 @@ type TranslationKey =
   | "gridPathResetAfterIncorrect"
   | "selectItemsHint"
   | "selectItemsRequired"
+  | "placeholderOnlySolveNow"
   | "override"
   | "noContent"
   | "funSettingTitle"
@@ -209,6 +210,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     gridPathResetAfterIncorrect: "Incorrect submission. Use Reset to start over.",
     selectItemsHint: "Tap the items that belong to the answer. Tap again to unselect.",
     selectItemsRequired: "Select at least one item.",
+    placeholderOnlySolveNow: "Placeholder puzzle for prototyping. Use admin “Solve now” to mark it complete.",
     socketPlaceholder: "?",
     override: "Override",
     noContent: "No content yet",
@@ -317,6 +319,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     gridPathResetAfterIncorrect: "Falsche Abgabe. Nutze Zurücksetzen für einen neuen Versuch.",
     selectItemsHint: "Tippe die passenden Elemente in der Szene an. Tippe erneut, um abzuwählen.",
     selectItemsRequired: "Wähle mindestens ein Element aus.",
+    placeholderOnlySolveNow: "Platzhalter-Rätsel für Prototypen. Nur per Admin-„Jetzt lösen“ abschließbar.",
     socketPlaceholder: "?",
     override: "Überschreiben",
     noContent: "Kein Inhalt",

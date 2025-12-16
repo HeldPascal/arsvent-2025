@@ -421,6 +421,22 @@ solution:
 
 ---
 
+## 7.8 Placeholder Puzzle
+
+Non-interactive stub used while prototyping. It cannot be solved through normal submissions and is only completable via the admin **Solve now** action.
+
+### Fields
+- **type:** `"placeholder"`
+- **solution:** optional; ignored for gameplay
+
+### Example
+
+```yaml
+type: "placeholder"
+```
+
+---
+
 # 8. Reward Block
 
 Rewards are defined separately from puzzles.
