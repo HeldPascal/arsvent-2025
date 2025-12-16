@@ -21,12 +21,45 @@ Daneben liegen einige glitzernde und funkelnde Drachenschuppen.
 
 ## Puzzle
 id: "sunspire"
-Ordne die farblich passenden Schuppen den Orten zu, an denen du Lokkestiiz, Naviintaas und Yolnahkriin bekämpfst.
-
-![Location](/assets/25_16_background_normal.png)
+Ordne die farblich passenden Schuppen den Orten zu, an denen du Lokkestiiz, Nahviintaas und Yolnahkriin bekämpfst.
 
 ```yaml puzzle
-type: "placeholder"
+type: "drag-sockets"
+background-image: "/assets/25_16_background.png"
+shape: "square"
+
+items:
+  - id: "scales-gold"
+    label: ""
+    image: "/assets/25_16_option_2.png"
+  - id: "scales-red"
+    label: ""
+    image: "/assets/25_16_option_3.png"
+  - id: "scales-iceblue"
+    label: ""
+    image: "/assets/25_16_option_5.png"
+
+sockets:
+  - id: "lokkestiiz"
+    label: ""
+    image: "/assets/25_16_socket.png"
+    position: { x: 0.61, y: 0.6 }
+  - id: "yolnahkriin"
+    label: ""
+    image: "/assets/25_16_socket.png"
+    position: { x: 0.426, y: 0.633 }
+  - id: "nahviintaas"
+    label: ""
+    image: "/assets/25_16_socket.png"
+    position: { x: 0.515, y: 0.46 }
+
+solution:
+  - socketId: "lokkestiiz"
+    itemId: "scales-iceblue"
+  - socketId: "yolnahkriin"
+    itemId: "scales-red"
+  - socketId: "nahviintaas"
+    itemId: "scales-gold"
 ```
 
 ## Wait for: sunspire
