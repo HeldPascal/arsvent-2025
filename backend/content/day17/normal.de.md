@@ -27,7 +27,25 @@ id: "dlcs"
 Welche dieser Verliese gehören zum selben DLC?
 
 ```yaml puzzle
-
+type: "pair-items"
+left:
+  - id: "cauldron"
+    label: "Der Kessel"
+  - id: "coral-aerie"
+    label: "Korallenhorst"
+  - id: "icereach"
+    label: "Eiskap"
+right:
+  - id: "black-drake-villa"
+    label: "Schwarzdrachenvilla"
+  - id: "unhallowed-grave"
+    label: "Unheiliges Grab"
+  - id: "shipwrights-regret"
+    label: "Gram des Schiffbauers"
+solution:
+  - { left: "cauldron", right: "black-drake-villa" }
+  - { left: "coral-aerie", right: "shipwrights-regret" }
+  - { left: "icereach", right: "unhallowed-grave" }
 ```
 
 ## Wait for: dlcs

@@ -27,7 +27,35 @@ id: "dlcs"
 Welche dieser Verliese gehören zum selben DLC?
 
 ```yaml puzzle
-
+type: "pair-items"
+left:
+  - id: "cauldron"
+    label: "Der Kessel"
+  - id: "coral-aerie"
+    label: "Korallenhorst"
+  - id: "lep-seclusa"
+    label: "Lep Seclusa"
+  - id: "falkreath-hold"
+    label: "Falkenring"
+  - id: "icereach"
+    label: "Eiskap"
+right:
+  - id: "exiled-redoubt"
+    label: "Schanze der Abgeschiedenen"
+  - id: "black-drake-villa"
+    label: "Schwarzdrachenvilla"
+  - id: "unhallowed-grave"
+    label: "Unheiliges Grab"
+  - id: "shipwrights-regret"
+    label: "Gram des Schiffbauers"
+  - id: "bloodroot-forge"
+    label: "Blutquellschmiede"
+solution:
+  - { left: "falkreath-hold", right: "bloodroot-forge" }
+  - { left: "cauldron", right: "black-drake-villa" }
+  - { left: "coral-aerie", right: "shipwrights-regret" }
+  - { left: "icereach", right: "unhallowed-grave" }
+  - { left: "lep-seclusa", right: "exiled-redoubt" }
 ```
 
 ## Wait for: dlcs

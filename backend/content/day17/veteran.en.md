@@ -27,7 +27,35 @@ id: "dlcs"
 Which of these dungeons belong to the same dlc?
 
 ```yaml puzzle
-
+type: "pair-items"
+left:
+  - id: "cauldron"
+    label: "The Cauldron"
+  - id: "coral-aerie"
+    label: "Coral Aerie"
+  - id: "lep-seclusa"
+    label: "Lep Seclusa"
+  - id: "falkreath-hold"
+    label: "Falkreath Hold"
+  - id: "icereach"
+    label: "Icereach"
+right:
+  - id: "exiled-redoubt"
+    label: "Exiled Redoubt"
+  - id: "black-drake-villa"
+    label: "Black Drake Villa"
+  - id: "unhallowed-grave"
+    label: "Unhallowed Grave"
+  - id: "shipwrights-regret"
+    label: "Shipwright's Regret"
+  - id: "bloodroot-forge"
+    label: "Bloodroot Forge"
+solution:
+  - { left: "falkreath-hold", right: "bloodroot-forge" }
+  - { left: "cauldron", right: "black-drake-villa" }
+  - { left: "coral-aerie", right: "shipwrights-regret" }
+  - { left: "icereach", right: "unhallowed-grave" }
+  - { left: "lep-seclusa", right: "exiled-redoubt" }
 ```
 
 ## Wait for: dlcs

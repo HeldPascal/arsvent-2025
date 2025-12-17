@@ -27,7 +27,25 @@ id: "dlcs"
 Which of these dungeons belong to the same dlc?
 
 ```yaml puzzle
-
+type: "pair-items"
+left:
+  - id: "cauldron"
+    label: "The Cauldron"
+  - id: "coral-aerie"
+    label: "Coral Aerie"
+  - id: "icereach"
+    label: "Icereach"
+right:
+  - id: "black-drake-villa"
+    label: "Black Drake Villa"
+  - id: "unhallowed-grave"
+    label: "Unhallowed Grave"
+  - id: "shipwrights-regret"
+    label: "Shipwright's Regret"
+solution:
+  - { left: "cauldron", right: "black-drake-villa" }
+  - { left: "coral-aerie", right: "shipwrights-regret" }
+  - { left: "icereach", right: "unhallowed-grave" }
 ```
 
 ## Wait for: dlcs
