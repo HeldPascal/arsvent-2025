@@ -201,6 +201,24 @@ export const tokenizeDayContent = (content: DayContent, ctx: TokenContext): Toke
       return { ...basePuzzle, options, solution };
     }
 
+    if (block.type === "pair-items") {
+      const leftOptions = (block.leftOptions ?? []).map((opt) => {
+        const optToken = ensureToken("option", opt.id);
+        return { ...opt, id: optToken, ...(opt.image ? { image: maskAsset(opt.image) } : {}) };
+      });
+      const rightOptions = (block.rightOptions ?? []).map((opt) => {
+        const optToken = ensureToken("option", opt.id);
+        return { ...opt, id: optToken, ...(opt.image ? { image: maskAsset(opt.image) } : {}) };
+      });
+      const solution = Array.isArray(block.solution)
+        ? (block.solution as Array<{ left?: string; right?: string }>).map((pair) => ({
+            left: pair?.left ? ensureToken("option", pair.left) : pair?.left ?? "",
+            right: pair?.right ? ensureToken("option", pair.right) : pair?.right ?? "",
+          }))
+        : block.solution;
+      return { ...basePuzzle, leftOptions, rightOptions, solution };
+    }
+
     if (block.type === "select-items") {
       const items = (block.items ?? []).map((item) => {
         const itemToken = ensureToken("item", item.id);

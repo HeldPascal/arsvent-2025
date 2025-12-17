@@ -140,6 +140,22 @@ export const checkMemoryPair = (
   });
 };
 
+export const checkPairItems = (
+  day: number,
+  payload: { puzzleId: string; left: string; right: string },
+  opts?: { override?: boolean; locale?: "en" | "de"; mode?: "NORMAL" | "VETERAN" },
+) => {
+  const params = new URLSearchParams();
+  if (opts?.override) params.set("override", "1");
+  if (opts?.locale) params.set("locale", opts.locale);
+  if (opts?.mode) params.set("mode", opts.mode);
+  const suffix = params.toString();
+  return apiFetch<{ match: boolean }>(`/api/days/${day}/pair-items/check${suffix ? `?${suffix}` : ""}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+};
+
 export const updateLocale = (locale: Locale) =>
   apiFetch<{ id: string; locale: Locale }>("/api/user/locale", {
     method: "POST",

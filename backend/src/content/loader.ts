@@ -13,6 +13,7 @@ export type Mode = "NORMAL" | "VETERAN";
 export type RiddleType =
   | "text"
   | "placeholder"
+  | "pair-items"
   | "single-choice"
   | "multi-choice"
   | "sort"
@@ -105,6 +106,8 @@ export interface PuzzleBlock {
   type: RiddleType;
   optionSize?: "small" | "medium" | "large";
   options?: RiddleOption[];
+  leftOptions?: RiddleOption[];
+  rightOptions?: RiddleOption[];
   groups?: RiddleGroup[];
   minSelections?: number;
   ordered?: boolean;

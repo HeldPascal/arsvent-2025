@@ -5,6 +5,7 @@ import DragSocketsPuzzle from "./drag/DragSocketsPuzzle";
 import SelectItemsPuzzle from "./drag/SelectItemsPuzzle";
 import MemoryPuzzle from "./memory/MemoryPuzzle";
 import GridPathPuzzle from "./grid-path/GridPathPuzzle";
+import PairItemsPuzzle from "./pair-items/PairItemsPuzzle";
 
 interface Props {
   block: Extract<DayBlock, { kind: "puzzle" }>;
@@ -43,12 +44,14 @@ export default function RiddleAnswerForm({
   const [multiChoices, setMultiChoices] = useState<string[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [memoryPairs, setMemoryPairs] = useState<Array<{ a: string; b: string }>>([]);
+  const [pairItemsPairs, setPairItemsPairs] = useState<Array<{ left: string; right: string }>>([]);
   const [dragAssignments, setDragAssignments] = useState<Record<string, string | undefined>>({});
   const [localError, setLocalError] = useState<string | null>(null);
   const [initializedDefaults, setInitializedDefaults] = useState(false);
   const prevBlockId = useRef<string | null>(null);
   const prevSolvedRef = useRef<boolean>(false);
   const memorySubmittedRef = useRef(false);
+  const pairItemsSubmittedRef = useRef(false);
   const isPlaceholder = block.type === "placeholder";
   const defaultAssignments = useMemo(() => {
     if (block.type !== "drag-sockets") return {};
@@ -72,6 +75,9 @@ export default function RiddleAnswerForm({
         setDragAssignments(defaultAssignments);
         if (block.type === "memory") {
           setMemoryPairs([]);
+        }
+        if (block.type === "pair-items") {
+          setPairItemsPairs([]);
         }
         if (block.type === "select-items") {
           setSelectedItems([String(block.solution)]);
@@ -102,6 +108,18 @@ export default function RiddleAnswerForm({
           setMemoryPairs(solvedPairs.filter((p) => p.a && p.b));
         } else if (block.type === "select-items") {
           setSelectedItems((block.solution as Array<unknown>).map((entry) => String(entry)));
+        } else if (block.type === "pair-items") {
+          const solvedPairs = (block.solution as Array<unknown>).map((entry) => {
+            if (entry && typeof entry === "object" && !Array.isArray(entry)) {
+              const { left, right } = entry as { left?: unknown; right?: unknown };
+              return { left: String(left ?? ""), right: String(right ?? "") };
+            }
+            if (Array.isArray(entry) && entry.length === 2) {
+              return { left: String(entry[0]), right: String(entry[1]) };
+            }
+            return { left: "", right: "" };
+          });
+          setPairItemsPairs(solvedPairs.filter((p) => p.left && p.right));
         }
       } else if (block.type === "drag-sockets" && block.solution && typeof block.solution === "object") {
         const solvedPlacements: Record<string, string> = {};
@@ -157,6 +175,23 @@ export default function RiddleAnswerForm({
             .filter(Boolean) as Array<{ a: string; b: string }>;
           setMemoryPairs(mapped);
         }
+      } else if (block.type === "pair-items" && block.solution && typeof block.solution === "object") {
+        const pairs = "pairs" in (block.solution as Record<string, unknown>) ? (block.solution as { pairs?: unknown }).pairs : [];
+        if (Array.isArray(pairs)) {
+          const mapped = pairs
+            .map((entry) => {
+              if (entry && typeof entry === "object" && !Array.isArray(entry)) {
+                const { left, right } = entry as { left?: unknown; right?: unknown };
+                return { left: String(left ?? ""), right: String(right ?? "") };
+              }
+              if (Array.isArray(entry) && entry.length === 2) {
+                return { left: String(entry[0]), right: String(entry[1]) };
+              }
+              return null;
+            })
+            .filter(Boolean) as Array<{ left: string; right: string }>;
+          setPairItemsPairs(mapped);
+        }
       } else {
         setDragAssignments({});
       }
@@ -167,6 +202,7 @@ export default function RiddleAnswerForm({
       setMultiChoices([]);
       setSelectedItems([]);
       setMemoryPairs([]);
+      setPairItemsPairs([]);
       if (block.type !== "drag-sockets") {
         setDragAssignments(defaultAssignments);
       }
@@ -176,6 +212,7 @@ export default function RiddleAnswerForm({
     prevBlockId.current = block.id;
     prevSolvedRef.current = Boolean(block.solved);
     memorySubmittedRef.current = false;
+    pairItemsSubmittedRef.current = false;
   }, [block.id, block.solution, block.solved, block.type, defaultAssignments]);
 
   useEffect(() => {
@@ -207,6 +244,12 @@ export default function RiddleAnswerForm({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memoryPairs]);
+  useEffect(() => {
+    if (block.type === "pair-items" && localError) {
+      setLocalError(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pairItemsPairs]);
 
   // Clear local state on explicit reset signal (per puzzle); drag-sockets keep placements
   useEffect(() => {
@@ -217,11 +260,13 @@ export default function RiddleAnswerForm({
       setMultiChoices([]);
       setSelectedItems([]);
       setMemoryPairs([]);
+      setPairItemsPairs([]);
       setDragAssignments(defaultAssignments);
     }
     setLocalError(null);
     setInitializedDefaults(false);
     memorySubmittedRef.current = false;
+    pairItemsSubmittedRef.current = false;
   }, [resetSignal, block.type, defaultAssignments]);
 
   useEffect(() => {
@@ -233,6 +278,15 @@ export default function RiddleAnswerForm({
       onSubmit({ puzzleId: block.id, type: "memory", answer: memoryPairs });
     }
   }, [block, memoryPairs, onSubmit, onInteract, submitting]);
+  useEffect(() => {
+    if (block.type !== "pair-items") return;
+    const totalPairs = Math.min(block.leftOptions?.length ?? 0, block.rightOptions?.length ?? 0);
+    if (totalPairs > 0 && pairItemsPairs.length >= totalPairs && !block.solved && !pairItemsSubmittedRef.current && !submitting) {
+      pairItemsSubmittedRef.current = true;
+      onInteract?.(block.id);
+      onSubmit({ puzzleId: block.id, type: "pair-items", answer: pairItemsPairs });
+    }
+  }, [block, pairItemsPairs, onSubmit, onInteract, submitting]);
 
   const handleSubmit = (evt: React.FormEvent) => {
     evt.preventDefault();
@@ -279,6 +333,17 @@ export default function RiddleAnswerForm({
       }
       onInteract?.(block.id);
       onSubmit({ puzzleId: block.id, type: "memory", answer: memoryPairs });
+      return;
+    }
+
+    if (block.type === "pair-items") {
+      const totalPairs = Math.min(block.leftOptions?.length ?? 0, block.rightOptions?.length ?? 0);
+      if (!totalPairs || pairItemsPairs.length < totalPairs) {
+        setLocalError(t("matchAllPairs"));
+        return;
+      }
+      onInteract?.(block.id);
+      onSubmit({ puzzleId: block.id, type: "pair-items", answer: pairItemsPairs });
       return;
     }
 
@@ -346,7 +411,12 @@ export default function RiddleAnswerForm({
   const statusClass =
     status === "correct" ? "choice-correct" : status === "incorrect" ? "choice-error" : submitting ? "choice-pending" : "";
   const effectiveStatus =
-    (block.type === "drag-sockets" || block.type === "select-items" || block.type === "memory" || block.type === "grid-path") && localError
+    (block.type === "drag-sockets" ||
+      block.type === "select-items" ||
+      block.type === "memory" ||
+      block.type === "pair-items" ||
+      block.type === "grid-path") &&
+    localError
       ? "incorrect"
       : status;
   const dragStatus: "correct" | "incorrect" | "idle" =
@@ -354,6 +424,8 @@ export default function RiddleAnswerForm({
   const selectStatus: "correct" | "incorrect" | "idle" =
     effectiveStatus === "correct" ? "correct" : effectiveStatus === "incorrect" ? "incorrect" : "idle";
   const memoryStatus: "correct" | "incorrect" | "idle" =
+    effectiveStatus === "correct" ? "correct" : effectiveStatus === "incorrect" ? "incorrect" : "idle";
+  const pairItemsStatus: "correct" | "incorrect" | "idle" =
     effectiveStatus === "correct" ? "correct" : effectiveStatus === "incorrect" ? "incorrect" : "idle";
   const gridPathStatus: "correct" | "incorrect" | "idle" =
     effectiveStatus === "correct" ? "correct" : effectiveStatus === "incorrect" ? "incorrect" : "idle";
@@ -529,6 +601,28 @@ export default function RiddleAnswerForm({
         />
       )}
 
+      {block.type === "pair-items" && (
+        <PairItemsPuzzle
+          key={`${block.id}-${block.solved ? "solved" : "play"}-${resetSignal}`}
+          block={block as Extract<typeof block, { type: "pair-items" }>}
+          pairs={pairItemsPairs}
+          onChange={(next) => {
+            setPairItemsPairs(next);
+            onInteract?.(block.id);
+          }}
+          resolveAsset={resolveImage}
+          status={pairItemsStatus}
+          disabled={submitting || block.solved}
+          errorMessage={localError || undefined}
+          onStartInteraction={() => {
+            setLocalError(null);
+            onInteract?.(block.id);
+          }}
+          onError={(message) => setLocalError(message)}
+          requestContext={requestContext}
+        />
+      )}
+
       {block.type === "grid-path" && (
         <GridPathPuzzle
           key={`${block.id}-${block.solved ? "solved" : "play"}-${resetSignal}`}
@@ -548,7 +642,11 @@ export default function RiddleAnswerForm({
         />
       )}
 
-      {!block.solved && block.type !== "memory" && block.type !== "grid-path" && block.type !== "placeholder" && (
+      {!block.solved &&
+        block.type !== "memory" &&
+        block.type !== "pair-items" &&
+        block.type !== "grid-path" &&
+        block.type !== "placeholder" && (
         <div className="actions">
           <button type="submit" className="primary wide" disabled={submitting}>
             {submitting ? "…" : t("submit")}

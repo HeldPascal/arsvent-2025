@@ -399,6 +399,24 @@ const ensureMemoryAnswer = (value: unknown) => {
   });
 };
 
+const ensurePairItemsAnswer = (value: unknown) => {
+  if (!Array.isArray(value)) {
+    throw new Error("Invalid pairing answer format");
+  }
+  return value.map((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      throw new Error("Invalid pairing answer format");
+    }
+    const { left, right } = entry as { left?: unknown; right?: unknown };
+    const leftId = normalizeAnswerId(left, "Answer must include a left id");
+    const rightId = normalizeAnswerId(right, "Answer must include a right id");
+    if (leftId === rightId) {
+      throw new Error("A pair must contain two different items");
+    }
+    return { left: leftId, right: rightId };
+  });
+};
+
 const mapTokenId = (token: string, tokenMap: Map<string, string>, allowRaw = false) => {
   if (typeof token !== "string") {
     throw new Error("Invalid id token");
@@ -417,6 +435,17 @@ const translateAnswerTokens = (
   switch (block.type) {
     case "placeholder": {
       throw new Error("This puzzle cannot accept answers");
+    }
+    case "pair-items": {
+      if (!Array.isArray(answer)) throw new Error("Invalid answer");
+      return answer.map((entry) => {
+        if (!entry || typeof entry !== "object" || Array.isArray(entry)) throw new Error("Invalid answer");
+        const { left, right } = entry as { left?: unknown; right?: unknown };
+        return {
+          left: mapTokenId(String(left ?? ""), tokenMap, false),
+          right: mapTokenId(String(right ?? ""), tokenMap, false),
+        };
+      });
     }
     case "single-choice": {
       if (typeof answer !== "string") throw new Error("Invalid answer");
@@ -481,6 +510,19 @@ const buildMemoryPairMap = (solution: unknown) => {
     if (b) pairKey.set(b, key);
   });
   return pairKey;
+};
+
+const buildPairItemsMap = (solution: unknown) => {
+  if (!Array.isArray(solution)) {
+    throw new Error("Pair-items puzzle misconfigured");
+  }
+  const map = new Map<string, string>();
+  (solution as Array<{ left?: string; right?: string }>).forEach((entry) => {
+    const left = String(entry?.left ?? "");
+    const right = String(entry?.right ?? "");
+    if (left) map.set(left, right);
+  });
+  return map;
 };
 
 const ensureGridPathAnswer = (value: unknown) => {
@@ -578,6 +620,22 @@ const applyCreatureSwapToBlocks = (blocks: DayBlock[], locale: Locale, enabled: 
               })),
             }
           : {}),
+        ...(block.leftOptions
+          ? {
+              leftOptions: block.leftOptions.map((opt) => ({
+                ...opt,
+                ...(opt.label ? { label: applyCreatureSwapText(opt.label, locale, enabled) } : {}),
+              })),
+            }
+          : {}),
+        ...(block.rightOptions
+          ? {
+              rightOptions: block.rightOptions.map((opt) => ({
+                ...opt,
+                ...(opt.label ? { label: applyCreatureSwapText(opt.label, locale, enabled) } : {}),
+              })),
+            }
+          : {}),
         ...(block.groups
           ? {
               groups: block.groups.map((grp) => ({
@@ -635,6 +693,46 @@ const evaluatePuzzleAnswer = (block: Extract<DayBlock, { kind: "puzzle" }>, answ
   switch (block.type) {
     case "placeholder": {
       throw new Error("This puzzle is a placeholder and can only be solved via admin override");
+    }
+    case "pair-items": {
+      const pairs = ensurePairItemsAnswer(answer);
+      const leftOptions = block.leftOptions ?? [];
+      const rightOptions = block.rightOptions ?? [];
+      if (!leftOptions.length || !rightOptions.length) {
+        throw new Error("Puzzle is misconfigured");
+      }
+      const leftIds = new Set(leftOptions.map((opt) => opt.id));
+      const rightIds = new Set(rightOptions.map((opt) => opt.id));
+      const seenLeft = new Set<string>();
+      const seenRight = new Set<string>();
+      pairs.forEach(({ left, right }) => {
+        if (!leftIds.has(left)) throw new Error("Unknown left item");
+        if (!rightIds.has(right)) throw new Error("Unknown right item");
+        if (seenLeft.has(left)) throw new Error("Each left item can only be used once");
+        if (seenRight.has(right)) throw new Error("Each right item can only be used once");
+        seenLeft.add(left);
+        seenRight.add(right);
+      });
+      const expectedPairs = Array.isArray(block.solution)
+        ? (block.solution as Array<{ left?: string; right?: string }>)
+        : [];
+      if (!expectedPairs.length) {
+        throw new Error("Puzzle is misconfigured");
+      }
+      const expectedMap = new Map<string, string>();
+      expectedPairs.forEach((entry) => {
+        const left = normalizeAnswerId(entry.left, "Solution pairs must have a left id");
+        const right = normalizeAnswerId(entry.right, "Solution pairs must have a right id");
+        if (expectedMap.has(left)) {
+          throw new Error("Puzzle is misconfigured");
+        }
+        expectedMap.set(left, right);
+      });
+      if (expectedMap.size !== leftIds.size || expectedMap.size !== rightIds.size) {
+        throw new Error("Puzzle is misconfigured");
+      }
+      if (pairs.length !== expectedMap.size) return false;
+      return pairs.every((pair) => expectedMap.get(pair.left) === pair.right);
     }
     case "text": {
       const normalizedAnswer = normalizeAnswerId(answer, "Answer must be a string").toLowerCase();
@@ -1220,6 +1318,66 @@ app.post("/api/days/:day/memory/check", requireAuth, requireIntroComplete, async
       return res.status(400).json({ error: "Unknown card token" });
     }
     const match = Boolean(pairMap.get(first) && pairMap.get(first) === pairMap.get(second));
+    return res.json({ match });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post("/api/days/:day/pair-items/check", requireAuth, requireIntroComplete, async (req, res, next) => {
+  const day = Number(req.params.day);
+  if (!Number.isInteger(day) || day < 1 || day > MAX_DAY) {
+    return res.status(400).json({ error: "Day must be between 1 and 24" });
+  }
+  const { puzzleId, left, right } = req.body as { puzzleId?: string; left?: unknown; right?: unknown };
+  if (!puzzleId || typeof left !== "string" || typeof right !== "string") {
+    return res.status(400).json({ error: "Invalid payload" });
+  }
+  try {
+    const isAdminOverride = Boolean(
+      (req.user?.isAdmin || req.user?.isSuperAdmin) &&
+        (req.query.override === "1" || req.query.override === "true" || req.query.override === "yes"),
+    );
+    const unlockedDay = await getUnlockedDay();
+    const lastSolved = req.user!.lastSolvedDay ?? 0;
+    const orderAllowed = isAdminOverride || day <= lastSolved + 1;
+    const available = isAdminOverride || day <= unlockedDay;
+    if (!available) {
+      return res.status(400).json({ error: "This day is not available yet." });
+    }
+    if (!orderAllowed) {
+      return res.status(400).json({ error: "Solve previous days first." });
+    }
+
+    const requestedLocale =
+      typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
+        ? normalizeLocale(req.query.locale)
+        : null;
+    const requestedMode = typeof req.query.mode === "string" ? normalizeModeValue(req.query.mode) : null;
+    const locale = isAdminOverride && requestedLocale ? requestedLocale : normalizeLocale(getUserLocale(req.user as PrismaUser));
+    const mode = isAdminOverride && requestedMode ? requestedMode : getUserMode(req.user as PrismaUser);
+
+    const sessionScope: ProgressScope = isAdminOverride ? "preview" : "default";
+    const progressKey = buildProgressKey(day, sessionScope, locale, mode);
+    const sessionSolved = getSessionPuzzleProgress(req, progressKey, sessionScope);
+    const content = await loadDayContent(day, locale, mode, sessionSolved, false);
+    const tokenized = tokenizeDayContent(content, { day, locale, mode });
+
+    const resolvedPuzzleId = tokenized.tokenToId.get(String(puzzleId));
+    const puzzleBlock = content.blocks.find(
+      (block): block is Extract<DayBlock, { kind: "puzzle" }> =>
+        block.kind === "puzzle" && block.id === resolvedPuzzleId,
+    );
+    if (!puzzleBlock || puzzleBlock.type !== "pair-items") {
+      return res.status(400).json({ error: "Puzzle not found or not a pair-items puzzle" });
+    }
+    const leftId = tokenized.tokenToId.get(String(left));
+    const rightId = tokenized.tokenToId.get(String(right));
+    if (!leftId || !rightId) {
+      return res.status(400).json({ error: "Unknown item token" });
+    }
+    const pairMap = buildPairItemsMap(puzzleBlock.solution);
+    const match = pairMap.get(leftId) === rightId;
     return res.json({ match });
   } catch (error) {
     return next(error);

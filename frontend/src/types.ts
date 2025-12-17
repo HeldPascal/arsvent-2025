@@ -3,6 +3,7 @@ export type Mode = "NORMAL" | "VETERAN";
 export type RiddleType =
   | "text"
   | "placeholder"
+  | "pair-items"
   | "single-choice"
   | "multi-choice"
   | "sort"
@@ -60,6 +61,7 @@ export interface GridPathSolution {
 
 export type RiddleAnswerPayload =
   | { puzzleId: string; type: "text"; answer: string }
+  | { puzzleId: string; type: "pair-items"; answer: Array<{ left: string; right: string }> }
   | { puzzleId: string; type: "single-choice"; answer: string }
   | { puzzleId: string; type: "multi-choice"; answer: string[] }
   | { puzzleId: string; type: "sort"; answer: string[] }
@@ -114,6 +116,8 @@ export type DayBlock =
       solution: unknown;
       solved: boolean;
       options?: RiddleOption[];
+      leftOptions?: RiddleOption[];
+      rightOptions?: RiddleOption[];
       minSelections?: number;
       ordered?: boolean;
       optionSize?: "small" | "medium" | "large";

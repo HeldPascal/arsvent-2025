@@ -239,6 +239,8 @@ const collectBlockAssetIssues = async (
       attach((block as { backImage?: string }).backImage);
       attach((block as { hoverBackImage?: string }).hoverBackImage);
       block.options?.forEach((opt) => attach(opt.image));
+      (block as { leftOptions?: Array<{ image?: string }> }).leftOptions?.forEach((opt) => attach(opt.image));
+      (block as { rightOptions?: Array<{ image?: string }> }).rightOptions?.forEach((opt) => attach(opt.image));
       block.items?.forEach((item) => attach(item.image));
       block.sockets?.forEach((socket) => attach(socket.image));
       (block as { cards?: Array<{ image?: string; backImage?: string; hoverBackImage?: string }> }).cards?.forEach((card) => {
@@ -477,6 +479,7 @@ const diagnoseVariant = async (
       const allowedTypes: RiddleType[] = [
         "text",
         "placeholder",
+        "pair-items",
         "single-choice",
         "multi-choice",
         "sort",
@@ -539,6 +542,34 @@ const diagnoseVariant = async (
             });
           }
           dupOpts.add(opt.id);
+        });
+      }
+      if (block.type === "pair-items") {
+        const leftIds = new Set<string>();
+        const rightIds = new Set<string>();
+        (block.leftOptions ?? []).forEach((opt) => {
+          if (leftIds.has(opt.id)) {
+            issuesCollector.push({
+              severity: "warning",
+              source: "content",
+              code: "CONTENT_OPTION_DUPLICATE",
+              message: `Duplicate left option id ${opt.id} in puzzle ${block.id}`,
+              details: { day, locale, mode, filePath, puzzleId: block.id, optionId: opt.id },
+            });
+          }
+          leftIds.add(opt.id);
+        });
+        (block.rightOptions ?? []).forEach((opt) => {
+          if (rightIds.has(opt.id)) {
+            issuesCollector.push({
+              severity: "warning",
+              source: "content",
+              code: "CONTENT_OPTION_DUPLICATE",
+              message: `Duplicate right option id ${opt.id} in puzzle ${block.id}`,
+              details: { day, locale, mode, filePath, puzzleId: block.id, optionId: opt.id },
+            });
+          }
+          rightIds.add(opt.id);
         });
       }
       if (block.type === "drag-sockets") {

@@ -119,6 +119,50 @@ const normalizeOptions = (raw: unknown): RiddleOption[] => {
   return options;
 };
 
+const normalizePairItemsSolution = (
+  raw: unknown,
+  leftOptions: RiddleOption[],
+  rightOptions: RiddleOption[],
+): Array<{ left: string; right: string }> => {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw new ContentValidationError("Pair-items puzzles require a solution");
+  }
+  const leftIds = new Set(leftOptions.map((opt) => opt.id));
+  const rightIds = new Set(rightOptions.map((opt) => opt.id));
+  const pairs = raw.map((entry) => {
+    if (Array.isArray(entry) && entry.length === 2) {
+      return {
+        left: normalizeId(entry[0], "Pair entries require a left id"),
+        right: normalizeId(entry[1], "Pair entries require a right id"),
+      };
+    }
+    if (entry && typeof entry === "object" && !Array.isArray(entry)) {
+      const { left, right, a, b } = entry as { left?: unknown; right?: unknown; a?: unknown; b?: unknown };
+      const leftId = normalizeId(left ?? a, "Pair entries require a left id");
+      const rightId = normalizeId(right ?? b, "Pair entries require a right id");
+      return { left: leftId, right: rightId };
+    }
+    throw new ContentValidationError("Invalid pair-items solution entry");
+  });
+
+  const usedLeft = new Set<string>();
+  const usedRight = new Set<string>();
+  pairs.forEach(({ left, right }) => {
+    if (!leftIds.has(left)) throw new ContentValidationError(`Solution references unknown left item: ${left}`);
+    if (!rightIds.has(right)) throw new ContentValidationError(`Solution references unknown right item: ${right}`);
+    if (usedLeft.has(left)) throw new ContentValidationError("Each left item must appear in exactly one pair");
+    if (usedRight.has(right)) throw new ContentValidationError("Each right item must appear in exactly one pair");
+    usedLeft.add(left);
+    usedRight.add(right);
+  });
+
+  if (usedLeft.size !== leftIds.size || usedRight.size !== rightIds.size) {
+    throw new ContentValidationError("Solution must include every item exactly once");
+  }
+
+  return pairs;
+};
+
 const ensureStringArray = (value: unknown, message: string) => {
   if (!Array.isArray(value)) {
     throw new ContentValidationError(message);
@@ -134,6 +178,7 @@ const ensureStringArray = (value: unknown, message: string) => {
 const resolveType = (input?: string): RiddleType => {
   const normalized = (input ?? "text").toLowerCase();
   if (["placeholder", "stub"].includes(normalized)) return "placeholder";
+  if (["pair-items", "pairing", "pairings", "match-items", "match-pairs"].includes(normalized)) return "pair-items";
   if (["single-choice", "single", "choice"].includes(normalized)) return "single-choice";
   if (["multi-choice", "multiple", "multi"].includes(normalized)) return "multi-choice";
   if (["sort", "ordering", "order"].includes(normalized)) return "sort";
@@ -809,6 +854,40 @@ const mapToDayBlocks = (
           visible: visibleSet.has(block),
           type,
           solution: block.definition.solution ?? null,
+          solved,
+          ...(block.title ? { title: block.title } : {}),
+        };
+      }
+
+      if (type === "pair-items") {
+        const rawDef = block.definition.raw as Record<string, unknown>;
+        const leftOptions = normalizeOptions(rawDef.left);
+        const rightOptions = normalizeOptions(rawDef.right);
+        if (leftOptions.length !== rightOptions.length) {
+          throw new ContentValidationError("Pair-items puzzles require the same number of left and right items");
+        }
+        if (!leftOptions.length) {
+          throw new ContentValidationError("Pair-items puzzles require at least one item per group");
+        }
+        const leftIds = new Set(leftOptions.map((opt) => opt.id));
+        const rightIds = new Set(rightOptions.map((opt) => opt.id));
+        leftIds.forEach((id) => {
+          if (rightIds.has(id)) {
+            throw new ContentValidationError(`Pair-items puzzles require unique ids across groups: ${id}`);
+          }
+        });
+        const solution = normalizePairItemsSolution(block.definition.solution, leftOptions, rightOptions);
+        const optionSize = normalizeOptionSize((block.definition.raw as { size?: unknown }).size);
+        return {
+          kind: "puzzle",
+          id: block.id,
+          html: block.html,
+          visible: visibleSet.has(block) || includeHidden,
+          type,
+          leftOptions,
+          rightOptions,
+          solution,
+          ...(optionSize ? { optionSize } : {}),
           solved,
           ...(block.title ? { title: block.title } : {}),
         };

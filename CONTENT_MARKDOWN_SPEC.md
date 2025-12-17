@@ -384,7 +384,41 @@ solution:
 
 ---
 
-## 7.7 Grid Path Puzzle
+## 7.7 Pair Items Puzzle
+
+Players match items from two visible columns. Each left item pairs with exactly one right item; matched pairs are listed below. Items remain visible after matching.
+
+### Fields
+- **type:** `"pair-items"`
+- **left:** list of options for the left column (id, label, image)
+- **right:** list of options for the right column (id, label, image)
+- **solution:** list of `{ left, right }` pairs (one-to-one mapping)
+- **size:** optional (`small`, `medium`, `large`) to adjust rendering
+
+### Example
+
+```yaml
+type: "pair-items"
+size: "medium"
+left:
+  - id: "rune"
+    label: "Rune"
+    image: "/assets/rune.png"
+  - id: "blade"
+    label: "Blade"
+right:
+  - id: "fire"
+    label: "Fire"
+  - id: "steel"
+    label: "Steel"
+solution:
+  - { left: "rune", right: "fire" }
+  - { left: "blade", right: "steel" }
+```
+
+---
+
+## 7.8 Grid Path Puzzle
 
 Players pick a start column, trace a path through a grid on top of a background image, and finish by clicking the goal in the same column on the bottom.
 
@@ -421,7 +455,7 @@ solution:
 
 ---
 
-## 7.8 Placeholder Puzzle
+## 7.9 Placeholder Puzzle
 
 Non-interactive stub used while prototyping. It cannot be solved through normal submissions and is only completable via the admin **Solve now** action.
 
