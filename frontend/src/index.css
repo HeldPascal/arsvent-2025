@@ -2717,7 +2717,7 @@ a {
 
 .debug-blocks {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 10px;
   margin: 12px 0;
 }
@@ -2727,6 +2727,20 @@ a {
   border-radius: 8px;
   padding: 10px;
   background: #2e3339;
+}
+.debug-block.selectable {
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+.debug-block.selectable:hover {
+  border-color: rgba(125, 211, 252, 0.6);
+  box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.25);
+}
+.debug-block.selectable.selected {
+  border-color: rgba(255, 237, 213, 0.9);
+  box-shadow: 0 0 0 2px rgba(255, 237, 213, 0.6);
+  transform: translateY(-2px);
+  background: #3a3f4a;
 }
 
 .debug-title {
@@ -2802,6 +2816,41 @@ a {
   color: inherit;
   cursor: pointer;
   padding: 0;
+}
+
+.tag-chip.locked {
+  opacity: 0.8;
+  padding-right: 6px;
+}
+
+.tag-lock {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.segmented button {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.segmented button + button {
+  border-left: 1px solid var(--line);
+}
+
+.segmented button.active {
+  background: var(--panel-contrast);
+  font-weight: 700;
 }
 
 .tag-key {

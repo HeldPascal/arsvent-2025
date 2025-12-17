@@ -12,6 +12,7 @@ import type {
   GridSize,
   GridPathSolution,
 } from "./loader.js";
+import { ContentValidationError } from "./errors.js";
 
 export type WhenCondition =
   | { kind: "all" }
@@ -88,13 +89,13 @@ export interface LoadedVersionedContent {
 
 const normalizeId = (value: unknown, message: string) => {
   const id = String(value ?? "").trim();
-  if (!id) throw new Error(message);
+  if (!id) throw new ContentValidationError(message);
   return id;
 };
 
 const normalizeOptions = (raw: unknown): RiddleOption[] => {
   if (!Array.isArray(raw) || raw.length === 0) {
-    throw new Error("Options are required for this puzzle type");
+    throw new ContentValidationError("Options are required for this puzzle type");
   }
   const options = raw.map((entry) => {
     if (typeof entry === "string") {
@@ -108,11 +109,11 @@ const normalizeOptions = (raw: unknown): RiddleOption[] => {
       const image = typeof option.image === "string" ? option.image : undefined;
       return { id, label, ...(image ? { image } : {}) };
     }
-    throw new Error("Invalid option entry");
+    throw new ContentValidationError("Invalid option entry");
   });
   const seen = new Set<string>();
   options.forEach((opt) => {
-    if (seen.has(opt.id)) throw new Error(`Duplicate option id: ${opt.id}`);
+    if (seen.has(opt.id)) throw new ContentValidationError(`Duplicate option id: ${opt.id}`);
     seen.add(opt.id);
   });
   return options;
@@ -120,12 +121,12 @@ const normalizeOptions = (raw: unknown): RiddleOption[] => {
 
 const ensureStringArray = (value: unknown, message: string) => {
   if (!Array.isArray(value)) {
-    throw new Error(message);
+    throw new ContentValidationError(message);
   }
   const result = value.map((entry) => normalizeId(entry, "Entries must be strings"));
   const unique = new Set(result);
   if (unique.size !== result.length) {
-    throw new Error("Entries must be unique");
+    throw new ContentValidationError("Entries must be unique");
   }
   return result;
 };
@@ -158,7 +159,7 @@ const resolveShape = (input: unknown): DragShape => {
   if (normalized === "circle" || normalized === "round") return "circle";
   if (normalized === "square" || normalized === "box") return "square";
   if (normalized === "hex" || normalized === "hexagon") return "hex";
-  throw new Error(`Unsupported shape: ${input}`);
+  throw new ContentValidationError(`Unsupported shape: ${input}`);
 };
 
 const stripQuotes = (value: string) => value.replace(/^['"]|['"]$/g, "").trim();
@@ -178,7 +179,7 @@ const parseWhenCondition = (value: unknown): WhenCondition => {
       return { kind: "or", conditions: list.map((entry) => parseWhenCondition(entry)) };
     }
   }
-  throw new Error("Invalid when condition");
+  throw new ContentValidationError("Invalid when condition");
 };
 
 const extractBlockId = (lines: string[]) => {
@@ -244,11 +245,11 @@ const parseBlocks = (parsed: GrayMatterFile<string>) => {
   }
 
   const normalizedLanguage = meta.language.toLowerCase();
-  if (!["en", "de"].includes(normalizedLanguage)) throw new Error(`Unsupported language: ${meta.language}`);
+  if (!["en", "de"].includes(normalizedLanguage)) throw new ContentValidationError(`Unsupported language: ${meta.language}`);
   meta.language = normalizedLanguage;
 
   const normalizedMode = meta.mode.toLowerCase();
-  if (!["normal", "veteran"].includes(normalizedMode)) throw new Error(`Unsupported mode: ${meta.mode}`);
+  if (!["normal", "veteran"].includes(normalizedMode)) throw new ContentValidationError(`Unsupported mode: ${meta.mode}`);
   meta.mode = normalizedMode;
 
   const blocks: StructuredBlock[] = [];
@@ -281,7 +282,7 @@ const parseBlocks = (parsed: GrayMatterFile<string>) => {
 
     if (isPuzzle) {
       const puzzleMatch = blockMarkdown.match(/```yaml\s+puzzle\s*\n([\s\S]*?)```/i);
-      if (!puzzleMatch) throw new Error("Puzzle block is missing a puzzle definition");
+      if (!puzzleMatch) throw new ContentValidationError("Puzzle block is missing a puzzle definition");
       const definition = parsePuzzleDefinition(puzzleMatch[1] ?? "");
       const puzzleId = id || normalizeId((definition.raw as { id?: unknown }).id, "Puzzle id is required");
       blocks.push({
@@ -320,7 +321,7 @@ const parseBlocks = (parsed: GrayMatterFile<string>) => {
       : whenMatch
         ? parseWhenCondition(parsePuzzleDefinition(whenMatch[1] ?? "").raw)
         : null;
-    if (!condition) throw new Error("Continue/Wait block requires a condition");
+    if (!condition) throw new ContentValidationError("Continue/Wait block requires a condition");
     blocks.push({
       kind: "continue-when",
       heading,
@@ -357,11 +358,11 @@ const normalizeDragItems = (
   options: { requirePosition?: boolean } = {},
 ): DragSocketItem[] => {
   if (!Array.isArray(raw) || raw.length === 0) {
-    throw new Error("This puzzle requires at least one item");
+    throw new ContentValidationError("This puzzle requires at least one item");
   }
   const items = raw.map((entry) => {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-      throw new Error("Invalid item definition");
+      throw new ContentValidationError("Invalid item definition");
     }
     const { id, label, image, shape, defaultSocketId, position } = entry as {
       id?: unknown;
@@ -378,7 +379,7 @@ const normalizeDragItems = (
     const itemDefaultSocketId = typeof defaultSocketId === "string" ? defaultSocketId : undefined;
     const normalizedPosition = position !== undefined ? normalizePosition(position) : undefined;
     if (options.requirePosition && !normalizedPosition) {
-      throw new Error("Placed items require a position");
+      throw new ContentValidationError("Placed items require a position");
     }
     return {
       id: itemId,
@@ -391,7 +392,7 @@ const normalizeDragItems = (
   });
   const seen = new Set<string>();
   items.forEach((item) => {
-    if (seen.has(item.id)) throw new Error(`Duplicate item id: ${item.id}`);
+    if (seen.has(item.id)) throw new ContentValidationError(`Duplicate item id: ${item.id}`);
     seen.add(item.id);
   });
   return items;
@@ -399,12 +400,12 @@ const normalizeDragItems = (
 
 const normalizePosition = (value: unknown) => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("Position must be an object with x and y");
+    throw new ContentValidationError("Position must be an object with x and y");
   }
   const { x, y } = value as { x?: unknown; y?: unknown };
   const toRatio = (val: unknown, axis: "x" | "y") => {
     const num = Number(val);
-    if (!Number.isFinite(num)) throw new Error(`Position ${axis} must be a number`);
+    if (!Number.isFinite(num)) throw new ContentValidationError(`Position ${axis} must be a number`);
     return Math.min(Math.max(num, 0), 1);
   };
   return { x: toRatio(x, "x"), y: toRatio(y, "y") };
@@ -412,12 +413,12 @@ const normalizePosition = (value: unknown) => {
 
 const normalizeDragSockets = (raw: unknown, items: DragSocketItem[], defaultShape: DragShape): DragSocketSlot[] => {
   if (!Array.isArray(raw) || raw.length === 0) {
-    throw new Error("Drag-sockets puzzles require sockets");
+    throw new ContentValidationError("Drag-sockets puzzles require sockets");
   }
   const itemIds = new Set(items.map((item) => item.id));
   const sockets = raw.map((entry) => {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-      throw new Error("Invalid socket definition");
+      throw new ContentValidationError("Invalid socket definition");
     }
     const { id, position, accepts, shape, label, image } = entry as {
       id?: unknown;
@@ -439,7 +440,7 @@ const normalizeDragSockets = (raw: unknown, items: DragSocketItem[], defaultShap
       accepts === undefined ? shapeScopedItems : ensureStringArray(accepts, "Sockets require accepted item ids");
     normalizedAccepts.forEach((acc) => {
       if (!itemIds.has(acc)) {
-        throw new Error(`Socket accepts unknown item id: ${acc}`);
+        throw new ContentValidationError(`Socket accepts unknown item id: ${acc}`);
       }
     });
     return {
@@ -453,7 +454,7 @@ const normalizeDragSockets = (raw: unknown, items: DragSocketItem[], defaultShap
   });
   const seen = new Set<string>();
   sockets.forEach((socket) => {
-    if (seen.has(socket.id)) throw new Error(`Duplicate socket id: ${socket.id}`);
+    if (seen.has(socket.id)) throw new ContentValidationError(`Duplicate socket id: ${socket.id}`);
     seen.add(socket.id);
   });
   return sockets;
@@ -465,7 +466,7 @@ const normalizeDragSolution = (
   items: DragSocketItem[],
 ): { lists?: Array<{ id: string; items: string[] }> | undefined; sockets: Array<{ socketId?: string; itemId?: string; listId?: string }> } => {
   if (!raw || typeof raw !== "object") {
-    throw new Error("Drag-sockets puzzles require a solution");
+    throw new ContentValidationError("Drag-sockets puzzles require a solution");
   }
 
   const socketIds = new Set(sockets.map((socket) => socket.id));
@@ -476,16 +477,16 @@ const normalizeDragSolution = (
     Array.isArray(maybeLists) && maybeLists.length > 0
       ? maybeLists.map((entry) => {
           if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-            throw new Error("Invalid drag-sockets list entry");
+            throw new ContentValidationError("Invalid drag-sockets list entry");
           }
           const { id, items: listItems } = entry as { id?: unknown; items?: unknown };
           const listId = normalizeId(id, "List entries require an id");
           if (!Array.isArray(listItems) || listItems.length === 0) {
-            throw new Error(`List ${listId} requires items`);
+            throw new ContentValidationError(`List ${listId} requires items`);
           }
           const normalizedItems = listItems.map((itm) => normalizeId(itm, "List items must be strings"));
           normalizedItems.forEach((itm) => {
-            if (!itemIds.has(itm)) throw new Error(`List ${listId} references unknown item: ${itm}`);
+            if (!itemIds.has(itm)) throw new ContentValidationError(`List ${listId} references unknown item: ${itm}`);
           });
           return { id: listId, items: normalizedItems };
         })
@@ -500,12 +501,12 @@ const normalizeDragSolution = (
         : [];
 
   if (!rawSockets.length) {
-    throw new Error("Drag-sockets puzzles require a solution");
+    throw new ContentValidationError("Drag-sockets puzzles require a solution");
   }
 
   const solutionSockets = rawSockets.map((entry) => {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-      throw new Error("Invalid drag-sockets solution entry");
+      throw new ContentValidationError("Invalid drag-sockets solution entry");
     }
     const { socketId, itemId, listId } = entry as { socketId?: unknown; itemId?: unknown; listId?: unknown };
     const normalizedSocketId = socketId !== undefined ? normalizeId(socketId, "Solution entries require a socketId") : undefined;
@@ -513,23 +514,23 @@ const normalizeDragSolution = (
     const normalizedListId = listId !== undefined ? normalizeId(listId, "Solution entries require a listId") : undefined;
 
     if (!normalizedSocketId && !normalizedItemId) {
-      throw new Error("Solution entries require at least an itemId or a listId");
+      throw new ContentValidationError("Solution entries require at least an itemId or a listId");
     }
     if (normalizedSocketId && !socketIds.has(normalizedSocketId)) {
-      throw new Error(`Solution references unknown socket: ${normalizedSocketId}`);
+      throw new ContentValidationError(`Solution references unknown socket: ${normalizedSocketId}`);
     }
     if (normalizedItemId && !itemIds.has(normalizedItemId)) {
-      throw new Error(`Solution references unknown item: ${normalizedItemId}`);
+      throw new ContentValidationError(`Solution references unknown item: ${normalizedItemId}`);
     }
     if (normalizedListId && !listIds.has(normalizedListId)) {
-      throw new Error(`Solution references unknown list: ${normalizedListId}`);
+      throw new ContentValidationError(`Solution references unknown list: ${normalizedListId}`);
     }
     if (normalizedListId && normalizedItemId) {
-      throw new Error("Solution entries should not specify both itemId and listId");
+      throw new ContentValidationError("Solution entries should not specify both itemId and listId");
     }
     const socket = normalizedSocketId ? sockets.find((s) => s.id === normalizedSocketId) : null;
     if (socket && socket.accepts.length > 0 && normalizedItemId && !socket.accepts.includes(normalizedItemId)) {
-      throw new Error(`Solution assigns an item that the socket does not accept: ${normalizedSocketId}`);
+      throw new ContentValidationError(`Solution assigns an item that the socket does not accept: ${normalizedSocketId}`);
     }
     return {
       ...(normalizedSocketId !== undefined ? { socketId: normalizedSocketId } : {}),
@@ -542,11 +543,11 @@ const normalizeDragSolution = (
   const seenItems = new Set<string>();
   solutionSockets.forEach(({ socketId, itemId }) => {
     if (socketId) {
-      if (seenSockets.has(socketId)) throw new Error(`Solution lists socket multiple times: ${socketId}`);
+      if (seenSockets.has(socketId)) throw new ContentValidationError(`Solution lists socket multiple times: ${socketId}`);
       seenSockets.add(socketId);
     }
     if (itemId) {
-      if (seenItems.has(itemId)) throw new Error(`Solution uses item multiple times: ${itemId}`);
+      if (seenItems.has(itemId)) throw new ContentValidationError(`Solution uses item multiple times: ${itemId}`);
       seenItems.add(itemId);
     }
   });
@@ -556,14 +557,14 @@ const normalizeDragSolution = (
 
 const normalizeMemoryCards = (raw: unknown): MemoryCard[] => {
   if (!Array.isArray(raw) || raw.length < 2) {
-    throw new Error("Memory puzzles require at least two cards");
+    throw new ContentValidationError("Memory puzzles require at least two cards");
   }
   if (raw.length % 2 !== 0) {
-    throw new Error("Memory puzzles require an even number of cards");
+    throw new ContentValidationError("Memory puzzles require an even number of cards");
   }
   const cards = raw.map((entry) => {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-      throw new Error("Invalid memory card definition");
+      throw new ContentValidationError("Invalid memory card definition");
     }
     const { id, image, label } = entry as { id?: unknown; image?: unknown; label?: unknown };
     const cardId = normalizeId(id, "Memory cards require an id");
@@ -573,7 +574,7 @@ const normalizeMemoryCards = (raw: unknown): MemoryCard[] => {
   });
   const seen = new Set<string>();
   cards.forEach((card) => {
-    if (seen.has(card.id)) throw new Error(`Duplicate memory card id: ${card.id}`);
+    if (seen.has(card.id)) throw new ContentValidationError(`Duplicate memory card id: ${card.id}`);
     seen.add(card.id);
   });
   return cards;
@@ -588,7 +589,7 @@ const normalizeMemoryPairs = (raw: unknown, cards: MemoryCard[]): Array<{ a: str
         ? ((raw as { pairs?: unknown[] }).pairs ?? [])
         : [];
   if (!rawPairs.length) {
-    throw new Error("Memory puzzles require pairs in the solution");
+    throw new ContentValidationError("Memory puzzles require pairs in the solution");
   }
   const pairs = rawPairs.map((entry) => {
     if (Array.isArray(entry) && entry.length === 2) {
@@ -601,21 +602,21 @@ const normalizeMemoryPairs = (raw: unknown, cards: MemoryCard[]): Array<{ a: str
       const right = normalizeId(b ?? second, "Pair entries require an id for b/second");
       return { a: left, b: right };
     }
-    throw new Error("Invalid memory solution entry");
+    throw new ContentValidationError("Invalid memory solution entry");
   });
 
   const used = new Set<string>();
   pairs.forEach(({ a, b }) => {
-    if (a === b) throw new Error("Pairs must reference two different cards");
-    if (!cardIds.has(a)) throw new Error(`Solution references unknown card: ${a}`);
-    if (!cardIds.has(b)) throw new Error(`Solution references unknown card: ${b}`);
-    if (used.has(a) || used.has(b)) throw new Error("Each card must appear in exactly one pair");
+    if (a === b) throw new ContentValidationError("Pairs must reference two different cards");
+    if (!cardIds.has(a)) throw new ContentValidationError(`Solution references unknown card: ${a}`);
+    if (!cardIds.has(b)) throw new ContentValidationError(`Solution references unknown card: ${b}`);
+    if (used.has(a) || used.has(b)) throw new ContentValidationError("Each card must appear in exactly one pair");
     used.add(a);
     used.add(b);
   });
 
   if (used.size !== cardIds.size) {
-    throw new Error("Solution must include every card exactly once");
+    throw new ContentValidationError("Solution must include every card exactly once");
   }
 
   return pairs;
@@ -626,7 +627,7 @@ const normalizeMaxMisses = (value: unknown): number | null => {
   if (typeof value === "string" && ["unlimited", "infinite", "none"].includes(value.toLowerCase())) return null;
   const num = Number(value);
   if (!Number.isFinite(num) || num < 0) {
-    throw new Error("maxMisses must be a non-negative number or omitted for unlimited");
+    throw new ContentValidationError("maxMisses must be a non-negative number or omitted for unlimited");
   }
   return Math.floor(num);
 };
@@ -646,7 +647,7 @@ const normalizeFlipBackMs = (value: unknown, fallback: number): number => {
   if (value === undefined || value === null) return fallback;
   const num = Number(value);
   if (!Number.isFinite(num) || num < 0) {
-    throw new Error("flipBackMs must be a non-negative number");
+    throw new ContentValidationError("flipBackMs must be a non-negative number");
   }
   return Math.floor(num);
 };
@@ -656,35 +657,35 @@ const normalizeGridSize = (value: unknown): GridSize => {
   const width = Number(raw.width ?? 9);
   const height = Number(raw.height ?? 9);
   if (!Number.isInteger(width) || width <= 0) {
-    throw new Error("Grid width must be a positive integer");
+    throw new ContentValidationError("Grid width must be a positive integer");
   }
   if (!Number.isInteger(height) || height <= 0) {
-    throw new Error("Grid height must be a positive integer");
+    throw new ContentValidationError("Grid height must be a positive integer");
   }
   return { width, height };
 };
 
 const normalizeGridPathSolution = (value: unknown, grid: GridSize): GridPathSolution => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("Grid-path puzzles require a solution");
+    throw new ContentValidationError("Grid-path puzzles require a solution");
   }
   const { path, startColumn, goalColumn } = value as { path?: unknown; startColumn?: unknown; goalColumn?: unknown };
   if (!Array.isArray(path) || path.length === 0) {
-    throw new Error("Grid-path puzzles require a solution path");
+    throw new ContentValidationError("Grid-path puzzles require a solution path");
   }
 
   const normalizeCoord = (entry: unknown, idx: number) => {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-      throw new Error("Solution path entries must be coordinate objects");
+      throw new ContentValidationError("Solution path entries must be coordinate objects");
     }
     const { x, y } = entry as { x?: unknown; y?: unknown };
     const coordX = Number(x);
     const coordY = Number(y);
     if (!Number.isInteger(coordX) || !Number.isInteger(coordY)) {
-      throw new Error(`Path entry ${idx + 1} must use integer coordinates`);
+      throw new ContentValidationError(`Path entry ${idx + 1} must use integer coordinates`);
     }
     if (coordX <= 0 || coordX > grid.width || coordY <= 0 || coordY > grid.height) {
-      throw new Error(`Path entry ${idx + 1} is out of bounds`);
+      throw new ContentValidationError(`Path entry ${idx + 1} is out of bounds`);
     }
     return { x: coordX - 1, y: coordY - 1 };
   };
@@ -694,7 +695,7 @@ const normalizeGridPathSolution = (value: unknown, grid: GridSize): GridPathSolu
   normalizedPath.forEach(({ x, y }) => {
     const key = `${x}:${y}`;
     if (seen.has(key)) {
-      throw new Error("Path cannot visit the same cell twice");
+      throw new ContentValidationError("Path cannot visit the same cell twice");
     }
     seen.add(key);
   });
@@ -705,36 +706,36 @@ const normalizeGridPathSolution = (value: unknown, grid: GridSize): GridPathSolu
     const dx = Math.abs(coord.x - prev.x);
     const dy = Math.abs(coord.y - prev.y);
     if (dx + dy !== 1) {
-      throw new Error("Path steps must be orthogonally adjacent");
+      throw new ContentValidationError("Path steps must be orthogonally adjacent");
     }
   });
 
   if (normalizedPath[0]?.y !== 0) {
-    throw new Error("Path must start on the top row (y = 1 in the specification)");
+    throw new ContentValidationError("Path must start on the top row (y = 1 in the specification)");
   }
   const startRaw = startColumn === undefined ? undefined : Number(startColumn);
   if (startRaw !== undefined) {
     if (!Number.isInteger(startRaw) || startRaw <= 0 || startRaw > grid.width) {
-      throw new Error("startColumn is out of bounds");
+      throw new ContentValidationError("startColumn is out of bounds");
     }
     const start = startRaw - 1;
     if (normalizedPath[0]?.x !== start) {
-      throw new Error("Path must start in the specified startColumn");
+      throw new ContentValidationError("Path must start in the specified startColumn");
     }
   }
 
   const last = normalizedPath[normalizedPath.length - 1];
   if (!last || last.y !== grid.height - 1) {
-    throw new Error("Path must end on the bottom row");
+    throw new ContentValidationError("Path must end on the bottom row");
   }
   const goalRaw = goalColumn === undefined ? undefined : Number(goalColumn);
   if (goalRaw !== undefined) {
     if (!Number.isInteger(goalRaw) || goalRaw <= 0 || goalRaw > grid.width) {
-      throw new Error("goalColumn is out of bounds");
+      throw new ContentValidationError("goalColumn is out of bounds");
     }
     const goal = goalRaw - 1;
     if (last.x !== goal) {
-      throw new Error("Path must end in the specified goalColumn");
+      throw new ContentValidationError("Path must end in the specified goalColumn");
     }
   }
 
@@ -805,7 +806,7 @@ const mapToDayBlocks = (
           kind: "puzzle",
           id: block.id,
           html: block.html,
-          visible: visibleSet.has(block) || includeHidden,
+          visible: visibleSet.has(block),
           type,
           solution: block.definition.solution ?? null,
           solved,
@@ -819,7 +820,7 @@ const mapToDayBlocks = (
           kind: "puzzle",
           id: block.id,
           html: block.html,
-          visible: visibleSet.has(block) || includeHidden,
+          visible: visibleSet.has(block),
           type,
           solution,
           solved,
@@ -831,13 +832,13 @@ const mapToDayBlocks = (
         const options = normalizeOptions(block.definition.options);
         const solution = normalizeId(block.definition.solution, "Solution must match a single option id");
         const optionIds = new Set(options.map((opt) => opt.id));
-        if (!optionIds.has(solution)) throw new Error("Solution must reference one of the provided options");
+        if (!optionIds.has(solution)) throw new ContentValidationError("Solution must reference one of the provided options");
         const optionSize = normalizeOptionSize((block.definition.raw as { size?: unknown }).size);
         return {
           kind: "puzzle",
           id: block.id,
           html: block.html,
-          visible: visibleSet.has(block) || includeHidden,
+          visible: visibleSet.has(block),
           type,
           solution,
           options,
@@ -850,17 +851,17 @@ const mapToDayBlocks = (
       if (type === "multi-choice") {
         const options = normalizeOptions(block.definition.options);
         const solution = ensureStringArray(block.definition.solution, "Solution must list the correct options");
-        if (solution.length === 0) throw new Error("Solution must include at least one correct option");
+        if (solution.length === 0) throw new ContentValidationError("Solution must include at least one correct option");
         const optionIds = new Set(options.map((opt) => opt.id));
         const orderedRaw = (block.definition.raw as { ordered?: unknown }).ordered;
         const ordered = typeof orderedRaw === "boolean" ? orderedRaw : typeof orderedRaw === "string" ? orderedRaw.toLowerCase() === "true" : false;
         const solutionIds = new Set<string>();
         solution.forEach((id) => {
           if (!optionIds.has(id)) {
-            throw new Error("Solution references an unknown option id");
+            throw new ContentValidationError("Solution references an unknown option id");
           }
           if (solutionIds.has(id)) {
-            throw new Error("Solution cannot contain duplicate options");
+            throw new ContentValidationError("Solution cannot contain duplicate options");
           }
           solutionIds.add(id);
         });
@@ -879,7 +880,7 @@ const mapToDayBlocks = (
           kind: "puzzle",
           id: block.id,
           html: block.html,
-          visible: visibleSet.has(block) || includeHidden,
+          visible: visibleSet.has(block),
           type,
           solution,
           options,
@@ -899,7 +900,7 @@ const mapToDayBlocks = (
         const backImage = typeof backImageCandidate === "string" ? backImageCandidate : undefined;
         const hoverBackImage = typeof hoverBackCandidate === "string" ? hoverBackCandidate : undefined;
         if (!backImage) {
-          throw new Error("Memory puzzles require a card back image");
+          throw new ContentValidationError("Memory puzzles require a card back image");
         }
         const cards = normalizeMemoryCards(rawDef.cards ?? rawDef.items);
         const solutionPairs = normalizeMemoryPairs(block.definition.solution, cards);
@@ -915,7 +916,7 @@ const mapToDayBlocks = (
           kind: "puzzle",
           id: block.id,
           html: block.html,
-          visible: visibleSet.has(block) || includeHidden,
+          visible: visibleSet.has(block),
           type,
           backImage,
           ...(hoverBackImage ? { hoverBackImage } : {}),
@@ -936,7 +937,7 @@ const mapToDayBlocks = (
         const backgroundImage =
           typeof backgroundImageCandidate === "string" ? backgroundImageCandidate : undefined;
         if (!backgroundImage) {
-          throw new Error("Select-items puzzles require a background image");
+          throw new ContentValidationError("Select-items puzzles require a background image");
         }
         const shape = rawDef.shape ? resolveShape(rawDef.shape) : "circle";
         const items = normalizeDragItems(rawDef.items, shape, { requirePosition: true });
@@ -951,19 +952,19 @@ const mapToDayBlocks = (
               ? ensureStringArray((rawSolution as { items?: unknown }).items, "Solution must list the correct items")
               : null;
         if (!solutionItems || solutionItems.length === 0) {
-          throw new Error("Solution must include at least one item id");
+          throw new ContentValidationError("Solution must include at least one item id");
         }
         const itemIds = new Set(items.map((itm) => itm.id));
         solutionItems.forEach((id) => {
           if (!itemIds.has(id)) {
-            throw new Error("Solution references an unknown item id");
+            throw new ContentValidationError("Solution references an unknown item id");
           }
         });
         return {
           kind: "puzzle",
           id: block.id,
           html: block.html,
-          visible: visibleSet.has(block) || includeHidden,
+          visible: visibleSet.has(block),
           type,
           solution: solutionItems,
           backgroundImage,
@@ -980,7 +981,7 @@ const mapToDayBlocks = (
         const backgroundImage =
           typeof backgroundImageCandidate === "string" ? backgroundImageCandidate : undefined;
         if (!backgroundImage) {
-          throw new Error("Drag-sockets puzzles require a background image");
+          throw new ContentValidationError("Drag-sockets puzzles require a background image");
         }
         const shape = rawDef.shape ? resolveShape(rawDef.shape) : "circle";
         const items = normalizeDragItems(rawDef.items, shape);
@@ -990,7 +991,7 @@ const mapToDayBlocks = (
           kind: "puzzle",
           id: block.id,
           html: block.html,
-          visible: visibleSet.has(block) || includeHidden,
+          visible: visibleSet.has(block),
           type,
           solution,
           backgroundImage,
@@ -1008,7 +1009,7 @@ const mapToDayBlocks = (
         const backgroundImage =
           typeof backgroundImageCandidate === "string" ? backgroundImageCandidate : undefined;
         if (!backgroundImage) {
-          throw new Error("Grid-path puzzles require a background image");
+          throw new ContentValidationError("Grid-path puzzles require a background image");
         }
         const grid = normalizeGridSize(rawDef.grid);
         const solution = normalizeGridPathSolution(block.definition.solution, grid);
@@ -1016,7 +1017,7 @@ const mapToDayBlocks = (
           kind: "puzzle",
           id: block.id,
           html: block.html,
-          visible: visibleSet.has(block) || includeHidden,
+          visible: visibleSet.has(block),
           type,
           backgroundImage,
           grid,
@@ -1026,7 +1027,7 @@ const mapToDayBlocks = (
         };
       }
 
-      throw new Error(`Unsupported puzzle type for versioned content: ${type}`);
+      throw new ContentValidationError(`Unsupported puzzle type for versioned content: ${type}`);
     }
     if (block.kind === "reward") {
       const unlocked = block.condition ? evaluateCondition(block.condition, solvedIds, puzzleIds) : true;
@@ -1034,7 +1035,7 @@ const mapToDayBlocks = (
       if (!item) return null;
       return {
         kind: "reward",
-        visible: (visibleSet.has(block) || includeHidden) && unlocked,
+        visible: visibleSet.has(block) && unlocked,
         item,
         ...(block.id ? { id: block.id } : {}),
         ...(block.title ? { title: block.title } : {}),
@@ -1058,7 +1059,7 @@ export const loadVersionedContent = (
   options: { solvedPuzzleIds: Set<string>; includeHidden: boolean; inventory: Map<string, InventoryItem> },
 ): LoadedVersionedContent => {
   const { meta, blocks } = parseBlocks(parsed);
-  if (!meta.version || Number.isNaN(meta.version)) throw new Error("Invalid content version");
+  if (!meta.version || Number.isNaN(meta.version)) throw new ContentValidationError("Invalid content version");
 
   const h1Match = parsed.content.match(/^#\s+(.+)\s*$/m);
   const derivedTitle = h1Match?.[1]?.trim() ?? "";

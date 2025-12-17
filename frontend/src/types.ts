@@ -242,6 +242,14 @@ export interface InventoryLocaleDiagnostics {
   missingImages: string[];
   issues: string[];
   ids?: string[];
+  itemList?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    image: string;
+    rarity: string;
+    imageToken?: string;
+  }>;
 }
 
 export interface InventoryConsistencyDiagnostics {
@@ -262,6 +270,12 @@ export interface ContentDiagnostics {
   };
   indexWarnings: string[];
   issues: ContentIssue[];
+  assets: {
+    total: number;
+    referenced: number;
+    unused: number;
+    list: Array<{ path: string; referenced: boolean; size: number; hash?: string; token: string }>;
+  };
   inventory: {
     locales: InventoryLocaleDiagnostics[];
     consistency: InventoryConsistencyDiagnostics[];

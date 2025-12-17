@@ -13,15 +13,19 @@ import {
   type Mode,
   CONTENT_ROOT,
   RiddleNotFoundError,
+  type RiddleType,
   loadIntro,
   IntroNotFoundError,
 } from "./loader.js";
+import { getAssetToken } from "./tokens.js";
 import { loadInventory } from "./inventory.js";
+import { ContentValidationError } from "./errors.js";
 
 const ASSETS_ROOT = path.join(CONTENT_ROOT, "assets");
 const SUPPORTED_LOCALES: Locale[] = ["en", "de"];
 const MODES: Mode[] = ["NORMAL", "VETERAN"];
 const ALLOWED_ASSET_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif", ".avif"]);
+const ENABLE_CROSS_LOCALE_ID_MISMATCH = false;
 
 type VariantStatus = "ok" | "missing" | "warning" | "error";
 
@@ -61,6 +65,14 @@ export interface InventoryLocaleDiagnostics {
   missingImages: string[];
   issues: string[];
   ids: string[];
+  itemList: Array<{
+    id: string;
+    title: string;
+    description: string;
+    image: string;
+    rarity: string;
+    imageToken?: string;
+  }>;
 }
 
 export interface InventoryConsistencyDiagnostics {
@@ -81,6 +93,18 @@ export interface ContentDiagnostics {
   };
   indexWarnings: string[];
   issues: Issue[];
+  assets: {
+    total: number;
+    referenced: number;
+    unused: number;
+    list: Array<{
+      path: string;
+      referenced: boolean;
+      size: number;
+      hash?: string;
+      token: string;
+    }>;
+  };
   inventory: {
     locales: InventoryLocaleDiagnostics[];
     consistency: InventoryConsistencyDiagnostics[];
@@ -248,12 +272,72 @@ const diagnoseVariant = async (
   try {
     const filePath = await resolveDayPath(day, locale, mode);
     const parsed = await loadParsedFile(filePath);
-    const contentLocale = String(parsed.parsed.data?.language ?? parsed.parsed.data?.locale ?? "").toLowerCase() === "de" ? "de" : "en";
+    const localeMeta = parsed.parsed.data?.language ?? parsed.parsed.data?.locale;
+    const modeMeta = parsed.parsed.data?.mode;
+    const versionMeta = parsed.parsed.data?.version;
+    const frontmatterKeys = Object.keys(parsed.parsed.data ?? {});
+    const allowedKeys = new Set([
+      "id",
+      "version",
+      "release",
+      "language",
+      "locale",
+      "mode",
+      "title",
+      "solved",
+      "intro",
+      "hidden",
+      "content",
+    ]);
+    const unknownKeys = frontmatterKeys.filter((k) => !allowedKeys.has(k));
+    if (unknownKeys.length) {
+      issuesCollector.push({
+        severity: "info",
+        source: "content",
+        code: "CONTENT_META_UNKNOWN",
+        message: `Unknown frontmatter keys: ${unknownKeys.join(", ")}`,
+        details: { day, locale, mode, filePath, keys: unknownKeys },
+      });
+    }
+    const contentLocale = String(localeMeta ?? "").toLowerCase() === "de" ? "de" : "en";
     const contentMode =
-      String(parsed.parsed.data?.mode ?? "").toLowerCase() === "veteran" || String(parsed.parsed.data?.mode ?? "").toLowerCase() === "vet"
-        ? "VETERAN"
-        : "NORMAL";
+      String(modeMeta ?? "").toLowerCase() === "veteran" || String(modeMeta ?? "").toLowerCase() === "vet" ? "VETERAN" : "NORMAL";
     const contentId = typeof parsed.parsed.data?.id === "string" ? parsed.parsed.data.id.trim() : undefined;
+    if (versionMeta !== 1) {
+      const msg = `Unsupported content version: ${versionMeta ?? "none"}`;
+      issuesCollector.push({
+        severity: "error",
+        source: "content",
+        code: "CONTENT_UNSUPPORTED_VERSION",
+        message: msg,
+        details: { day, locale, mode, filePath, version: versionMeta },
+      });
+      return { day, locale, mode, status: "error", issues: [msg] };
+    }
+    if (!contentId) {
+      const msg = "Missing required content id in frontmatter";
+      issues.push(msg);
+      issuesCollector.push({
+        severity: "error",
+        source: "content",
+        code: "CONTENT_ID_MISSING",
+        message: msg,
+        details: { day, locale, mode, filePath },
+      });
+    }
+    if (!localeMeta || !modeMeta) {
+      const missing: string[] = [];
+      if (!localeMeta) missing.push("locale/language");
+      if (!modeMeta) missing.push("mode");
+      const msg = `Missing required metadata: ${missing.join(", ")}`;
+      issuesCollector.push({
+        severity: "error",
+        source: "content",
+        code: "CONTENT_META_MISSING",
+        message: msg,
+        details: { day, locale, mode, filePath },
+      });
+    }
     if (contentLocale !== locale || contentMode !== mode) {
       const msg = `Metadata mismatch: frontmatter mode=${contentMode}, locale=${contentLocale}`;
       issues.push(msg);
@@ -278,7 +362,49 @@ const diagnoseVariant = async (
     }
 
     const inventory = await loadInventory(locale);
-    const content = await loadDayContent(day, locale, mode, new Set(), true);
+    const releaseMeta = parsed.parsed.data?.release;
+    if (!releaseMeta) {
+      issuesCollector.push({
+        severity: "warning",
+        source: "content",
+        code: "CONTENT_RELEASE_MISSING",
+        message: "Release timestamp is missing",
+        details: { day, locale, mode, filePath },
+      });
+    }
+    let content: DayContent;
+    try {
+      content = await loadDayContent(day, locale, mode, new Set(), true);
+    } catch (err) {
+      if (err instanceof ContentValidationError) {
+        const msg = err.message || "Content validation failed";
+        issuesCollector.push({
+          severity: "error",
+          source: "content",
+          code: "CONTENT_VALIDATION_ERROR",
+          message: msg,
+          details: { day, locale, mode, filePath },
+        });
+        return {
+          day,
+          locale,
+          mode,
+          status: "error",
+          issues: [msg],
+          filePath,
+        };
+      }
+      throw err;
+    }
+    if (!content.title) {
+      issuesCollector.push({
+        severity: "warning",
+        source: "content",
+        code: "CONTENT_TITLE_MISSING",
+        message: "Title is missing from content",
+        details: { day, locale, mode, filePath },
+      });
+    }
 
     await collectBlockAssetIssues(content, issuesCollector, { day, locale, mode }, referencedAssets);
 
@@ -315,6 +441,151 @@ const diagnoseVariant = async (
       }
     }
 
+    // Duplicate block IDs within file
+    const blockIdCounts = new Map<string, number>();
+    content.blocks.forEach((block) => {
+      if (!block.id) return;
+      blockIdCounts.set(block.id, (blockIdCounts.get(block.id) ?? 0) + 1);
+    });
+    blockIdCounts.forEach((count, id) => {
+      if (count > 1) {
+        const msg = `Duplicate block id ${id} in content`;
+        issuesCollector.push({
+          severity: "warning",
+          source: "content",
+          code: "CONTENT_BLOCK_ID_DUPLICATE",
+          message: msg,
+          details: { day, locale, mode, filePath, id },
+        });
+        issues.push(msg);
+      }
+    });
+
+    // Validate puzzle solutions/options basic consistency
+    content.blocks.forEach((block) => {
+      if (block.kind !== "puzzle") return;
+      if (typeof block.visible !== "boolean") {
+        issuesCollector.push({
+          severity: "warning",
+          source: "content",
+          code: "CONTENT_VISIBILITY_INVALID",
+          message: `Block visibility is invalid for ${block.id ?? "unknown id"}`,
+          details: { day, locale, mode, filePath, blockId: block.id },
+        });
+        issues.push(`Invalid visibility flag for block ${block.id ?? "unknown"}`);
+      }
+      const allowedTypes: RiddleType[] = [
+        "text",
+        "placeholder",
+        "single-choice",
+        "multi-choice",
+        "sort",
+        "group",
+        "drag-sockets",
+        "select-items",
+        "memory",
+        "grid-path",
+      ];
+      if (!allowedTypes.includes(block.type as RiddleType)) {
+        issuesCollector.push({
+          severity: "error",
+          source: "content",
+          code: "CONTENT_PUZZLE_TYPE_UNSUPPORTED",
+          message: `Unsupported puzzle type ${block.type}`,
+          details: { day, locale, mode, filePath, puzzleId: block.id, type: block.type },
+        });
+        issues.push(`Unsupported puzzle type ${block.type}`);
+      }
+      if (block.type === "single-choice" || block.type === "multi-choice") {
+        const optionIds = new Set(block.options?.map((opt) => opt.id) ?? []);
+        if (block.type === "single-choice") {
+          if (!optionIds.has(String(block.solution))) {
+            const msg = `Solution ${String(block.solution)} not found in options`;
+            issuesCollector.push({
+              severity: "error",
+              source: "content",
+              code: "CONTENT_SOLUTION_INVALID",
+              message: msg,
+              details: { day, locale, mode, filePath, puzzleId: block.id },
+            });
+            issues.push(msg);
+          }
+        } else {
+          const sol = Array.isArray(block.solution) ? block.solution : [];
+          sol.forEach((id) => {
+            if (!optionIds.has(String(id))) {
+              const msg = `Solution ${String(id)} not found in options`;
+              issuesCollector.push({
+                severity: "error",
+                source: "content",
+                code: "CONTENT_SOLUTION_INVALID",
+                message: msg,
+                details: { day, locale, mode, filePath, puzzleId: block.id },
+              });
+              issues.push(msg);
+            }
+          });
+        }
+        // duplicate options
+        const dupOpts = new Set<string>();
+        block.options?.forEach((opt) => {
+          if (dupOpts.has(opt.id)) {
+            issuesCollector.push({
+              severity: "warning",
+              source: "content",
+              code: "CONTENT_OPTION_DUPLICATE",
+              message: `Duplicate option id ${opt.id} in puzzle ${block.id}`,
+              details: { day, locale, mode, filePath, puzzleId: block.id, optionId: opt.id },
+            });
+          }
+          dupOpts.add(opt.id);
+        });
+      }
+      if (block.type === "drag-sockets") {
+        const socketIds = new Set<string>();
+        block.sockets?.forEach((socket) => {
+          if (socketIds.has(socket.id)) {
+            issuesCollector.push({
+              severity: "warning",
+              source: "content",
+              code: "CONTENT_SOCKET_DUPLICATE",
+              message: `Duplicate socket id ${socket.id} in puzzle ${block.id}`,
+              details: { day, locale, mode, filePath, puzzleId: block.id, socketId: socket.id },
+            });
+          }
+          socketIds.add(socket.id);
+        });
+        const itemIds = new Set<string>();
+        block.items?.forEach((item) => {
+          if (itemIds.has(item.id)) {
+            issuesCollector.push({
+              severity: "warning",
+              source: "content",
+              code: "CONTENT_ITEM_DUPLICATE",
+              message: `Duplicate item id ${item.id} in puzzle ${block.id}`,
+              details: { day, locale, mode, filePath, puzzleId: block.id, itemId: item.id },
+            });
+          }
+          itemIds.add(item.id);
+        });
+      }
+      if (block.type === "memory") {
+        const cardIds = new Set<string>();
+        block.cards?.forEach((card) => {
+          if (cardIds.has(card.id)) {
+            issuesCollector.push({
+              severity: "warning",
+              source: "content",
+              code: "CONTENT_CARD_DUPLICATE",
+              message: `Duplicate card id ${card.id} in puzzle ${block.id}`,
+              details: { day, locale, mode, filePath, puzzleId: block.id, cardId: card.id },
+            });
+          }
+          cardIds.add(card.id);
+        });
+      }
+    });
+
     return {
       day,
       locale,
@@ -336,12 +607,16 @@ const diagnoseVariant = async (
       });
       return { day, locale, mode, status: "missing", issues: [] };
     }
-    issues.push((err as Error).message);
+    const errorObj = err as NodeJS.ErrnoException;
+    const isPermission = errorObj.code === "EACCES";
+    const code = isPermission ? "CONTENT_FILE_UNREADABLE" : "CONTENT_LOAD_ERROR";
+    const message = isPermission ? "Content file unreadable (permissions)" : errorObj.message;
+    issues.push(message);
     issuesCollector.push({
-      severity: "error",
+      severity: isPermission ? "error" : "error",
       source: "content",
-      code: "CONTENT_LOAD_ERROR",
-      message: (err as Error).message,
+      code,
+      message,
       details: { day, locale, mode },
     });
     return {
@@ -366,6 +641,7 @@ const readInventoryDiagnostics = async (
   const images: Array<{ path: string; itemId: string }> = [];
   let hasFile = true;
   let entries: Array<Record<string, unknown>> = [];
+  const itemList: InventoryLocaleDiagnostics["itemList"] = [];
 
   try {
     const raw = await fs.readFile(filePath, "utf8");
@@ -394,6 +670,7 @@ const readInventoryDiagnostics = async (
         issues: issueMessages,
         ids: [],
         idSet: ids,
+        itemList,
       };
     }
     issueMessages.push(`Failed to parse inventory: ${error.message}`);
@@ -412,6 +689,7 @@ const readInventoryDiagnostics = async (
       issues: issueMessages,
       ids: [],
       idSet: ids,
+      itemList,
     };
   }
 
@@ -513,6 +791,9 @@ const readInventoryDiagnostics = async (
       });
     }
 
+    const imageToken = image ? getAssetToken(image) : undefined;
+    itemList.push({ id, title, description, image, rarity: rarity || "common", ...(imageToken ? { imageToken } : {}) });
+
     if (image) {
       images.push({ path: image, itemId: id });
       const list = imageUsage.get(image) ?? [];
@@ -567,6 +848,7 @@ const readInventoryDiagnostics = async (
     issues: issueMessages,
     ids: Array.from(ids),
     idSet: ids,
+    itemList,
   };
 };
 
@@ -624,7 +906,7 @@ const detectUnexpectedInventoryFiles = async (collector: Issue[]) => {
           details: { filePath: path.join(inventoryDir, file), locale },
         });
       }
-    });
+  });
 };
 
 const collectExistingAssets = async (): Promise<Array<{ key: string; absolutePath: string }>> => {
@@ -649,6 +931,26 @@ const collectExistingAssets = async (): Promise<Array<{ key: string; absolutePat
   };
   await walk(ASSETS_ROOT);
   return result;
+};
+
+const findUnusedContentFiles = async (maxDay: number): Promise<string[]> => {
+  const unused: string[] = [];
+  const entries = await fs.readdir(CONTENT_ROOT, { withFileTypes: true });
+  for (const dir of entries) {
+    if (!dir.isDirectory()) continue;
+    const match = dir.name.match(/^day(\d{2})$/i);
+    if (!match) continue;
+    const dayNum = Number(match[1]);
+    if (dayNum <= maxDay) continue;
+    const dirPath = path.join(CONTENT_ROOT, dir.name);
+    const files = await fs.readdir(dirPath);
+    files
+      .filter((f) => f.endsWith(".md"))
+      .forEach((file) => {
+        unused.push(path.join(dirPath, file));
+      });
+  }
+  return unused;
 };
 
 const collectIntroAssetIssues = async (issues: Issue[], referencedAssets: Set<string>) => {
@@ -690,6 +992,16 @@ export const getContentDiagnostics = async (maxDay: number): Promise<ContentDiag
     await detectUnexpectedInventoryFiles(issues);
     const indexWarnings = await getDayIndexWarnings();
     const indexWarningMap = parseIndexWarningTargets(indexWarnings);
+    indexWarnings.forEach((msg) => {
+      if (msg.toLowerCase().includes("duplicate content")) {
+        issues.push({
+          severity: "warning",
+          source: "content",
+          code: "CONTENT_VARIANT_DUPLICATE",
+          message: msg,
+        });
+      }
+    });
 
     for (let day = 1; day <= maxDay; day++) {
       SUPPORTED_LOCALES.forEach((locale) => {
@@ -727,10 +1039,79 @@ export const getContentDiagnostics = async (maxDay: number): Promise<ContentDiag
         contentIdMap.set(variant.contentId, variant);
         return;
       }
-      const message = `Duplicate content id "${variant.contentId}" also used by day ${existing.day} ${existing.locale} ${existing.mode}`;
+      // Allow same id for the same day+mode across locales; warn when reused for a different day or mode.
+      const sameVariant = existing.day === variant.day && existing.mode === variant.mode;
+      if (sameVariant) return;
+      const message = `Duplicate content id "${variant.contentId}" also used by day ${existing.day} ${existing.mode}`;
       [existing, variant].forEach((entry) => {
         entry.issues.push(message);
         if (entry.status === "ok") entry.status = "warning";
+      });
+      issues.push({
+        severity: "warning",
+        source: "content",
+        code: "CONTENT_ID_DUPLICATE",
+        message,
+        details: {
+          first: { day: existing.day, locale: existing.locale, mode: existing.mode },
+          second: { day: variant.day, locale: variant.locale, mode: variant.mode },
+          contentId: variant.contentId,
+        },
+      });
+    });
+
+    // Cross-locale consistency for content IDs/titles
+    const dayModeMap = new Map<string, VariantDiagnostics[]>();
+    variantDiagnostics.forEach((variant) => {
+      if (variant.status === "missing") return;
+      const key = `${variant.day}-${variant.mode}`;
+      const list = dayModeMap.get(key) ?? [];
+      list.push(variant);
+      dayModeMap.set(key, list);
+    });
+    dayModeMap.forEach((variants) => {
+      if (variants.length < 2) return;
+      const first = variants[0];
+      if (!first) return;
+      const rest = variants.slice(1);
+      rest.forEach((other) => {
+        if (
+          ENABLE_CROSS_LOCALE_ID_MISMATCH &&
+          first.contentId &&
+          other.contentId &&
+          first.contentId !== other.contentId
+        ) {
+          issues.push({
+            severity: "warning",
+            source: "consistency",
+            code: "CONTENT_CROSS_LOCALE_ID_MISMATCH",
+            message: `Content id mismatch between locales for day ${first.day} ${first.mode}`,
+            details: {
+              day: first.day,
+              mode: first.mode,
+              ids: [
+                { locale: first.locale, id: first.contentId },
+                { locale: other.locale, id: other.contentId },
+              ],
+            },
+          });
+        }
+        if (first.title && other.title && first.title !== other.title) {
+          issues.push({
+            severity: "info",
+            source: "consistency",
+            code: "CONTENT_CROSS_LOCALE_TITLE_MISMATCH",
+            message: `Title mismatch between locales for day ${first.day} ${first.mode}`,
+            details: {
+              day: first.day,
+              mode: first.mode,
+              titles: [
+                { locale: first.locale, title: first.title },
+                { locale: other.locale, title: other.title },
+              ],
+            },
+          });
+        }
       });
     });
 
@@ -768,13 +1149,14 @@ export const getContentDiagnostics = async (maxDay: number): Promise<ContentDiag
       SUPPORTED_LOCALES.map((locale) => readInventoryDiagnostics(locale, issues, referencedInventoryIds, referencedAssets)),
     );
     const consistency = computeInventoryConsistency(inventoryLocales);
-    const inventoryResponse = inventoryLocales.map((entry) => ({
+    const inventoryResponse: InventoryLocaleDiagnostics[] = inventoryLocales.map((entry) => ({
       locale: entry.locale,
       hasFile: entry.hasFile,
       items: entry.items,
       missingImages: entry.missingImages,
       issues: entry.issues,
       ids: Array.from(entry.ids),
+      itemList: entry.itemList,
     }));
 
     consistency.forEach((entry) => {
@@ -791,6 +1173,7 @@ export const getContentDiagnostics = async (maxDay: number): Promise<ContentDiag
 
     const existingAssets = await collectExistingAssets();
     const hashMap = new Map<string, string[]>(); // hash -> asset paths
+    const assetList: ContentDiagnostics["assets"]["list"] = [];
     await Promise.all(
       existingAssets.map(async ({ key, absolutePath }) => {
         if (!referencedAssets.has(key)) {
@@ -804,6 +1187,12 @@ export const getContentDiagnostics = async (maxDay: number): Promise<ContentDiag
         }
         try {
           const stat = await fs.stat(absolutePath);
+          const assetEntry: ContentDiagnostics["assets"]["list"][number] = {
+            path: key,
+            referenced: referencedAssets.has(key),
+            size: stat.size,
+            token: getAssetToken(`/assets/${key}`),
+          };
           if (stat.size === 0) {
             issues.push({
               severity: "error",
@@ -818,6 +1207,7 @@ export const getContentDiagnostics = async (maxDay: number): Promise<ContentDiag
           const list = hashMap.get(hash) ?? [];
           list.push(key);
           hashMap.set(hash, list);
+          assetList.push({ ...assetEntry, hash });
         } catch (err) {
           issues.push({
             severity: "error",
@@ -841,6 +1231,17 @@ export const getContentDiagnostics = async (maxDay: number): Promise<ContentDiag
       }
     });
 
+    const unusedContentFiles = await findUnusedContentFiles(maxDay);
+    unusedContentFiles.forEach((filePath) => {
+      issues.push({
+        severity: "info",
+        source: "content",
+        code: "CONTENT_FILE_UNUSED",
+        message: `Content file not in scope (day beyond max): ${filePath}`,
+        details: { filePath },
+      });
+    });
+
     return {
       variants: variantDiagnostics,
       days,
@@ -850,14 +1251,20 @@ export const getContentDiagnostics = async (maxDay: number): Promise<ContentDiag
         partialDays,
         issueDays,
         emptyDays,
-      },
-      indexWarnings,
-      issues,
-      inventory: {
-        locales: inventoryResponse,
-        consistency,
-      },
-    };
+    },
+    indexWarnings,
+    issues,
+    assets: {
+      total: existingAssets.length,
+      referenced: referencedAssets.size,
+      unused: existingAssets.length - referencedAssets.size >= 0 ? existingAssets.length - referencedAssets.size : 0,
+      list: assetList,
+    },
+    inventory: {
+      locales: inventoryResponse,
+      consistency,
+    },
+  };
   } finally {
     setContentWarningHandler(null);
   }

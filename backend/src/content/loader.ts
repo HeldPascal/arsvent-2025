@@ -5,6 +5,7 @@ import matter from "gray-matter";
 import type { GrayMatterFile } from "gray-matter";
 import { marked } from "marked";
 import { loadVersionedContent, type LoadedVersionedContent } from "./v1-loader.js";
+import { ContentValidationError } from "./errors.js";
 import { loadInventory, invalidateInventoryCache } from "./inventory.js";
 
 export type Locale = "en" | "de";
@@ -163,7 +164,7 @@ const buildIntroPath = (locale: Locale) => path.join(CONTENT_ROOT, "intro", `int
 
 export const normalizeId = (value: unknown, message: string) => {
   const id = String(value ?? "").trim();
-  if (!id) throw new Error(message);
+  if (!id) throw new ContentValidationError(message);
   return id;
 };
 

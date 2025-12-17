@@ -18,10 +18,11 @@ import { PrismaClient } from "@prisma/client";
 import type { User as PrismaUser } from "@prisma/client";
 import { loadIntro, loadDayContent, IntroNotFoundError, RiddleNotFoundError, resolveDayPath } from "./content/loader.js";
 import type { Locale, Mode, DayContent, DayBlock } from "./content/loader.js";
+import { ContentValidationError } from "./content/errors.js";
 import { evaluateCondition } from "./content/v1-loader.js";
 import { getContentDiagnostics } from "./content/diagnostics.js";
 import { tokenizeDayContent, resolveAssetToken } from "./content/tokens.js";
-import { maskHtmlAssets } from "./content/tokens.js";
+import { maskHtmlAssets, getAssetToken } from "./content/tokens.js";
 
 dotenv.config();
 
@@ -1607,6 +1608,63 @@ app.get("/api/admin/content/day", requireAuth, requireAdmin, async (req, res, ne
   }
   const locale = normalizeLocale(localeParam);
   const mode = normalizeModeValue(modeParam);
+  const maskAssetPath = (value?: string | null) => {
+    if (!value) return value;
+    if (value.startsWith("/content-asset/")) return value;
+    try {
+      return `/content-asset/${getAssetToken(value)}`;
+    } catch {
+      return value;
+    }
+  };
+  const maskBlockAssets = (block: DayBlock): DayBlock => {
+    if (block.kind === "story") {
+      return {
+        ...block,
+        html: maskHtmlAssets(block.html ?? ""),
+      };
+    }
+    if (block.kind === "reward" && block.item) {
+      const next = { ...block, item: { ...block.item } };
+      if (block.item.image) {
+        next.item.image = maskAssetPath(block.item.image) ?? block.item.image;
+      }
+      return next;
+    }
+    if (block.kind !== "puzzle") return block;
+    const next = { ...block };
+    if ((block as { html?: string }).html !== undefined) {
+      (next as { html?: string }).html = maskHtmlAssets((block as { html?: string }).html ?? "");
+    }
+    if (block.backgroundImage) next.backgroundImage = maskAssetPath(block.backgroundImage) ?? block.backgroundImage;
+    if (block.backImage) next.backImage = maskAssetPath(block.backImage) ?? block.backImage;
+    if (block.hoverBackImage) next.hoverBackImage = maskAssetPath(block.hoverBackImage) ?? block.hoverBackImage;
+    if (block.options) {
+      next.options = block.options.map((opt) => ({
+        ...opt,
+        ...(opt.image ? { image: maskAssetPath(opt.image) ?? opt.image } : {}),
+      }));
+    }
+    if (block.items) {
+      next.items = block.items.map((itm) => ({
+        ...itm,
+        ...(itm.image ? { image: maskAssetPath(itm.image) ?? itm.image } : {}),
+      }));
+    }
+    if (block.sockets) {
+      next.sockets = block.sockets.map((sock) => ({
+        ...sock,
+        ...(sock.image ? { image: maskAssetPath(sock.image) ?? sock.image } : {}),
+      }));
+    }
+    if (block.cards) {
+      next.cards = block.cards.map((card) => ({
+        ...card,
+        image: maskAssetPath(card.image) ?? card.image,
+      }));
+    }
+    return next;
+  };
   try {
     const content = await loadDayContent(day, locale, mode, new Set(), true);
     const filePath = await resolveDayPath(day, locale, mode);
@@ -1616,7 +1674,7 @@ app.get("/api/admin/content/day", requireAuth, requireAdmin, async (req, res, ne
       mode,
       filePath,
       title: content.title,
-      blocks: content.blocks,
+      blocks: content.blocks.map(maskBlockAssets),
       puzzleIds: content.puzzleIds,
       solvedCondition: content.solvedCondition,
     });
@@ -1884,6 +1942,9 @@ app.get("/", (_req, res) => {
 });
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  if (err instanceof ContentValidationError) {
+    return res.status(400).json({ error: err.message });
+  }
   // Basic error handler for now; logs can be added later if needed
   console.error(err);
   res.status(500).json({ error: "Internal server error" });

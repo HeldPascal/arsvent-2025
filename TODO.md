@@ -4,21 +4,6 @@ Ideas and improvements to tackle
 - Pairbuilding puzzle type (Duolingo style; verify on selection and move to list below)
 - Select items enable partial solutions for normal (e.g. 3 instead of 6) also make sure background is transparent without item and label
 
-- Admin content view:
-  - Inventory & Assets
-    - [x] Per-locale cards with locale code, item count, and any errors reading that inventory file
-    - [ ] Inventory consistency summary listing missing/extra IDs per locale pair
-    - [ ] Show count of missing asset files referenced by inventory (per locale)
-    - [ ] List the specific missing asset paths
-    - [ ] Surface cross-locale consistency issues (e.g., IDs present in one locale but not another) with counts and top offenders
-    - [ ] Link inventory issues to content issues (e.g., which rewards reference missing inventory IDs)
-    - [ ] Quick validity badge per locale (OK / warnings / errors)
-    - [ ] Last modified timestamp for each inventory YAML to spot stale files
-    - [ ] Summary totals: total items across locales, number of items missing assets, number of items mismatched across locales
-
-- Admin puzzle debug view  
-  Provide an admin debug mode for any day that shows raw block data, validation details (solutions, min selections, socket shapes), and a way to simulate submissions. Goal: let admins verify puzzles before releasing or unlocking them.
-
 - Test environment  
   Stand up a dedicated test setup (DB seeding, env flags) so flows can be validated without touching production data. Include a script to reset/seed test content and accounts.
 
@@ -27,12 +12,6 @@ Ideas and improvements to tackle
 
 - Inventory view  
   Add a page that lists all items the player has earned (name, rarity, image, description). Consider filters/sorting and a link-out from rewards.
-
-- Admin content coverage  
-  Show which days are missing content. Surface a per-day checklist in the dashboard so gaps are obvious at a glance and provide links to offending files.
-
-- Broken content reporting  
-  In the admin area, list content files that failed to load or parse (locale/mode combos). Include the error message so fixes are straightforward.
 
 - Error and warning log  
   Expose recent server errors/warnings in the admin panel with timestamps and a quick filter. Helps diagnose content or auth issues without digging through server logs.

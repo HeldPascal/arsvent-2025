@@ -7,6 +7,8 @@ import SettingsPage from "./views/SettingsPage";
 import AdminPage from "./views/AdminPage";
 import AdminAuditPage from "./views/AdminAuditPage";
 import AdminContentPage from "./views/AdminContentPage";
+import AdminAssetsBrowser from "./views/AdminAssetsBrowser";
+import AdminInventoryBrowser from "./views/AdminInventoryBrowser";
 import { fetchMe, updateLocale as apiUpdateLocale } from "./services/api";
 import type { Locale, User } from "./types";
 import Layout from "./views/Layout";
@@ -303,6 +305,38 @@ export default function AppRouter() {
               user ? (
                 user.isAdmin || user.isSuperAdmin ? (
                   <AdminContentPage />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              ) : loading ? (
+                <div className="panel">Loading…</div>
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/admin/content/assets"
+            element={
+              user ? (
+                user.isAdmin || user.isSuperAdmin ? (
+                  <AdminAssetsBrowser />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              ) : loading ? (
+                <div className="panel">Loading…</div>
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/admin/content/inventory"
+            element={
+              user ? (
+                user.isAdmin || user.isSuperAdmin ? (
+                  <AdminInventoryBrowser />
                 ) : (
                   <Navigate to="/" replace />
                 )

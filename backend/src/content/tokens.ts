@@ -47,6 +47,11 @@ const ensureAssetToken = (assetPath: string) => {
   return token;
 };
 
+export const getAssetToken = (assetPath: string) => {
+  const normalized = assetPath.startsWith("/assets/") ? assetPath : `/assets/${assetPath.replace(/^\/+/, "")}`;
+  return ensureAssetToken(normalized);
+};
+
 const isAssetPath = (value?: string | null) => Boolean(value && value.startsWith("/assets/"));
 
 export const resolveAssetToken = async (token: string): Promise<string | null> => {
