@@ -268,10 +268,13 @@ const buildDayIndex = async () => {
           warn(message);
           dayIndexWarnings.push(message);
         }
-        if (dayIndex.has(key)) {
-          const message = `Duplicate content for day ${day}, locale ${locale}, mode ${mode} (file: ${filePath}). Using first occurrence.`;
-          warn(message);
-          dayIndexWarnings.push(message);
+        const existingPath = dayIndex.get(key);
+        if (existingPath) {
+          if (existingPath !== filePath) {
+            const message = `Duplicate content for day ${day}, locale ${locale}, mode ${mode} (file: ${filePath}). Using first occurrence.`;
+            warn(message);
+            dayIndexWarnings.push(message);
+          }
           continue;
         }
         dayIndex.set(key, filePath);
