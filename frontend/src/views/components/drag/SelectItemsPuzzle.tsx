@@ -97,7 +97,7 @@ export default function SelectItemsPuzzle({
             <button
               key={item.id}
               type="button"
-              className={`select-item drag-socket ${shapeClass(item.shape)} ${selected ? "is-selected" : ""} status-${status}`}
+              className={`select-item drag-socket ${shapeClass(item.shape)} ${selected ? "is-selected" : ""} status-${status}${isEmpty ? " empty" : ""}`}
               style={{ left: `${posX}%`, top: `${posY}%` }}
               onClick={() => toggleSelection(item.id)}
               disabled={disabled}
