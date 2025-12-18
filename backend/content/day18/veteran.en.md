@@ -29,7 +29,7 @@ Find 3 of the impossible things during the fight against Lord Falgravn.
 ![Location](/assets/25_18_background.png)
 
 ```yaml puzzle
-
+type: "placeholder"
 ```
 
 ## Wait for: kynes

@@ -26,7 +26,7 @@ Welche Rüstungsfähigkeit musst du verwenden, um diesen Effekt zu erzielen?
 ![Location](/assets/25_19_background.png)
 
 ```yaml puzzle
-
+type: "placeholder"
 ```
 
 ## Wait for: defense

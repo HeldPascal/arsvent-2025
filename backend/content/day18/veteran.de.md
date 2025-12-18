@@ -29,7 +29,7 @@ Find all the impossible things in this fight.
 ![Location](/assets/25_18_background.png)
 
 ```yaml puzzle
-
+type: "placeholder"
 ```
 
 ## Wait for: kynes

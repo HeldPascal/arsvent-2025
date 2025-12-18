@@ -29,7 +29,7 @@ Finde 3 der unmöglichen Dinge während des Kampfs gegen Fürst Falgravn.
 ![Location](/assets/25_18_background.png)
 
 ```yaml puzzle
-
+type: "placeholder"
 ```
 
 ## Wait for: kynes

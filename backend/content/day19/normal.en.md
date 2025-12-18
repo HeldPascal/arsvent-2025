@@ -26,7 +26,7 @@ Which armor skill do you need to use in order to achieve this effect?
 ![Location](/assets/25_19_background.png)
 
 ```yaml puzzle
-
+type: "placeholder"
 ```
 
 ## Wait for: defense
