@@ -803,9 +803,12 @@ const evaluatePuzzleAnswer = (block: Extract<DayBlock, { kind: "puzzle" }>, answ
         ),
       );
       let correctCount = 0;
-      uniqueSelections.forEach((id) => {
-        if (solutionSet.has(id)) correctCount += 1;
-      });
+      for (const id of uniqueSelections) {
+        if (!solutionSet.has(id)) {
+          return false; // any selection not in solution invalidates the answer
+        }
+        correctCount += 1;
+      }
       return correctCount >= required;
     }
     case "memory": {
