@@ -1033,6 +1033,21 @@ const mapToDayBlocks = (
         if (!solutionItems || solutionItems.length === 0) {
           throw new ContentValidationError("Solution must include at least one item id");
         }
+        const rawRequired =
+          rawDef.requiredSelections ??
+          rawDef["required-selections"] ??
+          rawDef.required ??
+          rawDef["required"] ??
+          rawDef.minSelections ??
+          rawDef["min-selections"];
+        let requiredSelections = solutionItems.length;
+        if (rawRequired !== undefined && rawRequired !== null && rawRequired !== "") {
+          const parsed = Number(rawRequired);
+          if (!Number.isFinite(parsed) || parsed <= 0) {
+            throw new ContentValidationError("requiredSelections must be a positive number");
+          }
+          requiredSelections = Math.min(solutionItems.length, Math.max(1, Math.floor(parsed)));
+        }
         const itemIds = new Set(items.map((itm) => itm.id));
         solutionItems.forEach((id) => {
           if (!itemIds.has(id)) {
@@ -1046,6 +1061,7 @@ const mapToDayBlocks = (
           visible: visibleSet.has(block),
           type,
           solution: solutionItems,
+          requiredSelections,
           backgroundImage,
           items,
           shape,

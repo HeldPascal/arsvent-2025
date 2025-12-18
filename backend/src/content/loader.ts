@@ -110,6 +110,7 @@ export interface PuzzleBlock {
   rightOptions?: RiddleOption[];
   groups?: RiddleGroup[];
   minSelections?: number;
+  requiredSelections?: number;
   ordered?: boolean;
   backgroundImage?: string;
   items?: DragSocketItem[];

@@ -119,6 +119,7 @@ export type DayBlock =
       leftOptions?: RiddleOption[];
       rightOptions?: RiddleOption[];
       minSelections?: number;
+      requiredSelections?: number;
       ordered?: boolean;
       optionSize?: "small" | "medium" | "large";
       backgroundImage?: string;

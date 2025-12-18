@@ -516,6 +516,10 @@ export default function RiddleAnswerForm({
         </>
       );
     }
+
+    if (block.type === "select-items") {
+      return null;
+    }
     return null;
   };
 
@@ -578,6 +582,11 @@ export default function RiddleAnswerForm({
             setLocalError(null);
             onInteract?.(block.id);
           }}
+          hint={
+            block.requiredSelections && block.requiredSelections > 0
+              ? `${t("selectItemsHint")} (${block.requiredSelections}+)`
+              : t("selectItemsHint")
+          }
         />
       )}
 

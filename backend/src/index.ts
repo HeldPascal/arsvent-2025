@@ -792,8 +792,21 @@ const evaluatePuzzleAnswer = (block: Extract<DayBlock, { kind: "puzzle" }>, answ
           throw new Error("Puzzle is misconfigured");
         }
       });
-      const expected = new Set(solutionItems);
-      return uniqueSelections.size === expected.size && Array.from(expected).every((id) => uniqueSelections.has(id));
+      const solutionSet = new Set(solutionItems);
+      const required = Math.min(
+        solutionSet.size,
+        Math.max(
+          1,
+          typeof block.requiredSelections === "number" && Number.isFinite(block.requiredSelections)
+            ? Math.floor(block.requiredSelections)
+            : solutionSet.size,
+        ),
+      );
+      let correctCount = 0;
+      uniqueSelections.forEach((id) => {
+        if (solutionSet.has(id)) correctCount += 1;
+      });
+      return correctCount >= required;
     }
     case "memory": {
       const pairs = ensureMemoryAnswer(answer);

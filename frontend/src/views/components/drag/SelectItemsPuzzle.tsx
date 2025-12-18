@@ -18,6 +18,7 @@ interface Props {
   disabled?: boolean;
   errorMessage?: string;
   onStartInteraction?: () => void;
+  hint?: string;
 }
 
 export default function SelectItemsPuzzle({
@@ -29,6 +30,7 @@ export default function SelectItemsPuzzle({
   disabled = false,
   errorMessage,
   onStartInteraction,
+  hint,
 }: Props) {
   const { t } = useI18n();
   const items: DragSocketItem[] = useMemo(() => block.items ?? [], [block.items]);
@@ -74,7 +76,7 @@ export default function SelectItemsPuzzle({
 
   return (
     <div className="select-items-wrapper">
-      <div className="drag-hint">{t("selectItemsHint")}</div>
+      <div className="drag-hint">{hint ?? t("selectItemsHint")}</div>
       {errorMessage && <div className="banner error">{errorMessage}</div>}
       <div
         className={`drag-sockets-board select-items-board ${shapeClass(block.shape)} status-${status}`}
@@ -90,6 +92,7 @@ export default function SelectItemsPuzzle({
           const posX = (item.position?.x ?? 0.5) * 100;
           const posY = (item.position?.y ?? 0.5) * 100;
           const selected = isSelected(item.id);
+          const isEmpty = !item.image && !item.label;
           return (
             <button
               key={item.id}
@@ -101,7 +104,7 @@ export default function SelectItemsPuzzle({
               aria-pressed={selected}
               aria-label={item.label || item.id}
             >
-              <div className={`drag-socket-item ${shapeClass(item.shape)} ${selected ? "selected" : ""}`}>
+              <div className={`drag-socket-item ${shapeClass(item.shape)} ${selected ? "selected" : ""}${isEmpty ? " empty" : ""}`}>
                 {item.image && (
                   <img src={resolveAsset(item.image)} alt={item.label || item.id} draggable={false} className="drag-item-image" />
                 )}

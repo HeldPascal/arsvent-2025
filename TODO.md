@@ -1,8 +1,5 @@
 Ideas and improvements to tackle
 
-(unpolished)
-- Select items enable partial solutions for normal (e.g. 3 instead of 6) also make sure background is transparent without item and label
-
 - Test environment  
   Stand up a dedicated test setup (DB seeding, env flags) so flows can be validated without touching production data. Include a script to reset/seed test content and accounts.
 
