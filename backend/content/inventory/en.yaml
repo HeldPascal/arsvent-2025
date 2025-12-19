@@ -98,3 +98,8 @@
   description: "A daggar and an axe in the celestial style."
   image: "/assets/25_20_reward.png"
   rarity: "uncommon"
+- id: "alliance-points"
+  title: "Vilonia's alliance points"
+  description: "A hand full of alliance points."
+  image: "/assets/25_21_reward.png"
+  rarity: "common"

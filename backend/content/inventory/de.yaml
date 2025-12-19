@@ -98,3 +98,8 @@
   description: "Ein Dolch und eine Axt im Stil der Himmlischen."
   image: "/assets/25_20_reward.png"
   rarity: "uncommon"
+- id: "alliance-points"
+  title: "Allianzpunkte von Vilonia"
+  description: "Eine Hand voll Allianzpunkte."
+  image: "/assets/25_21_reward.png"
+  rarity: "common"
