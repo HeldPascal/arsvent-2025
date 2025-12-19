@@ -23,10 +23,21 @@ Oder, ich wusste es einmal...
 id: "defense"
 Welche Rüstungsfähigkeit musst du verwenden, um diesen Effekt zu erzielen?
 
-![Location](/assets/25_19_background.png)
+![Location](/assets/25_19_background_normal.png)
 
 ```yaml puzzle
-type: "placeholder"
+type: "single-choice"
+options:
+  - id: "light"
+    label: "Neutralisierende Magie"
+    image: "/assets/25_19_option_1.png"
+  - id: "medium"
+    label: "Ausweichen"
+    image: "/assets/25_19_option_2.png"
+  - id: "heavy"
+    label: "Sicherer Stand"
+    image: "/assets/25_19_option_3.png"
+solution: "light"
 ```
 
 ## Wait for: defense

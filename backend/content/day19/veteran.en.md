@@ -23,10 +23,21 @@ You are gently lowered to the ground and now face only a lone warrior.
 id: "defense"
 Which armor skill do you need to use in order to achieve this effect?
 
-![Location](/assets/25_19_background.png)
+![Location](/assets/25_19_background_veteran.png)
 
 ```yaml puzzle
-type: "placeholder"
+type: "single-choice"
+options:
+  - id: "light"
+    label: "Annulment"
+    image: "/assets/25_19_option_1.png"
+  - id: "medium"
+    label: "Evasion"
+    image: "/assets/25_19_option_2.png"
+  - id: "heavy"
+    label: "Unstoppable"
+    image: "/assets/25_19_option_3.png"
+solution: "light"
 ```
 
 ## Wait for: defense
