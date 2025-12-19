@@ -1078,10 +1078,14 @@ const mapToDayBlocks = (
         if (!backgroundImage) {
           throw new ContentValidationError("Drag-sockets puzzles require a background image");
         }
+        const socketSize = normalizeOptionSize((block.definition.raw as { size?: unknown }).size);
         const shape = rawDef.shape ? resolveShape(rawDef.shape) : "circle";
         const items = normalizeDragItems(rawDef.items, shape);
         const sockets = normalizeDragSockets(rawDef.sockets, items, shape);
         const solution = normalizeDragSolution(block.definition.solution, sockets, items);
+        const requiredSockets = Array.from(
+          new Set((solution.sockets ?? []).map((entry) => entry.socketId).filter((id): id is string => Boolean(id))),
+        );
         return {
           kind: "puzzle",
           id: block.id,
@@ -1090,6 +1094,8 @@ const mapToDayBlocks = (
           type,
           solution,
           backgroundImage,
+          ...(socketSize ? { socketSize } : {}),
+          ...(requiredSockets.length > 0 ? { requiredSockets } : {}),
           items,
           sockets,
           shape,

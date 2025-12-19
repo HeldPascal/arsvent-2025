@@ -93,7 +93,7 @@ export default function RiddleAnswerForm({
               solvedPlacements[entry.socketId] = entry.itemId;
             }
           });
-          setDragAssignments(Object.keys(solvedPlacements).length ? solvedPlacements : defaultAssignments);
+          setDragAssignments({ ...defaultAssignments, ...solvedPlacements });
         } else if (block.type === "memory") {
           const solvedPairs = (block.solution as Array<unknown>).map((entry) => {
             if (entry && typeof entry === "object" && !Array.isArray(entry)) {
@@ -152,7 +152,7 @@ export default function RiddleAnswerForm({
             solvedPlacements[entry.socketId] = itemId;
           }
         });
-        setDragAssignments(Object.keys(solvedPlacements).length ? solvedPlacements : defaultAssignments);
+        setDragAssignments({ ...defaultAssignments, ...solvedPlacements });
       } else if (block.type === "select-items" && block.solution && typeof block.solution === "object") {
         const items = "items" in (block.solution as Record<string, unknown>) ? (block.solution as { items?: unknown }).items : [];
         if (Array.isArray(items)) {
@@ -378,9 +378,14 @@ export default function RiddleAnswerForm({
           return;
         }
       } else {
-        const requiredSockets = new Set(
-          solutionEntries.map((entry) => entry?.socketId).filter((id): id is string => Boolean(id)),
-        );
+        const requiredSockets = new Set<string>();
+        solutionEntries
+          .map((entry) => entry?.socketId)
+          .filter((id): id is string => Boolean(id))
+          .forEach((id) => requiredSockets.add(id));
+        if (requiredSockets.size === 0 && Array.isArray(block.requiredSockets) && block.requiredSockets.length > 0) {
+          block.requiredSockets.forEach((id) => requiredSockets.add(id));
+        }
         if (requiredSockets.size === 0) {
           sockets.forEach((socket) => requiredSockets.add(socket.id));
         }

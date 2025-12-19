@@ -888,6 +888,9 @@ a {
 
 .drag-sockets-wrapper {
   --socket-size: 96px;
+  --socket-inset: clamp(4px, calc(var(--socket-size) * 0.12), 10px);
+  --socket-padding: clamp(4px, calc(var(--socket-size) * 0.1), 8px);
+  --socket-border: clamp(1px, calc(var(--socket-size) * 0.02), 2px);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1613,7 +1616,7 @@ a {
 .drag-socket-target {
   position: absolute;
   inset: 0;
-  border: 2px dashed var(--line);
+  border: var(--socket-border) dashed var(--line);
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.35);
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04), 0 0 18px rgba(247, 208, 70, 0.25);
@@ -1632,6 +1635,22 @@ a {
   font-size: 12px;
   word-break: break-word;
   hyphens: auto;
+}
+
+.socket-size-small .drag-socket-index {
+  display: none;
+}
+
+.socket-size-small {
+  --socket-inset: 2px;
+  --socket-padding: 2px;
+}
+
+.socket-size-small .drag-socket-item img:not(.drag-item-tooltip-image) {
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
 }
 
 .drag-socket.is-active .drag-socket-target {
@@ -1765,9 +1784,9 @@ a {
 
 .drag-socket-item {
   position: absolute;
-  inset: 10px;
+  inset: var(--socket-inset);
   border-radius: 12px;
-  border: 1px solid var(--line);
+  border: var(--socket-border) solid var(--line);
   background: rgba(13, 15, 18, 0.7);
   display: flex;
   flex-direction: column;
@@ -1775,7 +1794,7 @@ a {
   justify-content: center;
   gap: 6px;
   cursor: grab;
-  padding: 8px;
+  padding: var(--socket-padding);
   overflow: visible;
   z-index: 5;
   transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
@@ -1816,8 +1835,16 @@ a {
 
 .drag-socket .reset {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  left: 50%;
+  bottom: calc(-1 * (var(--socket-padding) + var(--socket-border)) - clamp(4px, calc(var(--socket-size) * 0.08), 8px));
+  transform: translate(-50%, 50%);
+  width: clamp(16px, calc(var(--socket-size) * 0.3), 28px);
+  height: clamp(16px, calc(var(--socket-size) * 0.3), 28px);
+  font-size: clamp(12px, calc(var(--socket-size) * 0.22), 18px);
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
 }
 
 .drag-items-grid {
@@ -1827,9 +1854,9 @@ a {
 }
 
 .drag-item-card {
-  border: 2px dashed var(--line);
+  border: var(--socket-border) dashed var(--line);
   border-radius: 14px;
-  padding: 8px;
+  padding: var(--socket-padding);
   background: #2a2e33;
   position: relative;
   display: flex;
@@ -1861,7 +1888,7 @@ a {
 }
 
 .drag-socket-item.dragging {
-  border: 2px dashed var(--line);
+  border: var(--socket-border) dashed var(--line);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
   background: #2a2e33;
   opacity: 0.9;
@@ -2026,6 +2053,7 @@ a {
   border-radius: inherit;
   max-width: 100%;
 }
+
 
 .drag-item-title.tooltip-label {
   margin-top: 8px;

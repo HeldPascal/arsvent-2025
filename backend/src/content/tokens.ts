@@ -265,6 +265,7 @@ export const tokenizeDayContent = (content: DayContent, ctx: TokenContext): Toke
           ...(sock.image ? { image: maskAsset(sock.image) } : {}),
         };
       });
+      const requiredSockets = (block.requiredSockets ?? []).map((sockId) => ensureToken("socket", sockId));
       const translateSocketEntry = (entry: { socketId?: string; itemId?: string; listId?: string }) => ({
         ...(entry.socketId ? { socketId: ensureToken("socket", entry.socketId) } : {}),
         ...(entry.itemId ? { itemId: ensureToken("item", entry.itemId) } : {}),
@@ -291,6 +292,7 @@ export const tokenizeDayContent = (content: DayContent, ctx: TokenContext): Toke
         items,
         sockets,
         backgroundImage: maskAsset(block.backgroundImage),
+        ...(requiredSockets.length > 0 ? { requiredSockets } : {}),
         solution: lists ? { lists, sockets: normalizedSockets } : normalizedSockets,
       };
     }

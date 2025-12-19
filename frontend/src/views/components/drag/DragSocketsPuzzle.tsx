@@ -10,6 +10,8 @@ type DragSocketsBlock = Extract<DayBlock, { kind: "puzzle" }> & {
   sockets?: DragSocketSlot[];
   backgroundImage?: string;
   shape?: "circle" | "square" | "hex";
+  socketSize?: "small" | "medium" | "large";
+  requiredSockets?: string[];
 };
 
 interface Props {
@@ -44,7 +46,11 @@ export default function DragSocketsPuzzle({
   const [draggingFromSocket, setDraggingFromSocket] = useState<string | null>(null);
   const dragGhostRef = useRef<HTMLElement | null>(null);
   const boardRef = useRef<HTMLDivElement | null>(null);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
   const baseBoardWidthRef = useRef<number>(0);
+  const socketSizePreset = block.socketSize ?? "large";
+  const baseSocketSize = socketSizePreset === "small" ? 24 : socketSizePreset === "medium" ? 64 : 96;
+  const minSocketSize = Math.max(16, Math.round(baseSocketSize * 0.5));
 
   const requiredSockets = useMemo(() => {
     const ids = new Set<string>();
@@ -61,8 +67,11 @@ export default function DragSocketsPuzzle({
         if (entry?.socketId) ids.add(String(entry.socketId));
       });
     }
+    (block.requiredSockets ?? []).forEach((id) => {
+      if (id) ids.add(String(id));
+    });
     return ids;
-  }, [block.solution]);
+  }, [block.solution, block.requiredSockets]);
 
   const assignedSocketByItem = useMemo(() => {
     const map: Record<string, string> = {};
@@ -112,8 +121,8 @@ export default function DragSocketsPuzzle({
   const createDragGhost = (item: DragSocketItem) => {
     if (typeof document === "undefined") return null;
     const ghost = document.createElement("div");
-    const rootStyle = getComputedStyle(document.documentElement);
-    const socketSize = rootStyle.getPropertyValue("--socket-size") || "104px";
+    const rootStyle = wrapperRef.current ? getComputedStyle(wrapperRef.current) : getComputedStyle(document.documentElement);
+    const socketSize = rootStyle.getPropertyValue("--socket-size").trim() || `${baseSocketSize}px`;
     ghost.className = `drag-item-card ${shapeClass(item.shape)}`;
     ghost.style.width = socketSize.trim();
     ghost.style.height = socketSize.trim();
@@ -144,20 +153,24 @@ export default function DragSocketsPuzzle({
   };
 
   useEffect(() => {
+    baseBoardWidthRef.current = 0;
     const updateSocketSize = () => {
-      if (!boardRef.current) return;
+      if (!boardRef.current || !wrapperRef.current) return;
       const width = boardRef.current.clientWidth || 0;
       if (width <= 0) return;
       // Track the widest we've rendered at; only start shrinking when below that max
       baseBoardWidthRef.current = Math.max(baseBoardWidthRef.current, width);
       const baseWidth = baseBoardWidthRef.current || width;
-      const size = width >= baseWidth ? 96 : Math.max(48, Math.min(96, (width / baseWidth) * 96));
-      boardRef.current.style.setProperty("--socket-size", `${size}px`);
+      const size =
+        width >= baseWidth
+          ? baseSocketSize
+          : Math.max(minSocketSize, Math.min(baseSocketSize, (width / baseWidth) * baseSocketSize));
+      wrapperRef.current.style.setProperty("--socket-size", `${size}px`);
     };
     updateSocketSize();
     window.addEventListener("resize", updateSocketSize);
     return () => window.removeEventListener("resize", updateSocketSize);
-  }, []);
+  }, [baseSocketSize, minSocketSize]);
 
   const hidePreview = useCallback((itemId?: string | null) => {
     setPreviewItem((prev) => (itemId && prev !== itemId ? prev : null));
@@ -405,6 +418,8 @@ export default function DragSocketsPuzzle({
   );
 
   const previewData = items.find((itm) => itm.id === previewItem) ?? null;
+  const tooltipImageSize =
+    socketSizePreset === "small" && previewRect ? Math.max(12, Math.round(previewRect.width * 1.5)) : null;
 
   const tooltipNode =
     previewData && previewRect && draggingItem !== previewData.id
@@ -417,7 +432,17 @@ export default function DragSocketsPuzzle({
             }}
           >
             {previewData.image && (
-              <img src={resolveAsset(previewData.image)} alt="" aria-hidden className="drag-item-tooltip-image" />
+              <img
+                src={resolveAsset(previewData.image)}
+                alt=""
+                aria-hidden
+                className="drag-item-tooltip-image"
+                style={
+                  tooltipImageSize
+                    ? { width: tooltipImageSize, height: tooltipImageSize, maxWidth: "none", maxHeight: "none" }
+                    : undefined
+                }
+              />
             )}
             {previewData.label && <div className="drag-item-title tooltip-label">{previewData.label}</div>}
           </div>,
@@ -437,7 +462,7 @@ export default function DragSocketsPuzzle({
   }, [previewItem, hidePreview]);
 
   return (
-    <div className="drag-sockets-wrapper">
+    <div className={`drag-sockets-wrapper socket-size-${socketSizePreset}`} ref={wrapperRef}>
       <div className="drag-hint">{t("dragHint")}</div>
       {errorMessage && <div className="banner error">{errorMessage}</div>}
       <div

@@ -122,6 +122,8 @@ export type DayBlock =
       requiredSelections?: number;
       ordered?: boolean;
       optionSize?: "small" | "medium" | "large";
+      socketSize?: "small" | "medium" | "large";
+      requiredSockets?: string[];
       backgroundImage?: string;
       items?: DragSocketItem[];
       sockets?: DragSocketSlot[];
