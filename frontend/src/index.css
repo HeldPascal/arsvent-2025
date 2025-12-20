@@ -898,6 +898,9 @@ a {
 
 .select-items-wrapper {
   --socket-size: 96px;
+  --socket-inset: clamp(4px, calc(var(--socket-size) * 0.12), 10px);
+  --socket-padding: clamp(4px, calc(var(--socket-size) * 0.1), 8px);
+  --socket-border: clamp(1px, calc(var(--socket-size) * 0.02), 2px);
   display: flex;
   flex-direction: column;
   gap: 12px;
