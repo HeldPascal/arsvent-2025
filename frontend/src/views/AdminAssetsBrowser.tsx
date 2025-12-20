@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { ContentDiagnostics } from "../types";
 import { fetchAdminContentDiagnostics } from "../services/api";
+import { appendWebpFormat } from "../utils/assets";
 
 export default function AdminAssetsBrowser() {
   const [diag, setDiag] = useState<ContentDiagnostics | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const backendBase = import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ?? "";
-  const resolveAssetUrl = (token: string) => `${backendBase}/content-asset/${token}`;
+  const resolveAssetUrl = (token: string) => appendWebpFormat(`${backendBase}/content-asset/${token}`);
 
   useEffect(() => {
     const load = async () => {

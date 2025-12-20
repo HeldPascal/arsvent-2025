@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { ContentDiagnostics, Locale } from "../types";
 import { fetchAdminContentDiagnostics } from "../services/api";
+import { appendWebpFormat } from "../utils/assets";
 
 export default function AdminInventoryBrowser() {
   const [diag, setDiag] = useState<ContentDiagnostics | null>(null);
@@ -41,7 +42,7 @@ export default function AdminInventoryBrowser() {
 
   const resolveAssetUrl = (token?: string) => {
     if (!token) return "";
-    return `${backendBase}/content-asset/${token}`;
+    return appendWebpFormat(`${backendBase}/content-asset/${token}`);
   };
 
   return (

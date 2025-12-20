@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DayBlock, RiddleAnswerPayload } from "../../types";
 import { useI18n } from "../../i18n";
+import { appendWebpFormat } from "../../utils/assets";
 import DragSocketsPuzzle from "./drag/DragSocketsPuzzle";
 import SelectItemsPuzzle from "./drag/SelectItemsPuzzle";
 import MemoryPuzzle from "./memory/MemoryPuzzle";
@@ -35,7 +36,7 @@ export default function RiddleAnswerForm({
       ? src.startsWith("/assets/")
         ? `${backendBase}/content-${src.slice(1)}`
         : src.startsWith("/content-asset/")
-          ? `${backendBase}${src}`
+          ? appendWebpFormat(`${backendBase}${src}`)
           : src
       : src ?? "";
 

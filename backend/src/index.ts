@@ -12,8 +12,10 @@ import type { Profile as DiscordProfile, StrategyOptions } from "passport-discor
 import type { VerifyCallback } from "passport-oauth2";
 import dotenv from "dotenv";
 import fs from "fs/promises";
+import fsSync from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import sharp from "sharp";
 import { PrismaClient } from "@prisma/client";
 import type { User as PrismaUser } from "@prisma/client";
 import { loadIntro, loadDayContent, IntroNotFoundError, RiddleNotFoundError, resolveDayPath } from "./content/loader.js";
@@ -112,6 +114,7 @@ app.use(
 app.use(cookieParser());
 app.use(express.json());
 const assetsPath = path.join(__dirname, "..", "content", "assets");
+const webpCacheDir = path.join(__dirname, "..", "content", ".webp-cache");
 const enableStaticAssets = false;
 if (enableStaticAssets) {
   app.use("/content-assets", express.static(assetsPath));
@@ -124,6 +127,75 @@ app.get("/content-asset/:token", async (req, res) => {
   if (!assetPath) return res.status(404).end();
   const normalized = assetPath.replace(/^\/+/, "");
   const abs = path.join(__dirname, "..", "content", normalized);
+  const ext = path.extname(abs).toLowerCase();
+  const formatParam = typeof req.query.format === "string" ? req.query.format.toLowerCase() : "";
+  const forceWebp = formatParam === "webp";
+  const wantsWebp = forceWebp || Boolean(req.accepts("image/webp"));
+  const canWebp = wantsWebp && [".png", ".jpg", ".jpeg"].includes(ext);
+  const setAssetCacheHeaders = () => {
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+  };
+
+  if (canWebp) {
+    if (!forceWebp) {
+      res.setHeader("Vary", "Accept");
+    }
+    const webpPath = path.join(webpCacheDir, `${token}.webp`);
+    try {
+      await fs.access(webpPath);
+    } catch {
+      try {
+        await fs.mkdir(webpCacheDir, { recursive: true });
+        const tempPath = `${webpPath}.tmp-${process.pid}-${Date.now()}`;
+        await sharp(abs).webp({ quality: 82 }).toFile(tempPath);
+        await fs.rename(tempPath, webpPath);
+      } catch (innerErr) {
+        console.error("[assets] WebP generation failed", {
+          token,
+          assetPath,
+          error: innerErr instanceof Error ? innerErr.message : String(innerErr),
+        });
+        if (forceWebp) return res.status(500).end();
+        return res.sendFile(abs, (err) => {
+          if (err) res.status(500).end();
+        });
+      }
+    }
+    try {
+      const stats = await fs.stat(webpPath);
+      setAssetCacheHeaders();
+      res.setHeader("Content-Length", stats.size);
+      res.type("image/webp");
+      const stream = fsSync.createReadStream(webpPath);
+      stream.on("error", (err) => {
+        console.error("[assets] WebP stream failed", {
+          token,
+          webpPath,
+          error: err instanceof Error ? err.message : String(err),
+        });
+        if (res.headersSent) return;
+        if (forceWebp) return res.status(500).end();
+        setAssetCacheHeaders();
+        res.sendFile(abs, (fallbackErr) => {
+          if (fallbackErr) res.status(500).end();
+        });
+      });
+      return stream.pipe(res);
+    } catch (err) {
+      console.error("[assets] WebP stat failed", {
+        token,
+        webpPath,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      if (forceWebp) return res.status(500).end();
+      setAssetCacheHeaders();
+      return res.sendFile(abs, (fallbackErr) => {
+        if (fallbackErr) res.status(500).end();
+      });
+    }
+  }
+
+  setAssetCacheHeaders();
   return res.sendFile(abs, (err) => {
     if (err) {
       res.status(500).end();

@@ -4,6 +4,7 @@ import { completeIntro, fetchIntro } from "../services/api";
 import type { Mode, User } from "../types";
 import { useI18n } from "../i18n";
 import ModeSelector from "./components/ModeSelector";
+import { appendWebpFormat } from "../utils/assets";
 
 interface Props {
   user: User;
@@ -39,7 +40,7 @@ export default function IntroPage({ user, onModeChange, onIntroComplete }: Props
       );
       out = out.replace(
         /src=(["'])(\/content-asset\/[^"']+)\1/g,
-        (_m, quote, path) => `src=${quote}${backendBase}${path}${quote}`,
+        (_m, quote, path) => `src=${quote}${appendWebpFormat(`${backendBase}${path}`)}${quote}`,
       );
       out = out.replace(
         /srcset=(["'])([^"']+)\1/gi,
@@ -52,7 +53,7 @@ export default function IntroPage({ user, onModeChange, onIntroComplete }: Props
               const masked = url.startsWith("/assets/")
                 ? `${backendBase}/content-${url.slice(1)}`
                 : url.startsWith("/content-asset/")
-                  ? `${backendBase}${url}`
+                  ? appendWebpFormat(`${backendBase}${url}`)
                   : url;
               return size ? `${masked} ${size}` : masked;
             })
@@ -61,7 +62,7 @@ export default function IntroPage({ user, onModeChange, onIntroComplete }: Props
         },
       );
       out = out.replace(/url\((['"]?)(\/content-asset\/[^'")]+)\1\)/gi, (_m, quote, path) => {
-        return `url(${quote}${backendBase}${path}${quote})`;
+        return `url(${quote}${appendWebpFormat(`${backendBase}${path}`)}${quote})`;
       });
       out = out.replace(/url\((['"]?)(\/assets\/[^'")]+)\1\)/gi, (_m, quote, path) => {
         return `url(${quote}${backendBase}/content-${path.slice(1)}${quote})`;

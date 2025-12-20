@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { fetchDay, submitAnswer, resetPuzzle, solvePuzzle } from "../services/api";
 import type { DayDetail, DayBlock, RiddleAnswerPayload, User } from "../types";
 import { useI18n } from "../i18n";
+import { appendWebpFormat } from "../utils/assets";
 import ConfirmDialog from "./components/ConfirmDialog";
 import RiddleAnswerForm from "./components/RiddleAnswerForm";
 
@@ -48,7 +49,7 @@ export default function DayPage({ user, version }: Props) {
     );
     out = out.replace(
       /src=(["'])(\/content-asset\/[^"']+)\1/g,
-      (_m, quote, path) => `src=${quote}${backendBase}${path}${quote}`,
+      (_m, quote, path) => `src=${quote}${appendWebpFormat(`${backendBase}${path}`)}${quote}`,
     );
     return out;
   };
@@ -57,7 +58,7 @@ export default function DayPage({ user, version }: Props) {
       ? src.startsWith("/assets/")
         ? `${backendBase}/content-${src.slice(1)}`
         : src.startsWith("/content-asset/")
-          ? `${backendBase}${src}`
+          ? appendWebpFormat(`${backendBase}${src}`)
           : src
       : src ?? "";
 

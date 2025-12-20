@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import fs from "fs/promises";
+import fsSync from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import type { DayContent, DayBlock, Locale, Mode } from "./loader.js";
@@ -38,13 +39,31 @@ export interface TokenizationResult {
 
 const assetTokenMap = new Map<string, string>(); // token -> path
 const assetPathToToken = new Map<string, string>(); // path -> token
+const assetPathToHash = new Map<string, string>(); // path -> content hash
 
 const ensureAssetToken = (assetPath: string) => {
   if (assetPathToToken.has(assetPath)) return assetPathToToken.get(assetPath)!;
-  const token = hmacToken("asset", "global-asset", assetPath);
+  const hash = getAssetContentHash(assetPath);
+  const token = hmacToken("asset", "global-asset", `${assetPath}|${hash}`);
   assetTokenMap.set(token, assetPath);
   assetPathToToken.set(assetPath, token);
   return token;
+};
+
+const getAssetContentHash = (assetPath: string) => {
+  if (assetPathToHash.has(assetPath)) return assetPathToHash.get(assetPath)!;
+  const rel = assetPath.replace(/^\/?assets\/?/, "");
+  const absPath = path.join(assetsRoot, rel);
+  try {
+    const buf = fsSync.readFileSync(absPath);
+    const hash = crypto.createHash("sha256").update(buf).digest("hex");
+    assetPathToHash.set(assetPath, hash);
+    return hash;
+  } catch {
+    const fallback = "missing";
+    assetPathToHash.set(assetPath, fallback);
+    return fallback;
+  }
 };
 
 export const getAssetToken = (assetPath: string) => {

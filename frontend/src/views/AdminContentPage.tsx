@@ -10,6 +10,7 @@ import type {
   Mode,
 } from "../types";
 import { fetchAdminContentDay, fetchAdminContentDiagnostics } from "../services/api";
+import { appendWebpFormat } from "../utils/assets";
 
 const variants: Array<{ locale: Locale; mode: Mode; label: string }> = [
   { locale: "en", mode: "NORMAL", label: "EN · NORMAL" },
@@ -195,7 +196,7 @@ export default function AdminContentPage() {
       );
       out = out.replace(
         /src=(["'])(\/content-asset\/[^"']+)\1/gi,
-        (_m, quote, path) => `src=${quote}${backendBase}${path}${quote}`,
+        (_m, quote, path) => `src=${quote}${appendWebpFormat(`${backendBase}${path}`)}${quote}`,
       );
       return out;
     },
@@ -207,7 +208,7 @@ export default function AdminContentPage() {
       if (!src) return "";
       if (!backendBase) return src;
       if (src.startsWith("/assets/")) return `${backendBase}/content-${src.slice(1)}`;
-      if (src.startsWith("/content-asset/")) return `${backendBase}${src}`;
+      if (src.startsWith("/content-asset/")) return appendWebpFormat(`${backendBase}${src}`);
       return src;
     },
     [backendBase],
