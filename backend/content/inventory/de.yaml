@@ -103,3 +103,8 @@
   description: "Eine Hand voll Allianzpunkte."
   image: "/assets/25_21_reward.png"
   rarity: "common"
+- id: "taunt"
+  title: "Fähigkeit von Telnidra"
+  description: "Eine Fähigkeit, mit der man seine Gegner verspotten kann."
+  image: "/assets/25_22_reward.png"
+  rarity: "common"

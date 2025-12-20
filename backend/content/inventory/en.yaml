@@ -103,3 +103,8 @@
   description: "A hand full of alliance points."
   image: "/assets/25_21_reward.png"
   rarity: "common"
+- id: "taunt"
+  title: "Telnidra's skill"
+  description: "A skill that can be used to taunt an enemy."
+  image: "/assets/25_22_reward.png"
+  rarity: "common"
