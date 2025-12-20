@@ -150,7 +150,16 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
       <header className="topbar">
         <div className="brand">
           <Link to="/" className="brand-link">
-            <img src="/logo-arsvent-2025.png" alt="Arsvent logo" className="brand-logo" />
+            <picture>
+              <source srcSet="/logo-arsvent-2025.webp" type="image/webp" />
+              <img
+                src="/logo-arsvent-2025.png"
+                alt="Arsvent logo"
+                className="brand-logo"
+                loading="eager"
+                fetchPriority="high"
+              />
+            </picture>
             <span className="brand-text">Arsvent 2025</span>
           </Link>
         </div>
