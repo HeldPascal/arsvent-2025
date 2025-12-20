@@ -108,3 +108,8 @@
   description: "Eine Fähigkeit, mit der man seine Gegner verspotten kann."
   image: "/assets/25_22_reward.png"
   rarity: "common"
+- id: "potion"
+  title: "Ein Trank"
+  description: "Ein Trank, den du selbst hergestellt hast."
+  image: "/assets/25_23_reward.png"
+  rarity: "uncommon"

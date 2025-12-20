@@ -108,3 +108,8 @@
   description: "A skill that can be used to taunt an enemy."
   image: "/assets/25_22_reward.png"
   rarity: "common"
+- id: "potion"
+  title: "A potion"
+  description: "A potion you have crafted yourself."
+  image: "/assets/25_23_reward.png"
+  rarity: "uncommon"
