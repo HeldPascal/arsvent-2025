@@ -29,37 +29,6 @@ id: "style_furniture"
 
 ```yaml puzzle
 type: "pair-items"
-left:
-  - id: "dragontail"
-    label: "Drachenschwanz-Verschnittwhiskey"
-    image: "/assets/25_21_option_5.png"
-  - id: "withered"
-    label: "Wildtopfbraten aus dem Verdorrten Baum"
-    image: "/assets/25_21_option_4.png"
-  - id: "firsthold"
-    label: "Ersthalt-Käseplatte mit Früchten"
-    image: "/assets/25_21_option_10.png"
-  - id: "orcrest"
-    label: "Orkruh-Schmerzbleichale"
-    image: "/assets/25_21_option_12.png"
-right:
-  - id: "velothi"
-    label: "Velothi-Fernmalbec"
-    image: "/assets/25_21_option_3.png"
-  - id: "port"
-    label: "Hundingshafen-Dunkelwein"
-    image: "/assets/25_21_option_6.png"
-  - id: "tomato"
-    label: "Tomatenknoblauchchutney"
-    image: "/assets/25_21_option_1.png"
-  - id: "capon"
-    label: "Kapaunenauflauf mit Tomaten und Gemüse"
-    image: "/assets/25_21_option_7.png"
-solution:
-  - { left: "orcrest", right: "velothi" }
-  - { left: "dragontail", right: "port" }
-  - { left: "firsthold", right: "tomato" }
-  - { left: "withered", right: "capon" }
 ```
 
 ## Wait for: style_furniture
@@ -72,37 +41,6 @@ Welches Stilmaterial wurde zur Herstellung der jeweiligen Rüstung verwendet?
 
 ```yaml puzzle
 type: "pair-items"
-left:
-  - id: "dragontail"
-    label: "Drachenschwanz-Verschnittwhiskey"
-    image: "/assets/25_21_option_5.png"
-  - id: "withered"
-    label: "Wildtopfbraten aus dem Verdorrten Baum"
-    image: "/assets/25_21_option_4.png"
-  - id: "firsthold"
-    label: "Ersthalt-Käseplatte mit Früchten"
-    image: "/assets/25_21_option_10.png"
-  - id: "orcrest"
-    label: "Orkruh-Schmerzbleichale"
-    image: "/assets/25_21_option_12.png"
-right:
-  - id: "velothi"
-    label: "Velothi-Fernmalbec"
-    image: "/assets/25_21_option_3.png"
-  - id: "port"
-    label: "Hundingshafen-Dunkelwein"
-    image: "/assets/25_21_option_6.png"
-  - id: "tomato"
-    label: "Tomatenknoblauchchutney"
-    image: "/assets/25_21_option_1.png"
-  - id: "capon"
-    label: "Kapaunenauflauf mit Tomaten und Gemüse"
-    image: "/assets/25_21_option_7.png"
-solution:
-  - { left: "orcrest", right: "velothi" }
-  - { left: "dragontail", right: "port" }
-  - { left: "firsthold", right: "tomato" }
-  - { left: "withered", right: "capon" }
 ```
 
 ## Wait for: style_armor
@@ -114,37 +52,6 @@ Mit welchem Eigenschaftsmaterial kannst du die Rüstung verstärken?
 
 ```yaml puzzle
 type: "pair-items"
-left:
-  - id: "dragontail"
-    label: "Drachenschwanz-Verschnittwhiskey"
-    image: "/assets/25_21_option_5.png"
-  - id: "withered"
-    label: "Wildtopfbraten aus dem Verdorrten Baum"
-    image: "/assets/25_21_option_4.png"
-  - id: "firsthold"
-    label: "Ersthalt-Käseplatte mit Früchten"
-    image: "/assets/25_21_option_10.png"
-  - id: "orcrest"
-    label: "Orkruh-Schmerzbleichale"
-    image: "/assets/25_21_option_12.png"
-right:
-  - id: "velothi"
-    label: "Velothi-Fernmalbec"
-    image: "/assets/25_21_option_3.png"
-  - id: "port"
-    label: "Hundingshafen-Dunkelwein"
-    image: "/assets/25_21_option_6.png"
-  - id: "tomato"
-    label: "Tomatenknoblauchchutney"
-    image: "/assets/25_21_option_1.png"
-  - id: "capon"
-    label: "Kapaunenauflauf mit Tomaten und Gemüse"
-    image: "/assets/25_21_option_7.png"
-solution:
-  - { left: "orcrest", right: "velothi" }
-  - { left: "dragontail", right: "port" }
-  - { left: "firsthold", right: "tomato" }
-  - { left: "withered", right: "capon" }
 ```
 
 ## Wait for: trait
@@ -157,37 +64,6 @@ Es wirkt, als würde hier eine Handwerksstation fehlen.
 
 ```yaml puzzle
 type: "pair-items"
-left:
-  - id: "dragontail"
-    label: "Drachenschwanz-Verschnittwhiskey"
-    image: "/assets/25_21_option_5.png"
-  - id: "withered"
-    label: "Wildtopfbraten aus dem Verdorrten Baum"
-    image: "/assets/25_21_option_4.png"
-  - id: "firsthold"
-    label: "Ersthalt-Käseplatte mit Früchten"
-    image: "/assets/25_21_option_10.png"
-  - id: "orcrest"
-    label: "Orkruh-Schmerzbleichale"
-    image: "/assets/25_21_option_12.png"
-right:
-  - id: "velothi"
-    label: "Velothi-Fernmalbec"
-    image: "/assets/25_21_option_3.png"
-  - id: "port"
-    label: "Hundingshafen-Dunkelwein"
-    image: "/assets/25_21_option_6.png"
-  - id: "tomato"
-    label: "Tomatenknoblauchchutney"
-    image: "/assets/25_21_option_1.png"
-  - id: "capon"
-    label: "Kapaunenauflauf mit Tomaten und Gemüse"
-    image: "/assets/25_21_option_7.png"
-solution:
-  - { left: "orcrest", right: "velothi" }
-  - { left: "dragontail", right: "port" }
-  - { left: "firsthold", right: "tomato" }
-  - { left: "withered", right: "capon" }
 ```
 
 ## Wait for: alchemy_table
@@ -197,43 +73,12 @@ id: "alchemy_crafting"
 Du entscheidest dich, einen Trank herzustellen.
 Zum Glück hast du eine Auswahl an Reagenzien bei dir.
 Wähle ein Tranklösemittel und 3 Reagenzien aus, um einen Trank mit folgenden Eigenschaften herzustellen:
-- Restore Health
-- Spell Critical
-- Restore Magicka
+- Leben wiederherstellen
+- Kritische Magietreffer
+- Magicka wiederherstellen
 
 ```yaml puzzle
 type: "pair-items"
-left:
-  - id: "dragontail"
-    label: "Drachenschwanz-Verschnittwhiskey"
-    image: "/assets/25_21_option_5.png"
-  - id: "withered"
-    label: "Wildtopfbraten aus dem Verdorrten Baum"
-    image: "/assets/25_21_option_4.png"
-  - id: "firsthold"
-    label: "Ersthalt-Käseplatte mit Früchten"
-    image: "/assets/25_21_option_10.png"
-  - id: "orcrest"
-    label: "Orkruh-Schmerzbleichale"
-    image: "/assets/25_21_option_12.png"
-right:
-  - id: "velothi"
-    label: "Velothi-Fernmalbec"
-    image: "/assets/25_21_option_3.png"
-  - id: "port"
-    label: "Hundingshafen-Dunkelwein"
-    image: "/assets/25_21_option_6.png"
-  - id: "tomato"
-    label: "Tomatenknoblauchchutney"
-    image: "/assets/25_21_option_1.png"
-  - id: "capon"
-    label: "Kapaunenauflauf mit Tomaten und Gemüse"
-    image: "/assets/25_21_option_7.png"
-solution:
-  - { left: "orcrest", right: "velothi" }
-  - { left: "dragontail", right: "port" }
-  - { left: "firsthold", right: "tomato" }
-  - { left: "withered", right: "capon" }
 ```
 
 ## Wait for: alchemy_crafting
@@ -245,41 +90,10 @@ Du weißt, dass du sie nicht brauchen wirst.
 Stattdessen trittst du an den Verzauberungstisch heran.
 Du hast einen Heilungsstab, einen Dolch und eine einhändige Axt bei dir.
 Um all deine Waffen gleich zu verzaubern, benötigst du noch 2 weitere Glyphen.
-Welche Runensteine benötigst du zur Herstellung einer Glyphe der Waffenkraft?
+Welche Runensteine benötigst du zur Herstellung einer Hervorragender Glyphe der Waffenkraft?
 
 ```yaml puzzle
 type: "pair-items"
-left:
-  - id: "dragontail"
-    label: "Drachenschwanz-Verschnittwhiskey"
-    image: "/assets/25_21_option_5.png"
-  - id: "withered"
-    label: "Wildtopfbraten aus dem Verdorrten Baum"
-    image: "/assets/25_21_option_4.png"
-  - id: "firsthold"
-    label: "Ersthalt-Käseplatte mit Früchten"
-    image: "/assets/25_21_option_10.png"
-  - id: "orcrest"
-    label: "Orkruh-Schmerzbleichale"
-    image: "/assets/25_21_option_12.png"
-right:
-  - id: "velothi"
-    label: "Velothi-Fernmalbec"
-    image: "/assets/25_21_option_3.png"
-  - id: "port"
-    label: "Hundingshafen-Dunkelwein"
-    image: "/assets/25_21_option_6.png"
-  - id: "tomato"
-    label: "Tomatenknoblauchchutney"
-    image: "/assets/25_21_option_1.png"
-  - id: "capon"
-    label: "Kapaunenauflauf mit Tomaten und Gemüse"
-    image: "/assets/25_21_option_7.png"
-solution:
-  - { left: "orcrest", right: "velothi" }
-  - { left: "dragontail", right: "port" }
-  - { left: "firsthold", right: "tomato" }
-  - { left: "withered", right: "capon" }
 ```
 
 ## Wait for: enchanting_crafting
@@ -306,37 +120,6 @@ Weise die jeweiligen Fähigkeiten den Orten auf deiner Leiste zu.
 
 ```yaml puzzle
 type: "pair-items"
-left:
-  - id: "dragontail"
-    label: "Drachenschwanz-Verschnittwhiskey"
-    image: "/assets/25_21_option_5.png"
-  - id: "withered"
-    label: "Wildtopfbraten aus dem Verdorrten Baum"
-    image: "/assets/25_21_option_4.png"
-  - id: "firsthold"
-    label: "Ersthalt-Käseplatte mit Früchten"
-    image: "/assets/25_21_option_10.png"
-  - id: "orcrest"
-    label: "Orkruh-Schmerzbleichale"
-    image: "/assets/25_21_option_12.png"
-right:
-  - id: "velothi"
-    label: "Velothi-Fernmalbec"
-    image: "/assets/25_21_option_3.png"
-  - id: "port"
-    label: "Hundingshafen-Dunkelwein"
-    image: "/assets/25_21_option_6.png"
-  - id: "tomato"
-    label: "Tomatenknoblauchchutney"
-    image: "/assets/25_21_option_1.png"
-  - id: "capon"
-    label: "Kapaunenauflauf mit Tomaten und Gemüse"
-    image: "/assets/25_21_option_7.png"
-solution:
-  - { left: "orcrest", right: "velothi" }
-  - { left: "dragontail", right: "port" }
-  - { left: "firsthold", right: "tomato" }
-  - { left: "withered", right: "capon" }
 ```
 
 ## Wait for: skill-bar
