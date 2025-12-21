@@ -25,52 +25,32 @@ id: "currency"
 Ordne diesen Händlerinnen die Währungen zu, die sie akzeptieren.
 
 ```yaml puzzle
-type: "pair-items"
-left:
-  - id: "dragontail"
-    label: "Drachenschwanz-Verschnittwhiskey"
-    image: "/assets/25_21_option_5.png"
-  - id: "withered"
-    label: "Wildtopfbraten aus dem Verdorrten Baum"
-    image: "/assets/25_21_option_4.png"
-  - id: "firsthold"
-    label: "Ersthalt-Käseplatte mit Früchten"
-    image: "/assets/25_21_option_10.png"
-  - id: "muthseras"
-    label: "Muthseras Reue"
-    image: "/assets/25_21_option_2.png"
-  - id: "orcrest"
-    label: "Orkruh-Schmerzbleichale"
-    image: "/assets/25_21_option_12.png"
-  - id: "sticky"
-    label: "Klebrige Rettichnudeln mit Schweinefleisch"
-    image: "/assets/25_21_option_11.png"
-right:
-  - id: "velothi"
-    label: "Velothi-Fernmalbec"
-    image: "/assets/25_21_option_3.png"
-  - id: "hearts"
-    label: "Herztags-Rosentee"
-    image: "/assets/25_21_option_8.png"
-  - id: "port"
-    label: "Hundingshafen-Dunkelwein"
-    image: "/assets/25_21_option_6.png"
-  - id: "tomato"
-    label: "Tomatenknoblauchchutney"
-    image: "/assets/25_21_option_1.png"
-  - id: "garlic"
-    label: "Knoblauchdorsch mit Kartoffelkruste"
-    image: "/assets/25_21_option_9.png"
-  - id: "capon"
-    label: "Kapaunenauflauf mit Tomaten und Gemüse"
-    image: "/assets/25_21_option_7.png"
+type: "drag-sockets"
+background-image: "/assets/25_22_background.png"
+shape: "square"
+
+inventorySource:
+  mode: "tags"
+  tags: ["currency"]
+
+sockets:
+  - id: "adhazabi"
+    label: ""
+    position: { x: 0.17, y: 0.5 }
+  - id: "faustina"
+    label: ""
+    position: { x: 0.5, y: 0.5 }
+  - id: "urgalag"
+    label: ""
+    position: { x: 0.84, y: 0.5 }
+
 solution:
-  - { left: "orcrest", right: "velothi" }
-  - { left: "dragontail", right: "port" }
-  - { left: "firsthold", right: "tomato" }
-  - { left: "withered", right: "capon" }
-  - { left: "muthseras", right: "hearts" }
-  - { left: "sticky", right: "garlic" }
+  - socketId: "adhazabi"
+    itemId: "alliance-points"
+  - socketId: "faustina"
+    itemId: "voucher"
+  - socketId: "urgalag"
+    itemId: "key"
 ```
 
 ## Wait for: currency

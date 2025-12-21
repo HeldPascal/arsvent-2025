@@ -189,7 +189,7 @@
   description: "Ein Schlüssel, der von den Unerschrockenen hergestellt wurde."
   image: "/assets/25_15_reward.png"
   rarity: "uncommon"
-  tags: ["other"]
+  tags: ["currency"]
 - id: "nirncrux"
   title: "Nirnkrux von Razaami"
   description: "Ein Brocken unbearbeitetes Nirnkrux."
@@ -207,7 +207,7 @@
   description: "Ein Schriebschein."
   image: "/assets/25_18_reward.png"
   rarity: "uncommon"
-  tags: ["other"]
+  tags: ["currency"]
 - id: "armorskill"
   title: "Fähigkeit von Latharek"
   description: "Eine Fähigkeit, mit der man sich verteidigen kann."
@@ -225,7 +225,7 @@
   description: "Eine Hand voll Allianzpunkte."
   image: "/assets/25_21_reward.png"
   rarity: "common"
-  tags: ["other"]
+  tags: ["currency"]
 - id: "taunt"
   title: "Fähigkeit von Telnidra"
   description: "Eine Fähigkeit, mit der man seine Gegner verspotten kann."

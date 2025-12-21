@@ -10,5 +10,7 @@
   title: "Verzaubern"
 - id: "style"
   title: "Stilmaterial"
+- id: "currency"
+  title: "Währung"
 - id: "other"
   title: "Anderes"

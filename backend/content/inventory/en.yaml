@@ -189,7 +189,7 @@
   description: "A key made by the Undaunted."
   image: "/assets/25_15_reward.png"
   rarity: "uncommon"
-  tags: ["other"]
+  tags: ["currency"]
 - id: "nirncrux"
   title: "Razaami's nirncrux"
   description: "A chunk of raw nirncrux."
@@ -207,7 +207,7 @@
   description: "A writ voucher."
   image: "/assets/25_18_reward.png"
   rarity: "uncommon"
-  tags: ["other"]
+  tags: ["currency"]
 - id: "armorskill"
   title: "Latharek's skill"
   description: "A skill that allows one to protect oneself."
@@ -225,7 +225,7 @@
   description: "A hand full of alliance points."
   image: "/assets/25_21_reward.png"
   rarity: "common"
-  tags: ["other"]
+  tags: ["currency"]
 - id: "taunt"
   title: "Telnidra's skill"
   description: "A skill that can be used to taunt an enemy."
