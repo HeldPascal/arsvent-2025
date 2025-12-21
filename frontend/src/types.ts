@@ -31,6 +31,8 @@ export interface DragSocketItem {
   shape?: "circle" | "square" | "hex";
   defaultSocketId?: string;
   position?: { x: number; y: number };
+  description?: string;
+  rarity?: string;
 }
 
 export interface DragSocketSlot {

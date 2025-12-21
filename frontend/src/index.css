@@ -2067,6 +2067,33 @@ a {
   width: 100%;
 }
 
+.drag-item-tooltip-desc {
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.drag-item-tooltip[data-rarity="common"] {
+  border-color: #9aa0a6;
+}
+
+.drag-item-tooltip[data-rarity="uncommon"] {
+  border-color: #5bd18a;
+}
+
+.drag-item-tooltip[data-rarity="rare"] {
+  border-color: #4f8af7;
+}
+
+.drag-item-tooltip[data-rarity="epic"] {
+  border-color: #b46bff;
+}
+
+.drag-item-tooltip[data-rarity="legendary"],
+.drag-item-tooltip[data-rarity="mythic"] {
+  border-color: #f7d046;
+}
+
 .drag-item-tooltip.shape-hex {
   border-radius: 0;
   clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0% 50%);

@@ -284,6 +284,10 @@ Players drag items into specific positions.
 - **backgroundImage:** path to background image
 - **shape:** optional default shape for items/sockets (`circle` if omitted)
 - **items:** list of draggable items (id, label, image, optional `shape`, optional `defaultSocketId`)
+- **inventorySource:** optional alternative to `items` that pulls items from the player inventory snapshot (mutually exclusive with `items`).
+  - **mode:** `"all"` | `"ids"` | `"tags"`
+  - **items:** list of inventory ids (when mode is `"ids"`)
+  - **tags:** list of inventory tag ids (when mode is `"tags"`)
 - **sockets:** list of socket definitions including accepted item types; sockets can set `label`, `image`, and `shape`
 - **solution:** list of socketId → itemId relations. Supports:
   - simple list of `{ socketId, itemId }`
@@ -309,6 +313,25 @@ sockets:
 solution:
   - socketId: "socket-top"
     itemId: "gem-red"
+```
+
+### Inventory-sourced example
+
+```yaml
+type: "drag-sockets"
+backgroundImage: "/assets/board.png"
+inventorySource:
+  mode: "tags"
+  tags: ["crafting", "soul"]
+
+sockets:
+  - id: "socket-top"
+    position: { x: 0.5, y: 0.1 }
+    accepts: ["restostaff", "soultrap"]
+
+solution:
+  - socketId: "socket-top"
+    itemId: "restostaff"
 ```
 
 ---
@@ -572,10 +595,14 @@ Items are referenced by their global IDs:
 - In **inventory** field in frontmatter  
 - In **consumesInventory** in puzzles  
 - In **inventoryId** in rewards  
+- In **inventorySource** in drag-sockets puzzles
 
 The actual item definitions live outside the Markdown file.
 
 Inventory snapshots are stored per day in `content/dayXX/inventory.yaml` as a simple YAML list of item IDs.
+Inventory tags can be localized in `content/inventory/tags.<locale>.yaml` and are referenced by id in `inventorySource.tags`.
+
+Inventory-sourced puzzles use the snapshot from the day *before* the currently played day (preview uses the day before the previewed day), because day snapshots represent the post-day inventory.
 
 ---
 

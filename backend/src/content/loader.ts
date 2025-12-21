@@ -8,7 +8,7 @@ import { loadVersionedContent, type LoadedVersionedContent } from "./v1-loader.j
 import { ContentValidationError } from "./errors.js";
 import { loadInventory, invalidateInventoryCache } from "./inventory.js";
 import { invalidateInventoryTagCache } from "./inventory-tags.js";
-import { invalidateDayInventoryCache } from "./day-inventory.js";
+import { invalidateDayInventoryCache, loadDayInventorySnapshot } from "./day-inventory.js";
 
 export type Locale = "en" | "de";
 export type Mode = "NORMAL" | "VETERAN";
@@ -49,6 +49,8 @@ export interface DragSocketItem {
   shape?: DragShape;
   defaultSocketId?: string;
   position?: { x: number; y: number };
+  description?: string;
+  rarity?: string;
 }
 
 export interface DragSocketSlot {
@@ -322,7 +324,14 @@ export async function loadDayContent(
     throw new Error(`Unsupported content version: ${version ?? "none"}`);
   }
   const inventory = await loadInventory(locale);
-  const loaded = loadVersionedContent(parsed, { solvedPuzzleIds, includeHidden, inventory });
+  const snapshotDay = Math.max(0, day - 1);
+  const snapshot = snapshotDay > 0 ? await loadDayInventorySnapshot(snapshotDay) : { ids: [], exists: false };
+  const loaded = loadVersionedContent(parsed, {
+    solvedPuzzleIds,
+    includeHidden,
+    inventory,
+    inventorySnapshot: snapshot.ids,
+  });
   const title =
     loaded.title || stripLeadingH1(parsed.content) || normalizeId(parsed.data.title, "Title is required for versioned content");
 

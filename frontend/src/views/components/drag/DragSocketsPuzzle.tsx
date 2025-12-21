@@ -430,6 +430,7 @@ export default function DragSocketsPuzzle({
               left: previewRect.left + previewRect.width / 2,
               top: previewRect.top - 8,
             }}
+            data-rarity={previewData.rarity?.toLowerCase()}
           >
             {previewData.image && (
               <img
@@ -445,6 +446,9 @@ export default function DragSocketsPuzzle({
               />
             )}
             {previewData.label && <div className="drag-item-title tooltip-label">{previewData.label}</div>}
+            {previewData.description && (
+              <div className="drag-item-tooltip-desc">{previewData.description}</div>
+            )}
           </div>,
           document.body
         )
