@@ -26,7 +26,7 @@ Du brauchst größere Schnelligkeit, um auszuweichen!
 Eine der Fähigkeiten des Hüters kann dir dabei helfen.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: expedition
@@ -37,7 +37,7 @@ Um ihr gewappnet zu sein, wirkst du kleinere Raserei und kleinere Entschlossenhe
 Eine der Fähigkeiten des Heilungsstabs kann dir dabei helfen.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: berserk
@@ -49,7 +49,7 @@ Schilde dich!
 Die Fähigkeit der leichten Rüstung kann dir dabei helfen.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: light_shield
@@ -61,7 +61,7 @@ Lege einen heilenden Kreis in die Arena!
 Eine der Fähigkeiten des Heilungsstabs kann dir dabei helfen.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: healing
@@ -76,7 +76,7 @@ Verspotte sie!
 Die Fähigkeit der Unerschrockenen kann dir dabei helfen.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: taunt
@@ -88,7 +88,7 @@ Belege Trinkt-Dein-Blut mit größerer Schändung und kleinerer Feigheit!
 Eine der Fähigkeiten des Hüters kann dir dabei helfen.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: defile
@@ -100,7 +100,7 @@ Umgib dich mit Schaden über Zeit!
 Eine der Fähigkeiten mit zwei Einhandwaffen kann dir dabei helfen.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: dmg_over_time
@@ -113,7 +113,7 @@ Absorbiere das Projektil!
 Eine der Fähigkeiten des Hüters kann dir dabei helfen.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: shimmering_shield
@@ -125,7 +125,7 @@ Beschwöre einen tierischen Wächter!
 Eine der Fähigkeiten des Hüters kann dir dabei helfen.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: ult
@@ -137,7 +137,7 @@ Erhöhe deinen kritischen Schaden für einen letzten Ansturm!
 Dein Trank kann dir dabei helfen.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: potion
@@ -149,7 +149,7 @@ Jetzt oder nie: Greife Trinkt-Dein-Blut mit 4 raschen Angriffen an!
 Eine der Fähigkeiten mit zwei Einhandwaffen kann dir dabei helfen.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: attack
@@ -161,7 +161,7 @@ Wirke ein letztes Mal Schaden auf sie und fang ihre Seele ein!
 Die letzte verbleibende Fähigkeit kann dir dabei helfen.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: trap

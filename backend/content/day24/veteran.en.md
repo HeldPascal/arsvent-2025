@@ -25,7 +25,7 @@ Drinks-Your-Blood hurls a curse on you.
 You will need major expedition to dodge it!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: expedition
@@ -35,7 +35,7 @@ id: "berserk"
 In order to be prepared, you cast Minor Berserk and Minor Resolve upon yourself.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: berserk
@@ -46,7 +46,7 @@ Drinks-Your-Blood raises her sword.
 Protect yourself!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: light_shield
@@ -57,7 +57,7 @@ You have blocked a lot of damage, but you're bleeding.
 Place a healing circle in the arena!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: healing
@@ -71,7 +71,7 @@ This game can be played by 2 people.
 Taunt her!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: taunt
@@ -82,7 +82,7 @@ You prepare your offensive.
 Afflict Drinks-Your-Blood with Major Defile and Minor Cowardice!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: defile
@@ -93,7 +93,7 @@ You approach Drinks-Your-Blood to within 5 meters.
 Surround yourself with damage over time!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: dmg_over_time
@@ -105,7 +105,7 @@ There is not enough time to dodge.
 Absorb the projectile!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: shimmering_shield
@@ -116,7 +116,7 @@ You feel the heroism coursing through your veins.
 Summon an animal guardian!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: ult
@@ -125,8 +125,9 @@ type: "multi-choice"
 id: "potion"
 Drinks-Your-Blood is now fully on the defensive.
 Increase your critical damage for one last surge!
+
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: potion
@@ -135,8 +136,9 @@ type: "multi-choice"
 id: "attack"
 You grip your dagger and axe tighter.
 Now or never: Attack Drinks-Your-Blood with 4 rapid attacks!
+
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: attack
@@ -147,7 +149,7 @@ Drinks-Your-Blood is almost finished.
 Deal damage to her one last time and capture her soul!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: trap

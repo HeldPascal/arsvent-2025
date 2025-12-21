@@ -25,7 +25,7 @@ Trinkt-Dein-Blut wirft einen Fluch nach dir.
 Du brauchst größere Schnelligkeit, um auszuweichen!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: expedition
@@ -35,7 +35,7 @@ id: "berserk"
 Um ihr gewappnet zu sein, wirkst du kleinere Raserei und kleinere Entschlossenheit auf dich.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: berserk
@@ -46,7 +46,7 @@ Trinkt-Dein-Blut holt mit ihrem Schwert aus.
 Schilde dich!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: light_shield
@@ -57,7 +57,7 @@ Du hast viel Schaden abgefangen, aber du blutest.
 Lege einen heilenden Kreis in die Arena!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: healing
@@ -71,7 +71,7 @@ Dieses Spiel können 2 Leute spielen.
 Verspotte sie!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: taunt
@@ -82,7 +82,7 @@ Du bereitest deine Offensive vor.
 Belege Trinkt-Dein-Blut mit größerer Schändung und kleinerer Feigheit!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: defile
@@ -93,7 +93,7 @@ Du näherst dich Trinkt-Dein-Blut auf 5 Meter.
 Umgib dich mit Schaden über Zeit!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: dmg_over_time
@@ -105,7 +105,7 @@ Es ist zu wenig Zeit, um auszuweichen.
 Absorbiere das Projektil!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: shimmering_shield
@@ -116,7 +116,7 @@ Du spürst den Heldenmut durch deine Adern strömen.
 Beschwöre einen tierischen Wächter!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: ult
@@ -127,7 +127,7 @@ Trinkt-Dein-Blut ist nun endgültig in der Defensive.
 Erhöhe deinen kritischen Schaden für einen letzten Ansturm!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: potion
@@ -138,7 +138,7 @@ Du greifst deinen Dolch und deine Axt fester.
 Jetzt oder nie: Greife Trinkt-Dein-Blut mit 4 raschen Angriffen an!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: attack
@@ -149,7 +149,7 @@ Trinkt-Dein-Blut ist fast erledigt.
 Wirke ein letztes Mal Schaden auf sie und fang ihre Seele ein!
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: trap

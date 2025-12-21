@@ -28,7 +28,7 @@ id: "style_furniture"
 Öffne den Schrank mit dem Stilmaterial der Dunkelelfen, welches man zu seiner Herstellung benötigt.
 
 ```yaml puzzle
-type: "pair-items"
+type: "placeholder"
 ```
 
 ## Wait for: style_furniture
@@ -40,7 +40,7 @@ Darin befinden sich drei vollständige Rüstungen: eine leichte, eine mittlere u
 Welches Stilmaterial wurde zur Herstellung der jeweiligen Rüstung verwendet?
 
 ```yaml puzzle
-type: "pair-items"
+type: "placeholder"
 ```
 
 ## Wait for: style_armor
@@ -51,7 +51,7 @@ Du nimmst die leichte Rüstung aus dem Schrank und bringst sie zu dem Schneidert
 Mit welchem Eigenschaftsmaterial kannst du die Rüstung verstärken?
 
 ```yaml puzzle
-type: "pair-items"
+type: "placeholder"
 ```
 
 ## Wait for: trait
@@ -63,7 +63,7 @@ An der Wand hängt ein Schild, aber davor ist der Platz frei.
 Es wirkt, als würde hier eine Handwerksstation fehlen.
 
 ```yaml puzzle
-type: "pair-items"
+type: "placeholder"
 ```
 
 ## Wait for: alchemy_table
@@ -78,10 +78,13 @@ Wähle ein Tranklösemittel und 3 Reagenzien aus, um einen Trank mit folgenden E
 - Magicka wiederherstellen
 
 ```yaml puzzle
-type: "pair-items"
+type: "placeholder"
 ```
 
 ## Wait for: alchemy_crafting
+
+## Reward
+inventoryId: "potion"
 
 ## Puzzle
 id: "enchanting_crafting"
@@ -93,7 +96,7 @@ Um all deine Waffen gleich zu verzaubern, benötigst du noch 2 weitere Glyphen.
 Welche Runensteine benötigst du zur Herstellung einer Hervorragender Glyphe der Waffenkraft?
 
 ```yaml puzzle
-type: "pair-items"
+type: "placeholder"
 ```
 
 ## Wait for: enchanting_crafting
@@ -119,7 +122,7 @@ Weise die jeweiligen Fähigkeiten den Orten auf deiner Leiste zu.
 - 11 = Ewiger Wächter
 
 ```yaml puzzle
-type: "pair-items"
+type: "placeholder"
 ```
 
 ## Wait for: skill-bar
@@ -127,6 +130,3 @@ type: "pair-items"
 ## Story
 Nun bist du vollständig vorbereitet.
 Entschlossen gehst du auf die Tür zu und bist bereit, dich Trinkt-Dein-Blut zu stellen.
-
-## Reward
-inventoryId: "potion"

@@ -28,7 +28,7 @@ id: "style_furniture"
 Open the wardrobe with the Dark Elf style material needed to craft it.
 
 ```yaml puzzle
-type: "pair-items"
+type: "placeholder"
 ```
 
 ## Wait for: style_furniture
@@ -40,7 +40,7 @@ Inside are three complete suits of armor: light, medium, and heavy.
 What style material was used to make each suit of armor?
 
 ```yaml puzzle
-type: "pair-items"
+type: "placeholder"
 ```
 
 ## Wait for: style_armor
@@ -51,7 +51,7 @@ You take the light armor from the wardrobe and bring it to the clothier table.
 Which trait material can you use to enhance the armor?
 
 ```yaml puzzle
-type: "pair-items"
+type: "placeholder"
 ```
 
 ## Wait for: trait
@@ -63,7 +63,7 @@ There's a sign on the wall, but the space in front of it is empty.
 It looks like a crafting station is missing here.
 
 ```yaml puzzle
-type: "pair-items"
+type: "placeholder"
 ```
 
 ## Wait for: alchemy_table
@@ -78,10 +78,13 @@ Choose a potion solvent and three reagents to craft a potion with the following 
 - Restore Magicka
 
 ```yaml puzzle
-type: "pair-items"
+type: "placeholder"
 ```
 
 ## Wait for: alchemy_crafting
+
+## Reward
+inventoryId: "potion"
 
 ## Puzzle
 id: "enchanting_crafting"
@@ -93,7 +96,7 @@ To enchant all your weapons, you will need two more glyphs.
 Which runestones do you need to create a Greater Glyph of Weapon Damage?
 
 ```yaml puzzle
-type: "pair-items"
+type: "placeholder"
 ```
 
 ## Wait for: enchanting_crafting
@@ -119,7 +122,7 @@ Assign the respective skills to the slots on your action bar.
 - 11 = Eternal Guardian
 
 ```yaml puzzle
-type: "pair-items"
+type: "placeholder"
 ```
 
 ## Wait for: skill-bar
@@ -127,6 +130,3 @@ type: "pair-items"
 ## Story
 Now you are perfectly prepared.
 You walk resolutely towards the door, ready to face Drinks-Your-Blood.
-
-## Reward
-inventoryId: "potion"

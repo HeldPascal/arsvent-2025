@@ -26,7 +26,7 @@ You will need major expedition to dodge it!
 One of the Warden abilities can help you with this.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: expedition
@@ -37,7 +37,7 @@ In order to be prepared, you cast Minor Berserk and Minor Resolve upon yourself.
 One of the Restoration Staff abilities can help you with this.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: berserk
@@ -49,7 +49,7 @@ Protect yourself!
 The Light Armor ability can help you with this.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: light_shield
@@ -61,7 +61,7 @@ Place a healing circle in the arena!
 One of the Restoration Staff abilities can help you with this.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: healing
@@ -76,7 +76,7 @@ Taunt her!
 The Undaunted ability can help you with this.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: taunt
@@ -88,7 +88,7 @@ Afflict Drinks-Your-Blood with Major Defile and Minor Cowardice!
 One of the Warden abilities can help you with this.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: defile
@@ -100,7 +100,7 @@ Surround yourself with damage over time!
 One of the dual wield skills can help you with this.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: dmg_over_time
@@ -113,7 +113,7 @@ Absorb the projectile!
 One of the Warden abilities can help you.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: shimmering_shield
@@ -125,7 +125,7 @@ Summon an animal guardian!
 One of the Warden abilities can help you with this.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: ult
@@ -137,7 +137,7 @@ Increase your critical damage for one last surge!
 Your potion can help you with this.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: potion
@@ -147,8 +147,9 @@ id: "attack"
 You grip your dagger and axe tighter.
 Now or never: Attack Drinks-Your-Blood with 4 rapid attacks!
 One of the dual wield skills can help you with this.
+
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: attack
@@ -160,7 +161,7 @@ Deal damage to her one last time and capture her soul!
 The last remaining ability can help you with this.
 
 ```yaml puzzle
-type: "multi-choice"
+type: "placeholder"
 ```
 
 ## Wait for: trap
