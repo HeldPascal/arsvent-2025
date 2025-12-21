@@ -65,15 +65,13 @@ export default function InventoryPage({ user }: Props) {
   }, [data, items]);
 
   const filtered = useMemo(() => {
-    return items
-      .filter((item) => {
-        if (tagFilter !== "all") {
-          const tags = new Set(item.tags ?? []);
-          if (!tags.has(tagFilter)) return false;
-        }
-        return true;
-      })
-      .sort((a, b) => a.title.localeCompare(b.title));
+    return items.filter((item) => {
+      if (tagFilter !== "all") {
+        const tags = new Set(item.tags ?? []);
+        if (!tags.has(tagFilter)) return false;
+      }
+      return true;
+    });
   }, [items, tagFilter]);
 
   const selectTag = (tag: string) => {
