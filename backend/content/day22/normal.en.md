@@ -25,38 +25,35 @@ id: "currency"
 Match these merchants with the currencies they accept.
 
 ```yaml puzzle
-type: "pair-items"
-left:
-  - id: "dragontail"
-    label: "Dragontail Blended Whisky"
-    image: "/assets/25_21_option_5.png"
-  - id: "withered"
-    label: "Withered Tree Inn Venison Pot Roast"
-    image: "/assets/25_21_option_4.png"
-  - id: "firsthold"
-    label: "Firsthold Fruit and Cheese Plate"
-    image: "/assets/25_21_option_10.png"
-  - id: "orcrest"
-    label: "Orcrest Agony Pale Ale"
-    image: "/assets/25_21_option_12.png"
-right:
-  - id: "velothi"
-    label: "Velothi View Vintage Malbec"
-    image: "/assets/25_21_option_3.png"
-  - id: "port"
-    label: "Port Hunding Pinot Noir"
-    image: "/assets/25_21_option_6.png"
-  - id: "tomato"
-    label: "Tomato Garlic Chutney"
-    image: "/assets/25_21_option_1.png"
-  - id: "capon"
-    label: "Capon Tomato-Beet Casserole"
-    image: "/assets/25_21_option_7.png"
+type: "drag-sockets"
+background-image: "/assets/25_22_background.png"
+shape: "square"
+
+inventorySource:
+  mode: "tags"
+  tags: ["currency"]
+
+sockets:
+  - id: "adhazabi"
+    label: "Adhazabi Aba-daro"
+    image: "/assets/25_22_socket.png"
+    position: { x: 0.17, y: 0.5 }
+  - id: "faustina"
+    label: "Faustina Curio"
+    image: "/assets/25_22_socket.png"
+    position: { x: 0.5, y: 0.5 }
+  - id: "urgalag"
+    label: "Urgalag Chief-bane"
+    image: "/assets/25_22_socket.png"
+    position: { x: 0.84, y: 0.5 }
+
 solution:
-  - { left: "orcrest", right: "velothi" }
-  - { left: "dragontail", right: "port" }
-  - { left: "firsthold", right: "tomato" }
-  - { left: "withered", right: "capon" }
+  - socketId: "adhazabi"
+    itemId: "alliance-points"
+  - socketId: "faustina"
+    itemId: "voucher"
+  - socketId: "urgalag"
+    itemId: "key"
 ```
 
 ## Wait for: currency

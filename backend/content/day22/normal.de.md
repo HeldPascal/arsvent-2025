@@ -25,38 +25,35 @@ id: "currency"
 Ordne diesen Händlerinnen die Währungen zu, die sie akzeptieren.
 
 ```yaml puzzle
-type: "pair-items"
-left:
-  - id: "dragontail"
-    label: "Drachenschwanz-Verschnittwhiskey"
-    image: "/assets/25_21_option_5.png"
-  - id: "withered"
-    label: "Wildtopfbraten aus dem Verdorrten Baum"
-    image: "/assets/25_21_option_4.png"
-  - id: "firsthold"
-    label: "Ersthalt-Käseplatte mit Früchten"
-    image: "/assets/25_21_option_10.png"
-  - id: "orcrest"
-    label: "Orkruh-Schmerzbleichale"
-    image: "/assets/25_21_option_12.png"
-right:
-  - id: "velothi"
-    label: "Velothi-Fernmalbec"
-    image: "/assets/25_21_option_3.png"
-  - id: "port"
-    label: "Hundingshafen-Dunkelwein"
-    image: "/assets/25_21_option_6.png"
-  - id: "tomato"
-    label: "Tomatenknoblauchchutney"
-    image: "/assets/25_21_option_1.png"
-  - id: "capon"
-    label: "Kapaunenauflauf mit Tomaten und Gemüse"
-    image: "/assets/25_21_option_7.png"
+type: "drag-sockets"
+background-image: "/assets/25_22_background.png"
+shape: "square"
+
+inventorySource:
+  mode: "tags"
+  tags: ["currency"]
+
+sockets:
+  - id: "adhazabi"
+    label: "Adhazabi Aba-daro"
+    image: "/assets/25_22_socket.png"
+    position: { x: 0.17, y: 0.5 }
+  - id: "faustina"
+    label: "Faustina Curio"
+    image: "/assets/25_22_socket.png"
+    position: { x: 0.5, y: 0.5 }
+  - id: "urgalag"
+    label: "Urgalag Häuptlingsfluch"
+    image: "/assets/25_22_socket.png"
+    position: { x: 0.84, y: 0.5 }
+
 solution:
-  - { left: "orcrest", right: "velothi" }
-  - { left: "dragontail", right: "port" }
-  - { left: "firsthold", right: "tomato" }
-  - { left: "withered", right: "capon" }
+  - socketId: "adhazabi"
+    itemId: "alliance-points"
+  - socketId: "faustina"
+    itemId: "voucher"
+  - socketId: "urgalag"
+    itemId: "key"
 ```
 
 ## Wait for: currency
