@@ -1,7 +1,5 @@
 Ideas and improvements to tackle
 
-- Inventory component for puzzles
-
 - Test environment  
   Stand up a dedicated test setup (DB seeding, env flags) so flows can be validated without touching production data. Include a script to reset/seed test content and accounts.
 
