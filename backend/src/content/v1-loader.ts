@@ -1114,6 +1114,8 @@ const mapToDayBlocks = (
         }
         const grid = normalizeGridSize(rawDef.grid);
         const solution = normalizeGridPathSolution(block.definition.solution, grid);
+        const startColumnHint = solution.startColumn ?? undefined;
+        const goalColumnHint = solution.goalColumn ?? undefined;
         return {
           kind: "puzzle",
           id: block.id,
@@ -1123,6 +1125,8 @@ const mapToDayBlocks = (
           backgroundImage,
           grid,
           solution,
+          ...(startColumnHint !== undefined ? { startColumnHint } : {}),
+          ...(goalColumnHint !== undefined ? { goalColumnHint } : {}),
           solved,
           ...(block.title ? { title: block.title } : {}),
         };

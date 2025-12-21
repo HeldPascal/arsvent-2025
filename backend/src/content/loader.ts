@@ -107,6 +107,8 @@ export interface PuzzleBlock {
   optionSize?: "small" | "medium" | "large";
   socketSize?: "small" | "medium" | "large";
   requiredSockets?: string[];
+  startColumnHint?: number;
+  goalColumnHint?: number;
   options?: RiddleOption[];
   leftOptions?: RiddleOption[];
   rightOptions?: RiddleOption[];

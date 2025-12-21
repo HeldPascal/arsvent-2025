@@ -124,6 +124,8 @@ export type DayBlock =
       optionSize?: "small" | "medium" | "large";
       socketSize?: "small" | "medium" | "large";
       requiredSockets?: string[];
+      startColumnHint?: number;
+      goalColumnHint?: number;
       backgroundImage?: string;
       items?: DragSocketItem[];
       sockets?: DragSocketSlot[];

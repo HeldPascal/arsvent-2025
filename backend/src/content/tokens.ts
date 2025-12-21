@@ -320,6 +320,8 @@ export const tokenizeDayContent = (content: DayContent, ctx: TokenContext): Toke
       return {
         ...basePuzzle,
         backgroundImage: maskAsset(block.backgroundImage),
+        ...(block.startColumnHint !== undefined ? { startColumnHint: block.startColumnHint } : {}),
+        ...(block.goalColumnHint !== undefined ? { goalColumnHint: block.goalColumnHint } : {}),
       };
     }
 

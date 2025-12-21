@@ -44,14 +44,8 @@ export default function GridPathPuzzle({ block, status, disabled = false, resolv
   const presetGoal =
     presetSolution?.goalColumn ??
     (presetSolution?.path && presetSolution.path.length > 0 ? presetSolution.path[presetSolution.path.length - 1]?.x ?? null : null);
-  const hintStartColumn =
-    block.solution && typeof block.solution === "object" && (block.solution as GridPathSolution).startColumn !== undefined
-      ? (block.solution as GridPathSolution).startColumn!
-      : null;
-  const hintGoalColumn =
-    block.solution && typeof block.solution === "object" && (block.solution as GridPathSolution).goalColumn !== undefined
-      ? (block.solution as GridPathSolution).goalColumn!
-      : null;
+  const hintStartColumn = block.startColumnHint ?? null;
+  const hintGoalColumn = block.goalColumnHint ?? null;
   const [startColumn, setStartColumn] = useState<number | null>(() => presetStart);
   const [goalColumn, setGoalColumn] = useState<number | null>(() => presetGoal);
   const [path, setPath] = useState<Array<{ x: number; y: number }>>(() => presetSolution?.path ?? []);
