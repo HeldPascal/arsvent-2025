@@ -3,6 +3,7 @@ import type { DragEvent } from "react";
 import { createPortal } from "react-dom";
 import type { DayBlock, DragSocketItem, DragSocketSlot } from "../../../types";
 import { useI18n } from "../../../i18n";
+import inventoryIcon from "../../../assets/inventory-icon.png";
 
 type DragSocketsBlock = Extract<DayBlock, { kind: "puzzle" }> & {
   type: "drag-sockets";
@@ -12,6 +13,7 @@ type DragSocketsBlock = Extract<DayBlock, { kind: "puzzle" }> & {
   shape?: "circle" | "square" | "hex";
   socketSize?: "small" | "medium" | "large";
   requiredSockets?: string[];
+  inventorySource?: { mode: "all" | "ids" | "tags"; tags?: string[] };
 };
 
 interface Props {
@@ -38,6 +40,12 @@ export default function DragSocketsPuzzle({
   const { t } = useI18n();
   const sockets: DragSocketSlot[] = block.sockets ?? [];
   const items: DragSocketItem[] = useMemo(() => block.items ?? [], [block.items]);
+  const inventoryHeader = useMemo(() => {
+    if (!block.inventorySource) return null;
+    const tags = block.inventorySource.tags?.filter(Boolean) ?? [];
+    const tagLabel = tags.length > 0 ? ` · ${tags.join(", ")}` : "";
+    return `${t("inventoryTitle")}${tagLabel}`;
+  }, [block.inventorySource, t]);
   const [hoverSocket, setHoverSocket] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState<number>(4 / 3);
   const [previewItem, setPreviewItem] = useState<string | null>(null);
@@ -424,32 +432,56 @@ export default function DragSocketsPuzzle({
   const tooltipNode =
     previewData && previewRect && draggingItem !== previewData.id
       ? createPortal(
-          <div
-            className={`drag-item-tooltip ${shapeClass(previewData.shape)} is-portal`}
-            style={{
-              left: previewRect.left + previewRect.width / 2,
-              top: previewRect.top - 8,
-            }}
-            data-rarity={previewData.rarity?.toLowerCase()}
-          >
-            {previewData.image && (
-              <img
-                src={resolveAsset(previewData.image)}
-                alt=""
-                aria-hidden
-                className="drag-item-tooltip-image"
-                style={
-                  tooltipImageSize
-                    ? { width: tooltipImageSize, height: tooltipImageSize, maxWidth: "none", maxHeight: "none" }
-                    : undefined
-                }
-              />
-            )}
-            {previewData.label && <div className="drag-item-title tooltip-label">{previewData.label}</div>}
-            {previewData.description && (
-              <div className="drag-item-tooltip-desc">{previewData.description}</div>
-            )}
-          </div>,
+          previewData.source === "inventory" ? (
+            <div
+              className="drag-item-tooltip inventory-tooltip-like is-portal"
+              style={{
+                left: previewRect.left + previewRect.width / 2,
+                top: previewRect.top - 8,
+              }}
+              data-rarity={previewData.rarity?.toLowerCase()}
+            >
+              <div className="inventory-tooltip-header">
+                {previewData.image ? (
+                  <img
+                    src={resolveAsset(previewData.image)}
+                    alt=""
+                    aria-hidden
+                    className="inventory-tooltip-icon"
+                  />
+                ) : (
+                  <div className="inventory-tooltip-icon inventory-icon-empty" />
+                )}
+                {previewData.label && <div className="inventory-tooltip-title">{previewData.label}</div>}
+              </div>
+              {previewData.description && (
+                <div className="inventory-tooltip-desc">{previewData.description}</div>
+              )}
+            </div>
+          ) : (
+            <div
+              className={`drag-item-tooltip ${shapeClass(previewData.shape)} is-portal`}
+              style={{
+                left: previewRect.left + previewRect.width / 2,
+                top: previewRect.top - 8,
+              }}
+            >
+              {previewData.image && (
+                <img
+                  src={resolveAsset(previewData.image)}
+                  alt=""
+                  aria-hidden
+                  className="drag-item-tooltip-image"
+                  style={
+                    tooltipImageSize
+                      ? { width: tooltipImageSize, height: tooltipImageSize, maxWidth: "none", maxHeight: "none" }
+                      : undefined
+                  }
+                />
+              )}
+              {previewData.label && <div className="drag-item-title tooltip-label">{previewData.label}</div>}
+            </div>
+          ),
           document.body
         )
       : null;
@@ -482,6 +514,12 @@ export default function DragSocketsPuzzle({
         {sockets.map((socket: DragSocketSlot) => renderSocket(socket))}
       </div>
       <div className="drag-items-grid">
+        {inventoryHeader && (
+          <div className="drag-items-header">
+            <img src={inventoryIcon} alt="" aria-hidden className="drag-items-icon" />
+            <span>{inventoryHeader}</span>
+          </div>
+        )}
         {availableItems.length === 0 && items.length > 0 && <div className="muted small">{t("allItemsPlaced")}</div>}
         {availableItems.map((item: DragSocketItem) => renderItemCard(item))}
       </div>

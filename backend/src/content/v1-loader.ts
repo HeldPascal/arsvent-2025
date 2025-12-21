@@ -443,15 +443,21 @@ const normalizeDragItems = (
   return items;
 };
 
+type InventorySourceMeta = {
+  mode: "all" | "ids" | "tags";
+  tags?: string[];
+};
+
 const resolveDragItems = (
   rawDef: Record<string, unknown>,
   defaultShape: DragShape,
   inventory: Map<string, InventoryItem>,
   inventorySnapshot: string[],
-): DragSocketItem[] => {
+  inventoryTags: Map<string, string>,
+): { items: DragSocketItem[]; sourceMeta?: InventorySourceMeta } => {
   const source = rawDef.inventorySource ?? rawDef["inventory-source"];
   if (!source) {
-    return normalizeDragItems(rawDef.items, defaultShape);
+    return { items: normalizeDragItems(rawDef.items, defaultShape) };
   }
   if (rawDef.items !== undefined) {
     throw new ContentValidationError("Drag-sockets inventorySource cannot be combined with items");
@@ -463,8 +469,10 @@ const resolveDragItems = (
   const mode = typeof sourceObj.mode === "string" ? sourceObj.mode.toLowerCase().trim() : "all";
   const snapshotSet = new Set(inventorySnapshot);
   let ids: string[] = [];
+  let sourceMeta: InventorySourceMeta = { mode: "all" };
   if (mode === "all") {
     ids = inventorySnapshot;
+    sourceMeta = { mode: "all" };
   } else if (mode === "ids") {
     ids = ensureStringArray(sourceObj.items, "inventorySource.items must list item ids");
     ids.forEach((id) => {
@@ -472,12 +480,15 @@ const resolveDragItems = (
         throw new ContentValidationError(`Inventory item not in snapshot: ${id}`);
       }
     });
+    sourceMeta = { mode: "ids" };
   } else if (mode === "tags") {
     const tags = ensureStringArray(sourceObj.tags, "inventorySource.tags must list tag ids");
     ids = inventorySnapshot.filter((id) => {
       const item = inventory.get(id);
       return item ? tags.some((tag) => item.tags.includes(tag)) : false;
     });
+    const tagTitles = tags.map((id) => inventoryTags.get(id) ?? id);
+    sourceMeta = { mode: "tags", tags: tagTitles };
   } else {
     throw new ContentValidationError(`Unsupported inventorySource mode: ${String(sourceObj.mode ?? "")}`);
   }
@@ -498,12 +509,13 @@ const resolveDragItems = (
       ...(item.description ? { description: item.description } : {}),
       ...(item.rarity ? { rarity: item.rarity } : {}),
       shape: defaultShape,
+      source: "inventory" as const,
     };
   });
   if (items.length === 0) {
     throw new ContentValidationError("Inventory source resolved no items");
   }
-  return items;
+  return { items, sourceMeta };
 };
 
 const normalizePosition = (value: unknown) => {
@@ -874,6 +886,7 @@ const mapToDayBlocks = (
   includeHidden: boolean,
   inventory: Map<string, InventoryItem>,
   inventorySnapshot: string[],
+  inventoryTags: Map<string, string>,
 ): DayBlock[] => {
   const segments = segmentBlocks(blocks);
   const puzzleIds = new Set(blocks.filter((b) => b.kind === "puzzle").map((b) => (b as PuzzleBlockRaw).id));
@@ -1144,7 +1157,7 @@ const mapToDayBlocks = (
         }
         const socketSize = normalizeOptionSize((block.definition.raw as { size?: unknown }).size);
         const shape = rawDef.shape ? resolveShape(rawDef.shape) : "circle";
-        const items = resolveDragItems(rawDef, shape, inventory, inventorySnapshot);
+        const { items, sourceMeta } = resolveDragItems(rawDef, shape, inventory, inventorySnapshot, inventoryTags);
         const sockets = normalizeDragSockets(rawDef.sockets, items, shape);
         const solution = normalizeDragSolution(block.definition.solution, sockets, items);
         const requiredSockets = Array.from(
@@ -1160,6 +1173,7 @@ const mapToDayBlocks = (
           backgroundImage,
           ...(socketSize ? { socketSize } : {}),
           ...(requiredSockets.length > 0 ? { requiredSockets } : {}),
+          ...(sourceMeta ? { inventorySource: sourceMeta } : {}),
           items,
           sockets,
           shape,
@@ -1226,6 +1240,7 @@ export const loadVersionedContent = (
     includeHidden: boolean;
     inventory: Map<string, InventoryItem>;
     inventorySnapshot: string[];
+    inventoryTags: Map<string, string>;
   },
 ): LoadedVersionedContent => {
   const { meta, blocks } = parseBlocks(parsed);
@@ -1242,6 +1257,7 @@ export const loadVersionedContent = (
     options.includeHidden,
     options.inventory,
     options.inventorySnapshot,
+    options.inventoryTags,
   );
 
   return {

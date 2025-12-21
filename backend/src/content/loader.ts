@@ -7,7 +7,7 @@ import { marked } from "marked";
 import { loadVersionedContent, type LoadedVersionedContent } from "./v1-loader.js";
 import { ContentValidationError } from "./errors.js";
 import { loadInventory, invalidateInventoryCache } from "./inventory.js";
-import { invalidateInventoryTagCache } from "./inventory-tags.js";
+import { invalidateInventoryTagCache, loadInventoryTags } from "./inventory-tags.js";
 import { invalidateDayInventoryCache, loadDayInventorySnapshot } from "./day-inventory.js";
 
 export type Locale = "en" | "de";
@@ -51,6 +51,7 @@ export interface DragSocketItem {
   position?: { x: number; y: number };
   description?: string;
   rarity?: string;
+  source?: "inventory";
 }
 
 export interface DragSocketSlot {
@@ -324,12 +325,14 @@ export async function loadDayContent(
     throw new Error(`Unsupported content version: ${version ?? "none"}`);
   }
   const inventory = await loadInventory(locale);
+  const inventoryTags = await loadInventoryTags(locale);
   const snapshotDay = Math.max(0, day - 1);
   const snapshot = snapshotDay > 0 ? await loadDayInventorySnapshot(snapshotDay) : { ids: [], exists: false };
   const loaded = loadVersionedContent(parsed, {
     solvedPuzzleIds,
     includeHidden,
     inventory,
+    inventoryTags: inventoryTags.map,
     inventorySnapshot: snapshot.ids,
   });
   const title =

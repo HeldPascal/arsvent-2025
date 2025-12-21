@@ -33,6 +33,7 @@ export interface DragSocketItem {
   position?: { x: number; y: number };
   description?: string;
   rarity?: string;
+  source?: "inventory";
 }
 
 export interface DragSocketSlot {
@@ -139,6 +140,7 @@ export type DayBlock =
       items?: DragSocketItem[];
       sockets?: DragSocketSlot[];
       shape?: "circle" | "square" | "hex";
+      inventorySource?: { mode: "all" | "ids" | "tags"; tags?: string[] };
       cards?: MemoryCard[];
       backImage?: string;
       hoverBackImage?: string;

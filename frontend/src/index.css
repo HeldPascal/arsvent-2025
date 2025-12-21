@@ -1858,6 +1858,21 @@ a {
   gap: 10px;
 }
 
+.drag-items-header {
+  flex-basis: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.drag-items-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
 .drag-item-card {
   border: var(--socket-border) dashed var(--line);
   border-radius: 14px;
@@ -2037,6 +2052,17 @@ a {
   left: auto;
   transform: translate(-50%, -100%);
   z-index: 2000;
+}
+
+.drag-item-tooltip.inventory-tooltip-like {
+  width: 320px;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.drag-item-tooltip.inventory-tooltip-like .inventory-tooltip-title {
+  font-size: 16px;
+  font-weight: 800;
 }
 
 .drag-item-card.dragging .drag-item-tooltip {
