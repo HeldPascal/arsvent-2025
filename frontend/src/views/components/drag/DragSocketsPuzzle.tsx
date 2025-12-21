@@ -274,6 +274,8 @@ export default function DragSocketsPuzzle({
     const socketStatusClass = requiredSockets.size === 0 || requiredSockets.has(socket.id) ? statusClass : "status-idle";
     const isSelected = draggingItem === assignedItem?.id;
 
+    const showLabelAbove = Boolean(socket.image && socket.label && socket.label.trim().length > 0);
+
     return (
       <div
         key={socket.id}
@@ -294,8 +296,9 @@ export default function DragSocketsPuzzle({
         onDrop={(evt) => handleDrop(socket.id, evt)}
         onClick={() => handlePlaceClick(socket.id)}
       >
+        {showLabelAbove && <span className="drag-socket-label above">{socketLabel}</span>}
         <div
-          className="drag-socket-target"
+          className={`drag-socket-target${showLabelAbove ? " has-top-label" : ""}`}
           style={
             socket.image
               ? {
@@ -307,7 +310,7 @@ export default function DragSocketsPuzzle({
               : undefined
           }
         >
-          <span className="drag-socket-index">{socketLabel}</span>
+          {!showLabelAbove && <span className="drag-socket-index">{socketLabel}</span>}
         </div>
         {assignedItem && (
           <div

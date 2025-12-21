@@ -1838,6 +1838,21 @@ a {
   hyphens: auto;
 }
 
+.drag-socket-label.above {
+  position: absolute;
+  top: calc(-1 * (var(--socket-padding) + var(--socket-border)) - clamp(6px, calc(var(--socket-size) * 0.08), 10px));
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 17, 21, 0.75);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 2px 6px;
+  width: max-content;
+  max-width: min(360px, 80vw);
+  word-break: normal;
+  z-index: 2;
+}
+
 .drag-socket .reset {
   position: absolute;
   left: 50%;
