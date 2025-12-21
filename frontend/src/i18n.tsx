@@ -111,7 +111,20 @@ type TranslationKey =
   | "funSettingToggle"
   | "funSettingSaved"
   | "reset"
-  | "solveNow";
+  | "solveNow"
+  | "inventoryTitle"
+  | "inventorySubtitle"
+  | "inventoryEmptySubtitle"
+  | "inventoryEmpty"
+  | "inventoryCount"
+  | "inventorySearchLabel"
+  | "inventorySearchPlaceholder"
+  | "inventoryRarityLabel"
+  | "inventoryRarityAll"
+  | "inventoryTagsLabel"
+  | "inventoryTagAll"
+  | "inventoryLoadFailed"
+  | "inventoryLink";
 
 const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -224,6 +237,19 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     funSettingSaved: "Fun setting updated.",
     reset: "Reset",
     solveNow: "Solve now",
+    inventoryTitle: "Inventory",
+    inventorySubtitle: "Inventory after day {day}.",
+    inventoryEmptySubtitle: "Solve a day to start collecting rewards.",
+    inventoryEmpty: "No items match your filters yet.",
+    inventoryCount: "{count} of {total} items",
+    inventorySearchLabel: "Search",
+    inventorySearchPlaceholder: "Search items",
+    inventoryRarityLabel: "Rarity",
+    inventoryRarityAll: "All",
+    inventoryTagsLabel: "Tags",
+    inventoryTagAll: "All",
+    inventoryLoadFailed: "Inventory could not be loaded.",
+    inventoryLink: "View inventory",
   },
   de: {
     brand: "Arsvent",
@@ -335,6 +361,19 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     funSettingSaved: "Spaß-Einstellung aktualisiert.",
     reset: "Zurücksetzen",
     solveNow: "Jetzt lösen",
+    inventoryTitle: "Inventar",
+    inventorySubtitle: "Inventar nach Tag {day}.",
+    inventoryEmptySubtitle: "Löse einen Tag, um Belohnungen zu sammeln.",
+    inventoryEmpty: "Keine Gegenstände passen zu deinen Filtern.",
+    inventoryCount: "{count} von {total} Gegenständen",
+    inventorySearchLabel: "Suche",
+    inventorySearchPlaceholder: "Gegenstände durchsuchen",
+    inventoryRarityLabel: "Seltenheit",
+    inventoryRarityAll: "Alle",
+    inventoryTagsLabel: "Tags",
+    inventoryTagAll: "Alle",
+    inventoryLoadFailed: "Inventar konnte nicht geladen werden.",
+    inventoryLink: "Inventar ansehen",
   },
 };
 

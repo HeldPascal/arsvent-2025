@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { fetchDay, submitAnswer, resetPuzzle, solvePuzzle } from "../services/api";
 import type { DayDetail, DayBlock, RiddleAnswerPayload, User } from "../types";
 import { useI18n } from "../i18n";
@@ -270,6 +270,9 @@ export default function DayPage({ user, version }: Props) {
           <div>
             <div className="reward-title">{block.item.title}</div>
             {block.item.description && <div className="reward-desc">{block.item.description}</div>}
+            <Link className="ghost nav-link" to="/inventory">
+              {t("inventoryLink")}
+            </Link>
           </div>
         </div>
       );

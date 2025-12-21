@@ -7,6 +7,8 @@ import { marked } from "marked";
 import { loadVersionedContent, type LoadedVersionedContent } from "./v1-loader.js";
 import { ContentValidationError } from "./errors.js";
 import { loadInventory, invalidateInventoryCache } from "./inventory.js";
+import { invalidateInventoryTagCache } from "./inventory-tags.js";
+import { invalidateDayInventoryCache } from "./day-inventory.js";
 
 export type Locale = "en" | "de";
 export type Mode = "NORMAL" | "VETERAN";
@@ -87,6 +89,7 @@ export interface InventoryItem {
   description: string;
   image: string;
   rarity: string;
+  tags: string[];
 }
 
 export interface StoryBlock {
@@ -336,6 +339,12 @@ const handleFileChange = (filePath: string) => {
   if (filePath.endsWith(".md")) {
     invalidateContentCache(filePath);
   } else if (filePath.endsWith(".yaml")) {
+    if (filePath.endsWith(`${path.sep}inventory.yaml`)) {
+      invalidateDayInventoryCache();
+    }
+    if (filePath.includes(`${path.sep}inventory${path.sep}`) && path.basename(filePath).startsWith("tags.")) {
+      invalidateInventoryTagCache();
+    }
     invalidateInventoryCache();
   }
 };
@@ -345,7 +354,11 @@ export const startContentWatcher = async () => {
   try {
     const chokidar = await import("chokidar");
     const watcher = chokidar.watch(
-      [path.join(CONTENT_ROOT, "**/*.md"), path.join(CONTENT_ROOT, "inventory", "*.yaml")],
+      [
+        path.join(CONTENT_ROOT, "**/*.md"),
+        path.join(CONTENT_ROOT, "inventory", "*.yaml"),
+        path.join(CONTENT_ROOT, "day*", "inventory.yaml"),
+      ],
       { ignoreInitial: true },
     );
     watcher

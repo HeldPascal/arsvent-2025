@@ -25,6 +25,9 @@ import { evaluateCondition } from "./content/v1-loader.js";
 import { getContentDiagnostics } from "./content/diagnostics.js";
 import { tokenizeDayContent, resolveAssetToken } from "./content/tokens.js";
 import { maskHtmlAssets, getAssetToken } from "./content/tokens.js";
+import { loadInventory } from "./content/inventory.js";
+import { loadInventoryTags } from "./content/inventory-tags.js";
+import { loadDayInventorySnapshot } from "./content/day-inventory.js";
 
 dotenv.config();
 
@@ -1194,6 +1197,53 @@ app.post("/api/user/creature-swap", requireAuth, async (req: Request, res: Respo
       storeSessionVersion(req, updatedUser);
       return res.json({ id: updatedUser.id, creatureSwap: updatedUser.creatureSwap });
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/inventory", requireAuth, requireIntroComplete, async (req, res, next) => {
+  try {
+    const user = req.user as PrismaUser;
+    const isAdminOverride = Boolean(
+      (user?.isAdmin || user?.isSuperAdmin) &&
+        (req.query.override === "1" || req.query.override === "true" || req.query.override === "yes"),
+    );
+    const requestedDay = Number(req.query.day);
+    const fallbackDay = user.lastSolvedDay ?? 0;
+    const snapshotDay = isAdminOverride && Number.isInteger(requestedDay) && requestedDay > 0 ? requestedDay : fallbackDay;
+    if (!snapshotDay || snapshotDay < 1) {
+      return res.json({ day: 0, items: [] });
+    }
+
+    const locale = normalizeLocale(getUserLocale(user));
+    const funSwap = Boolean(user?.creatureSwap);
+    const inventory = await loadInventory(locale);
+    const snapshot = await loadDayInventorySnapshot(snapshotDay);
+    if (!snapshot.exists) {
+      return res.json({ day: snapshotDay, items: [] });
+    }
+
+    const items = snapshot.ids
+      .map((id) => inventory.get(id))
+      .filter((item): item is NonNullable<typeof item> => Boolean(item))
+      .map((item) => ({
+        ...item,
+        title: applyCreatureSwapText(item.title, locale, funSwap),
+        ...(item.description ? { description: applyCreatureSwapText(item.description, locale, funSwap) } : {}),
+        image: item.image ? `/content-asset/${getAssetToken(item.image)}` : "",
+      }));
+
+    const tagCatalog = await loadInventoryTags(locale);
+    const usedTags = new Set<string>();
+    items.forEach((item) => (item.tags ?? []).forEach((tag) => usedTags.add(tag)));
+    const ordered = tagCatalog.list.filter((tag) => usedTags.has(tag.id));
+    const fallback = Array.from(usedTags)
+      .filter((id) => !tagCatalog.map.has(id))
+      .map((id) => ({ id, title: id }));
+    const tagList = ordered.length > 0 ? [...ordered, ...fallback] : fallback;
+
+    return res.json({ day: snapshotDay, items, tags: tagList });
   } catch (error) {
     next(error);
   }
