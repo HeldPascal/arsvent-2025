@@ -1,3 +1,5 @@
+- id: "shield"
+  title: "Shield"
 - id: "skill"
   title: "Skill"
 - id: "weapon"
