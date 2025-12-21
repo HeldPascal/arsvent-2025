@@ -1,7 +1,5 @@
-- id: "shield"
-  title: "Schild"
 - id: "skill"
-  title: "Fertigkeit"
+  title: "Fähigkeit"
 - id: "weapon"
   title: "Waffe"
 - id: "alchemy"

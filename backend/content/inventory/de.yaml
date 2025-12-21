@@ -21,25 +21,25 @@
   description: "Schilde von Pakt, Bündnis und Dominion."
   image: "/assets/25_04_reward.png"
   rarity: "uncommon"
-  tags: ["shield"]
+  tags: ["weapon"]
 - id: "shield-dominion"
   title: "Schild von Malerics Gefährten des Dominions"
   description: "Ein Schild mit dem Wappen des Aldmeri-Dominons."
   image: "/assets/25_04_reward_1.png"
   rarity: "uncommon"
-  tags: ["shield"]
+  tags: ["weapon"]
 - id: "shield-covenant"
   title: "Schild von Malerics Gefährten des Bündnisses"
   description: "Ein Schild mit dem Wappen des Dolchsturz-Bündnisses."
   image: "/assets/25_04_reward_2.png"
   rarity: "uncommon"
-  tags: ["shield"]
+  tags: ["weapon"]
 - id: "shield-pact"
   title: "Schild von Malerics Gefährten des Pakts"
   description: "Ein Schild mit dem Wappen des Ebenherz-Pakts."
   image: "/assets/25_04_reward_3.png"
   rarity: "uncommon"
-  tags: ["shield"]
+  tags: ["weapon"]
 - id: "nickel"
   title: "Nickel von Ciira"
   description: "Material, das die Essenz der Kaiserlichen verkörpert."

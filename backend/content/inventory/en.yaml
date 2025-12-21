@@ -21,25 +21,25 @@
   description: "Shields of Pact, Covenant and Dominion."
   image: "/assets/25_04_reward.png"
   rarity: "uncommon"
-  tags: ["shield"]
+  tags: ["weapon"]
 - id: "shield-dominion"
   title: "Shield of Maleric's companions of the Dominion"
   description: "A shield bearing the coat of arms of the Aldmeri Dominion."
   image: "/assets/25_04_reward_1.png"
   rarity: "uncommon"
-  tags: ["shield"]
+  tags: ["weapon"]
 - id: "shield-covenant"
   title: "Shield of Maleric's companions of the Covenant"
   description: "A shield bearing the coat of arms of the Daggerfall Covenant."
   image: "/assets/25_04_reward_2.png"
   rarity: "uncommon"
-  tags: ["shield"]
+  tags: ["weapon"]
 - id: "shield-pact"
   title: "Shield of Maleric's companions of the Pact"
   description: "A shield bearing the coat of arms of the Ebonheart Pact."
   image: "/assets/25_04_reward_3.png"
   rarity: "uncommon"
-  tags: ["shield"]
+  tags: ["weapon"]
 - id: "nickel"
   title: "Ciira's nickel"
   description: "Material that embodies the essence of the Imperials."

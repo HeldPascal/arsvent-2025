@@ -31,35 +31,28 @@ type: "drag-sockets"
 background-image: "/assets/25_05_background_normal.png"
 shape: "square"
 
-items:
-  - id: "shield-1"
-    label: ""
-    image: "/assets/25_05_option_1.png"
-  - id: "shield-2"
-    label: ""
-    image: "/assets/25_05_option_2.png"
-  - id: "shield-3"
-    label: ""
-    image: "/assets/25_05_option_3.png"
+inventorySource:
+  mode: "tags"
+  tags: ["weapon"]
 
 sockets:
-  - id: "socket-1"
+  - id: "socket-pact"
     label: ""
     position: { x: 0.9, y: 0.195 }
-  - id: "socket-2"
+  - id: "socket-covenant"
     label: ""
     position: { x: 0.07, y: 0.196 }
-  - id: "socket-3"
+  - id: "socket-dominion"
     label: ""
     position: { x: 0.488, y: 0.9 }
 
 solution:
-  - socketId: "socket-1"
-    itemId: "shield-3"
-  - socketId: "socket-2"
-    itemId: "shield-2"
-  - socketId: "socket-3"
-    itemId: "shield-1"
+  - socketId: "socket-pact"
+    itemId: "shield-pact"
+  - socketId: "socket-covenant"
+    itemId: "shield-covenant"
+  - socketId: "socket-dominion"
+    itemId: "shield-dominion"
 ```
 
 ## Wait for: cyrodiil
