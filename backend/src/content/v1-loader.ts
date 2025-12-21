@@ -443,6 +443,81 @@ const normalizeDragItems = (
   return items;
 };
 
+type InventorySourceMeta = {
+  mode: "all" | "ids" | "tags";
+  tags?: string[];
+};
+
+const resolveDragItems = (
+  rawDef: Record<string, unknown>,
+  defaultShape: DragShape,
+  inventory: Map<string, InventoryItem>,
+  inventorySnapshot: string[],
+  inventoryTags: Map<string, string>,
+): { items: DragSocketItem[]; sourceMeta?: InventorySourceMeta } => {
+  const source = rawDef.inventorySource ?? rawDef["inventory-source"];
+  if (!source) {
+    return { items: normalizeDragItems(rawDef.items, defaultShape) };
+  }
+  if (rawDef.items !== undefined) {
+    throw new ContentValidationError("Drag-sockets inventorySource cannot be combined with items");
+  }
+  if (!source || typeof source !== "object" || Array.isArray(source)) {
+    throw new ContentValidationError("inventorySource must be an object");
+  }
+  const sourceObj = source as { mode?: unknown; items?: unknown; tags?: unknown };
+  const mode = typeof sourceObj.mode === "string" ? sourceObj.mode.toLowerCase().trim() : "all";
+  const snapshotSet = new Set(inventorySnapshot);
+  let ids: string[] = [];
+  let sourceMeta: InventorySourceMeta = { mode: "all" };
+  if (mode === "all") {
+    ids = inventorySnapshot;
+    sourceMeta = { mode: "all" };
+  } else if (mode === "ids") {
+    ids = ensureStringArray(sourceObj.items, "inventorySource.items must list item ids");
+    ids.forEach((id) => {
+      if (!snapshotSet.has(id)) {
+        throw new ContentValidationError(`Inventory item not in snapshot: ${id}`);
+      }
+    });
+    sourceMeta = { mode: "ids" };
+  } else if (mode === "tags") {
+    const tags = ensureStringArray(sourceObj.tags, "inventorySource.tags must list tag ids");
+    ids = inventorySnapshot.filter((id) => {
+      const item = inventory.get(id);
+      return item ? tags.some((tag) => item.tags.includes(tag)) : false;
+    });
+    const tagTitles = tags.map((id) => inventoryTags.get(id) ?? id);
+    sourceMeta = { mode: "tags", tags: tagTitles };
+  } else {
+    throw new ContentValidationError(`Unsupported inventorySource mode: ${String(sourceObj.mode ?? "")}`);
+  }
+  const seen = new Set<string>();
+  const items = ids.map((id) => {
+    if (seen.has(id)) {
+      throw new ContentValidationError(`Duplicate item id: ${id}`);
+    }
+    seen.add(id);
+    const item = inventory.get(id);
+    if (!item) {
+      throw new ContentValidationError(`Inventory item not found: ${id}`);
+    }
+    return {
+      id,
+      label: item.title,
+      ...(item.image ? { image: item.image } : {}),
+      ...(item.description ? { description: item.description } : {}),
+      ...(item.rarity ? { rarity: item.rarity } : {}),
+      shape: defaultShape,
+      source: "inventory" as const,
+    };
+  });
+  if (items.length === 0) {
+    throw new ContentValidationError("Inventory source resolved no items");
+  }
+  return { items, sourceMeta };
+};
+
 const normalizePosition = (value: unknown) => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new ContentValidationError("Position must be an object with x and y");
@@ -810,6 +885,8 @@ const mapToDayBlocks = (
   solvedIds: Set<string>,
   includeHidden: boolean,
   inventory: Map<string, InventoryItem>,
+  inventorySnapshot: string[],
+  inventoryTags: Map<string, string>,
 ): DayBlock[] => {
   const segments = segmentBlocks(blocks);
   const puzzleIds = new Set(blocks.filter((b) => b.kind === "puzzle").map((b) => (b as PuzzleBlockRaw).id));
@@ -1080,7 +1157,7 @@ const mapToDayBlocks = (
         }
         const socketSize = normalizeOptionSize((block.definition.raw as { size?: unknown }).size);
         const shape = rawDef.shape ? resolveShape(rawDef.shape) : "circle";
-        const items = normalizeDragItems(rawDef.items, shape);
+        const { items, sourceMeta } = resolveDragItems(rawDef, shape, inventory, inventorySnapshot, inventoryTags);
         const sockets = normalizeDragSockets(rawDef.sockets, items, shape);
         const solution = normalizeDragSolution(block.definition.solution, sockets, items);
         const requiredSockets = Array.from(
@@ -1096,6 +1173,7 @@ const mapToDayBlocks = (
           backgroundImage,
           ...(socketSize ? { socketSize } : {}),
           ...(requiredSockets.length > 0 ? { requiredSockets } : {}),
+          ...(sourceMeta ? { inventorySource: sourceMeta } : {}),
           items,
           sockets,
           shape,
@@ -1161,7 +1239,13 @@ const mapToDayBlocks = (
 
 export const loadVersionedContent = (
   parsed: GrayMatterFile<string>,
-  options: { solvedPuzzleIds: Set<string>; includeHidden: boolean; inventory: Map<string, InventoryItem> },
+  options: {
+    solvedPuzzleIds: Set<string>;
+    includeHidden: boolean;
+    inventory: Map<string, InventoryItem>;
+    inventorySnapshot: string[];
+    inventoryTags: Map<string, string>;
+  },
 ): LoadedVersionedContent => {
   const { meta, blocks } = parseBlocks(parsed);
   if (!meta.version || Number.isNaN(meta.version)) throw new ContentValidationError("Invalid content version");
@@ -1171,7 +1255,14 @@ export const loadVersionedContent = (
   const title = derivedTitle || meta.id;
 
   const puzzleIds = blocks.filter((block) => block.kind === "puzzle").map((block) => (block as PuzzleBlockRaw).id);
-  const dayBlocks = mapToDayBlocks(blocks, options.solvedPuzzleIds, options.includeHidden, options.inventory);
+  const dayBlocks = mapToDayBlocks(
+    blocks,
+    options.solvedPuzzleIds,
+    options.includeHidden,
+    options.inventory,
+    options.inventorySnapshot,
+    options.inventoryTags,
+  );
 
   return {
     title,

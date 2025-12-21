@@ -7,6 +7,8 @@ import { marked } from "marked";
 import { loadVersionedContent, type LoadedVersionedContent } from "./v1-loader.js";
 import { ContentValidationError } from "./errors.js";
 import { loadInventory, invalidateInventoryCache } from "./inventory.js";
+import { invalidateInventoryTagCache, loadInventoryTags } from "./inventory-tags.js";
+import { invalidateDayInventoryCache, loadDayInventorySnapshot } from "./day-inventory.js";
 
 export type Locale = "en" | "de";
 export type Mode = "NORMAL" | "VETERAN";
@@ -47,6 +49,9 @@ export interface DragSocketItem {
   shape?: DragShape;
   defaultSocketId?: string;
   position?: { x: number; y: number };
+  description?: string;
+  rarity?: string;
+  source?: "inventory";
 }
 
 export interface DragSocketSlot {
@@ -87,6 +92,7 @@ export interface InventoryItem {
   description: string;
   image: string;
   rarity: string;
+  tags: string[];
 }
 
 export interface StoryBlock {
@@ -321,7 +327,16 @@ export async function loadDayContent(
     throw new Error(`Unsupported content version: ${version ?? "none"}`);
   }
   const inventory = await loadInventory(locale);
-  const loaded = loadVersionedContent(parsed, { solvedPuzzleIds, includeHidden, inventory });
+  const inventoryTags = await loadInventoryTags(locale);
+  const snapshotDay = Math.max(0, day - 1);
+  const snapshot = snapshotDay > 0 ? await loadDayInventorySnapshot(snapshotDay) : { ids: [], exists: false };
+  const loaded = loadVersionedContent(parsed, {
+    solvedPuzzleIds,
+    includeHidden,
+    inventory,
+    inventoryTags: inventoryTags.map,
+    inventorySnapshot: snapshot.ids,
+  });
   const title =
     loaded.title || stripLeadingH1(parsed.content) || normalizeId(parsed.data.title, "Title is required for versioned content");
 
@@ -338,6 +353,12 @@ const handleFileChange = (filePath: string) => {
   if (filePath.endsWith(".md")) {
     invalidateContentCache(filePath);
   } else if (filePath.endsWith(".yaml")) {
+    if (filePath.endsWith(`${path.sep}inventory.yaml`)) {
+      invalidateDayInventoryCache();
+    }
+    if (filePath.includes(`${path.sep}inventory${path.sep}`) && path.basename(filePath).startsWith("tags.")) {
+      invalidateInventoryTagCache();
+    }
     invalidateInventoryCache();
   }
 };
@@ -346,12 +367,22 @@ export const startContentWatcher = async () => {
   if (isProd || watcherStarted) return;
   try {
     const chokidar = await import("chokidar");
-    const watcher = chokidar.watch(
-      [path.join(CONTENT_ROOT, "**/*.md"), path.join(CONTENT_ROOT, "inventory", "*.yaml")],
-      { ignoreInitial: true },
-    );
+    const watcher = chokidar.watch(CONTENT_ROOT, {
+      ignoreInitial: true,
+      ignored: (_path, stats) => {
+        if (!stats) return false;
+        if (stats.isDirectory()) return false;
+        const rel = path.relative(CONTENT_ROOT, _path);
+        if (!rel || rel.startsWith("..")) return true;
+        if (rel.endsWith(".md")) return false;
+        if (rel.startsWith(`inventory${path.sep}`) && rel.endsWith(".yaml")) return false;
+        if (/^day\d{2}\/inventory\.yaml$/i.test(rel)) return false;
+        return true;
+      },
+    });
     watcher
-      .on("all", (_event, filePath) => {
+      .on("all", (event, filePath) => {
+        console.log("[content] Watcher event", event, filePath);
         handleFileChange(filePath);
       })
       .on("error", (err) => warn("Watcher error", err));

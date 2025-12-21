@@ -31,6 +31,9 @@ export interface DragSocketItem {
   shape?: "circle" | "square" | "hex";
   defaultSocketId?: string;
   position?: { x: number; y: number };
+  description?: string;
+  rarity?: string;
+  source?: "inventory";
 }
 
 export interface DragSocketSlot {
@@ -104,6 +107,15 @@ export interface DaysResponse {
   contentDayCount?: number;
 }
 
+export interface InventoryItem {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  rarity: string;
+  tags?: string[];
+}
+
 export type DayBlock =
   | { kind: "story"; id?: string; title?: string; html: string; visible: boolean }
   | {
@@ -130,6 +142,7 @@ export type DayBlock =
       items?: DragSocketItem[];
       sockets?: DragSocketSlot[];
       shape?: "circle" | "square" | "hex";
+      inventorySource?: { mode: "all" | "ids" | "tags"; tags?: string[] };
       cards?: MemoryCard[];
       backImage?: string;
       hoverBackImage?: string;
@@ -144,13 +157,7 @@ export type DayBlock =
       id?: string;
       title?: string;
       visible: boolean;
-      item?: {
-        id: string;
-        title: string;
-        description: string;
-        image: string;
-        rarity: string;
-      };
+      item?: InventoryItem;
     };
 
 export interface DayDetail {
@@ -160,6 +167,12 @@ export interface DayDetail {
   isSolved: boolean;
   canPlay: boolean;
   message?: string;
+}
+
+export interface InventoryResponse {
+  day: number;
+  items: InventoryItem[];
+  tags?: Array<{ id: string; title: string }>;
 }
 
 export interface IntroPayload {

@@ -6,9 +6,6 @@ Ideas and improvements to tackle
 - Developer ergonomics  
   Improve local dev with hot-reload scripts for both backend and frontend, clearer README setup steps, and sample `.env.example` files for quick starts.
 
-- Inventory view  
-  Add a page that lists all items the player has earned (name, rarity, image, description). Consider filters/sorting and a link-out from rewards.
-
 - Error and warning log  
   Expose recent server errors/warnings in the admin panel with timestamps and a quick filter. Helps diagnose content or auth issues without digging through server logs.
 
