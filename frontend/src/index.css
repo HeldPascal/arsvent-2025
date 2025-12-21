@@ -535,6 +535,7 @@ a {
   font-weight: 600;
   color: var(--text);
   background: transparent;
+  cursor: pointer;
 }
 
 .small-btn.primary {
@@ -559,6 +560,7 @@ a {
   text-align: center;
   display: inline-flex;
   justify-content: center;
+  cursor: pointer;
 }
 
 .pill {
@@ -2920,11 +2922,272 @@ a {
   gap: 12px;
 }
 
+.inventory-grid-player {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.inventory-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin-top: 8px;
+}
+
+.inventory-search,
+.inventory-rarity {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inventory-search input {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel-contrast);
+  color: var(--text);
+}
+
+.inventory-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.inventory-tags-filter {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.inventory-count {
+  margin-bottom: 2px;
+}
+
 .inventory-card {
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--panel-contrast);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 260px;
+  width: 100%;
+}
+
+.inventory-image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 215, 128, 0.7);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1), transparent 50%), #1f2327;
+}
+
+.inventory-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inventory-image[data-rarity="common"] {
+  border-color: #9aa0a6;
+}
+
+.inventory-image[data-rarity="uncommon"] {
+  border-color: #5bd18a;
+}
+
+.inventory-image[data-rarity="rare"] {
+  border-color: #4f8af7;
+}
+
+.inventory-image[data-rarity="epic"] {
+  border-color: #b46bff;
+}
+
+.inventory-image[data-rarity="legendary"],
+.inventory-image[data-rarity="mythic"] {
+  border-color: #f7d046;
+}
+
+.inventory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: visible;
+}
+
+.inventory-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-contrast);
+  transition: border-color 0.15s ease, transform 0.15s ease;
+  overflow: visible;
+}
+
+.inventory-row:focus-within,
+.inventory-row:hover {
+  border-color: rgba(255, 215, 128, 0.5);
+  transform: translateY(-1px);
+  z-index: 3;
+}
+
+.inventory-row-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.inventory-title {
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inventory-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 215, 128, 0.7);
+  object-fit: cover;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1), transparent 50%), #1f2327;
+  flex: 0 0 auto;
+}
+
+.inventory-icon-empty {
+  background: #1f2327;
+  border-color: var(--line);
+}
+
+.inventory-icon[data-rarity="common"] {
+  border-color: #9aa0a6;
+}
+
+.inventory-icon[data-rarity="uncommon"] {
+  border-color: #5bd18a;
+}
+
+.inventory-icon[data-rarity="rare"] {
+  border-color: #4f8af7;
+}
+
+.inventory-icon[data-rarity="epic"] {
+  border-color: #b46bff;
+}
+
+.inventory-icon[data-rarity="legendary"],
+.inventory-icon[data-rarity="mythic"] {
+  border-color: #f7d046;
+}
+
+.inventory-tooltip {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%) scale(0.98);
+  background: #0f1115;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-size: 14px;
+  max-width: 320px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 2;
+}
+
+.inventory-row:hover .inventory-tooltip,
+.inventory-row:focus-within .inventory-tooltip {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+
+.inventory-tooltip[data-rarity="common"] {
+  border-color: #9aa0a6;
+}
+
+.inventory-tooltip[data-rarity="uncommon"] {
+  border-color: #5bd18a;
+}
+
+.inventory-tooltip[data-rarity="rare"] {
+  border-color: #4f8af7;
+}
+
+.inventory-tooltip[data-rarity="epic"] {
+  border-color: #b46bff;
+}
+
+.inventory-tooltip[data-rarity="legendary"],
+.inventory-tooltip[data-rarity="mythic"] {
+  border-color: #f7d046;
+}
+
+.inventory-tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.inventory-tooltip-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  border: none;
+  object-fit: cover;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1), transparent 50%), #1f2327;
+  flex: 0 0 auto;
+}
+
+.inventory-tooltip-title {
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.inventory-tooltip-desc {
+  color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .inventory-grid-player {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+
+  .inventory-row {
+    align-items: flex-start;
+  }
+
+  .inventory-tooltip {
+    right: auto;
+    left: 12px;
+    top: auto;
+    bottom: 8px;
+    transform: scale(0.98);
+  }
+
+  .inventory-row:hover .inventory-tooltip,
+  .inventory-row:focus-within .inventory-tooltip {
+    transform: scale(1);
+  }
 }
 
 .issues-filter {
@@ -2968,6 +3231,16 @@ a {
   line-height: 1.2;
 }
 
+button.tag-chip {
+  cursor: pointer;
+  color: inherit;
+}
+
+.tag-chip.active {
+  border-color: var(--accent);
+  background: rgba(212, 77, 63, 0.12);
+}
+
 .tag-chip button {
   background: none;
   border: none;
@@ -2991,6 +3264,15 @@ a {
   border: 1px solid var(--line);
   border-radius: 999px;
   overflow: hidden;
+}
+
+.segmented-fit {
+  align-self: flex-start;
+}
+.segmented-strong button.active {
+  background: var(--accent);
+  color: #fdf3ee;
+  font-weight: 800;
 }
 
 .segmented button {

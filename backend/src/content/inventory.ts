@@ -15,6 +15,14 @@ const normalizeId = (value: unknown) => String(value ?? "").trim();
 
 const warn = (...args: unknown[]) => console.warn("[inventory]", ...args);
 
+const normalizeTags = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  const normalized = value
+    .map((entry) => String(entry ?? "").trim())
+    .filter((entry) => entry.length > 0);
+  return Array.from(new Set(normalized));
+};
+
 const readInventoryFile = async (locale: Locale): Promise<Map<string, InventoryItem>> => {
   const filePath = path.join(INVENTORY_ROOT, `${locale}.yaml`);
   try {
@@ -25,6 +33,7 @@ const readInventoryFile = async (locale: Locale): Promise<Map<string, InventoryI
       description?: unknown;
       image?: unknown;
       rarity?: unknown;
+      tags?: unknown;
     }>;
     const map = new Map<string, InventoryItem>();
     parsed.forEach((entry) => {
@@ -36,6 +45,7 @@ const readInventoryFile = async (locale: Locale): Promise<Map<string, InventoryI
         description: entry.description ? String(entry.description) : "",
         image: entry.image ? String(entry.image) : "",
         rarity: entry.rarity ? String(entry.rarity) : "common",
+        tags: normalizeTags(entry.tags),
       });
     });
     if (map.size === 0) {

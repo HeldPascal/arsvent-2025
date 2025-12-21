@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import HomePage from "./views/HomePage";
 import CalendarPage from "./views/CalendarPage";
+import InventoryPage from "./views/InventoryPage";
 import DayPage from "./views/DayPage";
 import SettingsPage from "./views/SettingsPage";
 import AdminPage from "./views/AdminPage";
@@ -221,6 +222,22 @@ export default function AppRouter() {
                     version={stateVersion}
                     onModeChange={(mode) => handleUserPatch({ mode })}
                   />
+                ) : (
+                  <Navigate to="/intro" replace />
+                )
+              ) : loading ? (
+                <div className="panel">Loading…</div>
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/inventory"
+            element={
+              user ? (
+                user.introCompleted ? (
+                  <InventoryPage user={user} />
                 ) : (
                   <Navigate to="/intro" replace />
                 )

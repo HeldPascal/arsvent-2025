@@ -184,6 +184,9 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
                   <span className="user-chip" title={user.globalName ?? user.username}>
                     {user.globalName ?? user.username}
                   </span>
+                  <button className="ghost nav-link" onClick={() => closeMenuAnd(() => navigate("/inventory"))}>
+                    {t("inventoryTitle")}
+                  </button>
                   {user.isAdmin || user.isSuperAdmin ? (
                     <button className="ghost nav-link" onClick={() => closeMenuAnd(() => navigate("/admin"))}>
                       Admin

@@ -57,7 +57,7 @@ tags:
 
 ### Optional
 
-- inventory — Items the player starts with on this day.
+- inventory — Deprecated. Use `content/dayXX/inventory.yaml` snapshots instead.
 - tags — Free keywords for organizational use.
 - solved.when — Defines the condition required to mark the day as completed.
 
@@ -574,6 +574,8 @@ Items are referenced by their global IDs:
 - In **inventoryId** in rewards  
 
 The actual item definitions live outside the Markdown file.
+
+Inventory snapshots are stored per day in `content/dayXX/inventory.yaml` as a simple YAML list of item IDs.
 
 ---
 
