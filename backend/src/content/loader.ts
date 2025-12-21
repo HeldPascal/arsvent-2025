@@ -365,16 +365,22 @@ export const startContentWatcher = async () => {
   if (isProd || watcherStarted) return;
   try {
     const chokidar = await import("chokidar");
-    const watcher = chokidar.watch(
-      [
-        path.join(CONTENT_ROOT, "**/*.md"),
-        path.join(CONTENT_ROOT, "inventory", "*.yaml"),
-        path.join(CONTENT_ROOT, "day*", "inventory.yaml"),
-      ],
-      { ignoreInitial: true },
-    );
+    const watcher = chokidar.watch(CONTENT_ROOT, {
+      ignoreInitial: true,
+      ignored: (_path, stats) => {
+        if (!stats) return false;
+        if (stats.isDirectory()) return false;
+        const rel = path.relative(CONTENT_ROOT, _path);
+        if (!rel || rel.startsWith("..")) return true;
+        if (rel.endsWith(".md")) return false;
+        if (rel.startsWith(`inventory${path.sep}`) && rel.endsWith(".yaml")) return false;
+        if (/^day\d{2}\/inventory\.yaml$/i.test(rel)) return false;
+        return true;
+      },
+    });
     watcher
-      .on("all", (_event, filePath) => {
+      .on("all", (event, filePath) => {
+        console.log("[content] Watcher event", event, filePath);
         handleFileChange(filePath);
       })
       .on("error", (err) => warn("Watcher error", err));
