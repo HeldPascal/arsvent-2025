@@ -36,12 +36,15 @@ inventorySource:
 sockets:
   - id: "adhazabi"
     label: ""
+    image: "/assets/25_22_socket.png"
     position: { x: 0.17, y: 0.5 }
   - id: "faustina"
     label: ""
+    image: "/assets/25_22_socket.png"
     position: { x: 0.5, y: 0.5 }
   - id: "urgalag"
     label: ""
+    image: "/assets/25_22_socket.png"
     position: { x: 0.84, y: 0.5 }
 
 solution:
