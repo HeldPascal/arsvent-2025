@@ -1,5 +1,15 @@
 Ideas and improvements to tackle
 
+- Fun idea: For file watcher events use a mascot (Scruut from ESO) with image and quotes
+- Feature: Twitch playes Arsvent. Design and implement a connection between Arsvent and Twitch
+
+- drag-sockets:
+  - inventory filter our or add items
+  - empty background image
+  - socket solution order and conditions hints (let the sockets be filled one after the other)
+
+- richer media format (animated images, videos etc.)
+
 - Test environment  
   Stand up a dedicated test setup (DB seeding, env flags) so flows can be validated without touching production data. Include a script to reset/seed test content and accounts.
 
