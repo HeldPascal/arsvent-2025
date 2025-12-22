@@ -532,6 +532,13 @@ function LegendChip({ color, label }: { color: string; label: string }) {
   );
 }
 
+const normalizeModeFilter = (value: string) => {
+  const lower = value.toLowerCase().trim();
+  if (lower.startsWith("vet")) return "veteran";
+  if (lower.startsWith("norm")) return "normal";
+  return lower;
+};
+
 type IssueListSubpanelProps = {
   title: string;
   description?: string;
@@ -548,6 +555,11 @@ function filterIssues(issues: ContentDiagnostics["issues"], tokens: string[]) {
   if (normalizedTokens.length === 0) return issues;
   return issues.filter((issue) => {
     const details = issue.details ?? {};
+    const relatedContexts = [
+      details,
+      (details as { first?: Record<string, unknown> }).first ?? {},
+      (details as { second?: Record<string, unknown> }).second ?? {},
+    ];
     return normalizedTokens.every((token) => {
       if (!token) return true;
       const [maybeKey, ...restRaw] = token.split(":");
@@ -564,9 +576,18 @@ function filterIssues(issues: ContentDiagnostics["issues"], tokens: string[]) {
         }
         if (key === "severity") return issue.severity.toLowerCase() === lowerVal;
         if (key === "source") return issue.source.toLowerCase() === lowerVal;
-        if (key === "day") return Number(details.day) === Number(value);
-        if (key === "locale") return String(details.locale ?? "").toLowerCase() === lowerVal;
-        if (key === "mode") return String(details.mode ?? "").toLowerCase() === lowerVal;
+        if (key === "day") {
+          return relatedContexts.some((ctx) => Number((ctx as { day?: unknown }).day) === Number(value));
+        }
+        if (key === "locale") {
+          return relatedContexts.some(
+            (ctx) => String((ctx as { locale?: unknown }).locale ?? "").toLowerCase() === lowerVal,
+          );
+        }
+        if (key === "mode") {
+          const normalizedValue = normalizeModeFilter(lowerVal);
+          return relatedContexts.some((ctx) => normalizeModeFilter(String((ctx as { mode?: unknown }).mode ?? "")) === normalizedValue);
+        }
         if (key === "id" || key === "item") {
           return String(details.itemId ?? details.inventoryId ?? details.contentId ?? "").toLowerCase().includes(lowerVal);
         }
