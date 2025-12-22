@@ -515,8 +515,8 @@ const resolveDragItems = (
     }
   });
   includes.forEach((id) => {
-    if (!snapshotSet.has(id)) {
-      throw new ContentValidationError(`Inventory item not in snapshot: ${id}`);
+    if (!inventory.has(id)) {
+      throw new ContentValidationError(`Inventory item not found: ${id}`);
     }
   });
   const excludeSet = new Set(excludes);
@@ -579,18 +579,20 @@ const normalizeDragSockets = (raw: unknown, items: DragSocketItem[], defaultShap
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
       throw new ContentValidationError("Invalid socket definition");
     }
-    const { id, position, accepts, shape, label, image } = entry as {
+    const { id, position, accepts, shape, label, image, hint } = entry as {
       id?: unknown;
       position?: unknown;
       accepts?: unknown;
       shape?: unknown;
       label?: unknown;
       image?: unknown;
+      hint?: unknown;
     };
     const socketId = normalizeId(id, "Sockets require an id");
     const socketShape = shape ? resolveShape(shape) : defaultShape;
     const socketLabel = typeof label === "string" ? label : undefined;
     const socketImage = typeof image === "string" ? image : undefined;
+    const socketHint = typeof hint === "string" ? hint : undefined;
     const shapeScopedItems =
       socketShape && items.some((item) => item.shape === socketShape)
         ? items.filter((item) => item.shape === socketShape).map((item) => item.id)
@@ -609,6 +611,7 @@ const normalizeDragSockets = (raw: unknown, items: DragSocketItem[], defaultShap
       shape: socketShape,
       ...(socketLabel !== undefined ? { label: socketLabel } : {}),
       ...(socketImage ? { image: socketImage } : {}),
+      ...(socketHint ? { hint: socketHint } : {}),
     };
   });
   const seen = new Set<string>();
@@ -1191,9 +1194,26 @@ const mapToDayBlocks = (
         const backgroundImageCandidate = rawDef.backgroundImage ?? rawDef["background-image"];
         const backgroundImage =
           typeof backgroundImageCandidate === "string" ? backgroundImageCandidate : undefined;
+        const backgroundSizeCandidate = rawDef.backgroundSize ?? rawDef["background-size"];
+        const backgroundSize =
+          typeof backgroundSizeCandidate === "string" && backgroundSizeCandidate.trim().length > 0
+            ? backgroundSizeCandidate.trim()
+            : undefined;
+        const boardMaxWidthCandidate = rawDef.boardMaxWidth ?? rawDef["board-max-width"];
+        const boardMaxWidth =
+          typeof boardMaxWidthCandidate === "string" && boardMaxWidthCandidate.trim().length > 0
+            ? boardMaxWidthCandidate.trim()
+            : undefined;
         const socketSize = normalizeOptionSize((block.definition.raw as { size?: unknown }).size);
         const shape = rawDef.shape ? resolveShape(rawDef.shape) : "circle";
         const { items, sourceMeta } = resolveDragItems(rawDef, shape, inventory, inventorySnapshot, inventoryTags);
+        const orderedRaw = rawDef.ordered ?? rawDef["ordered"];
+        const ordered =
+          typeof orderedRaw === "boolean"
+            ? orderedRaw
+            : typeof orderedRaw === "string"
+              ? orderedRaw.toLowerCase() === "true"
+              : false;
         const sockets = normalizeDragSockets(rawDef.sockets, items, shape);
         const solution = normalizeDragSolution(block.definition.solution, sockets, items);
         const requiredSockets = Array.from(
@@ -1207,9 +1227,12 @@ const mapToDayBlocks = (
           type,
           solution,
           ...(backgroundImage ? { backgroundImage } : {}),
+          ...(backgroundSize ? { backgroundSize } : {}),
+          ...(boardMaxWidth ? { boardMaxWidth } : {}),
           ...(socketSize ? { socketSize } : {}),
           ...(requiredSockets.length > 0 ? { requiredSockets } : {}),
           ...(sourceMeta ? { inventorySource: sourceMeta } : {}),
+          ...(ordered ? { ordered } : {}),
           items,
           sockets,
           shape,

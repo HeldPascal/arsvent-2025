@@ -61,6 +61,7 @@ export interface DragSocketSlot {
   shape?: DragShape;
   label?: string;
   image?: string;
+  hint?: string;
 }
 
 export interface MemoryCard {
@@ -123,6 +124,8 @@ export interface PuzzleBlock {
   requiredSelections?: number;
   ordered?: boolean;
   backgroundImage?: string;
+  backgroundSize?: string;
+  boardMaxWidth?: string;
   items?: DragSocketItem[];
   sockets?: DragSocketSlot[];
   shape?: DragShape;

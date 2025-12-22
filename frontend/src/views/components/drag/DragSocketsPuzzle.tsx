@@ -10,9 +10,12 @@ type DragSocketsBlock = Extract<DayBlock, { kind: "puzzle" }> & {
   items?: DragSocketItem[];
   sockets?: DragSocketSlot[];
   backgroundImage?: string;
+  backgroundSize?: string;
+  boardMaxWidth?: string;
   shape?: "circle" | "square" | "hex";
   socketSize?: "small" | "medium" | "large";
   requiredSockets?: string[];
+  ordered?: boolean;
   inventorySource?: { mode: "all" | "ids" | "tags"; tags?: string[] };
 };
 
@@ -38,8 +41,9 @@ export default function DragSocketsPuzzle({
   onStartInteraction,
 }: Props) {
   const { t } = useI18n();
-  const sockets: DragSocketSlot[] = block.sockets ?? [];
-  const items: DragSocketItem[] = useMemo(() => block.items ?? [], [block.items]);
+  const sockets = useMemo<DragSocketSlot[]>(() => block.sockets ?? [], [block.sockets]);
+  const items = useMemo<DragSocketItem[]>(() => block.items ?? [], [block.items]);
+  const isOrdered = Boolean(block.ordered);
   const inventoryHeader = useMemo(() => {
     if (!block.inventorySource) return null;
     const tags = block.inventorySource.tags?.filter(Boolean) ?? [];
@@ -94,6 +98,11 @@ export default function DragSocketsPuzzle({
   const availableItems = items.filter((item: DragSocketItem) => !assignedSocketByItem[item.id]);
   const resolvedBackground = resolveAsset(block.backgroundImage);
   const hasBackground = Boolean(resolvedBackground);
+  const activeOrderedSocketId = useMemo(() => {
+    if (!isOrdered) return null;
+    const nextSocket = sockets.find((socket) => !assignments[socket.id]);
+    return nextSocket?.id ?? null;
+  }, [isOrdered, sockets, assignments]);
 
   useEffect(() => {
     if (!resolvedBackground) return;
@@ -117,6 +126,7 @@ export default function DragSocketsPuzzle({
   }, [items]);
 
   const canDrop = (socketId: string, itemId: string) => {
+    if (isOrdered && activeOrderedSocketId && socketId !== activeOrderedSocketId) return false;
     const socket = sockets.find((s) => s.id === socketId);
     const item = items.find((itm) => itm.id === itemId);
     if (!socket || !item) return false;
@@ -268,6 +278,8 @@ export default function DragSocketsPuzzle({
     const assignedId = assignments[socket.id];
     const assignedItem = items.find((item) => item.id === assignedId);
     const isActive = hoverSocket === socket.id;
+    const isOrderedActive = isOrdered && activeOrderedSocketId === socket.id;
+    const isOrderedLocked = isOrdered && Boolean(activeOrderedSocketId) && activeOrderedSocketId !== socket.id;
     const isDropCandidate = draggingItem ? canDrop(socket.id, draggingItem) : false;
     const isMuted = Boolean(draggingItem && !isDropCandidate);
     const socketLabel = socket.label && socket.label.trim().length > 0 ? socket.label : t("socketPlaceholder");
@@ -276,11 +288,12 @@ export default function DragSocketsPuzzle({
     const isSelected = draggingItem === assignedItem?.id;
 
     const showLabelAbove = Boolean(socket.image && socket.label && socket.label.trim().length > 0);
+    const showHint = isOrderedActive && socket.hint && socket.hint.trim().length > 0;
 
     return (
       <div
         key={socket.id}
-        className={`drag-socket ${socketStatusClass} ${shapeClass(socket.shape)} ${isActive ? "is-active" : ""} ${isDropCandidate ? "is-candidate" : ""} ${isMuted ? "is-muted" : ""}`}
+        className={`drag-socket ${socketStatusClass} ${shapeClass(socket.shape)} ${isActive ? "is-active" : ""} ${isDropCandidate ? "is-candidate" : ""} ${isMuted ? "is-muted" : ""} ${isOrderedActive ? "is-ordered-active" : ""} ${isOrderedLocked ? "is-ordered-locked" : ""}`}
         style={{ left: `${socket.position.x * 100}%`, top: `${socket.position.y * 100}%` }}
         onDragEnter={(evt) => {
           const itemId = draggingItem ?? evt.dataTransfer.getData("text/plain");
@@ -297,6 +310,7 @@ export default function DragSocketsPuzzle({
         onDrop={(evt) => handleDrop(socket.id, evt)}
         onClick={() => handlePlaceClick(socket.id)}
       >
+        {showHint && <span className="drag-socket-hint">{socket.hint}</span>}
         {showLabelAbove && <span className="drag-socket-label above">{socketLabel}</span>}
         <div
           className={`drag-socket-target${showLabelAbove ? " has-top-label" : ""}`}
@@ -511,7 +525,10 @@ export default function DragSocketsPuzzle({
           ...(hasBackground ? { backgroundImage: `url(${resolvedBackground})` } : {}),
           aspectRatio,
           backgroundRepeat: "no-repeat",
-          backgroundSize: "contain",
+          backgroundSize: block.backgroundSize ?? "contain",
+          ...(block.boardMaxWidth
+            ? { maxWidth: block.boardMaxWidth, marginLeft: "auto", marginRight: "auto" }
+            : {}),
         }}
         ref={boardRef}
       >

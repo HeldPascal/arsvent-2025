@@ -282,16 +282,19 @@ Players drag items into specific positions.
 ### Fields
 - **type:** `"drag-sockets"`
 - **backgroundImage:** optional path to background image (defaults to empty board)
+- **backgroundSize:** optional CSS `background-size` value (e.g. `80%`, `320px`, `contain`)
+- **boardMaxWidth:** optional CSS max-width for the board container (e.g. `clamp(320px, 90vw, 760px)`)
 - **shape:** optional default shape for items/sockets (`circle` if omitted)
+- **ordered:** optional `true` to enforce socket order (only the first unfilled socket accepts input)
 - **items:** list of draggable items (id, label, image, optional `shape`, optional `defaultSocketId`)
 - **inventorySource:** optional alternative to `items` that pulls items from the player inventory snapshot (mutually exclusive with `items`).
   - **mode:** `"all"` | `"ids"` | `"tags"`
   - **items:** list of inventory ids (when mode is `"ids"`)
   - **tags:** list of inventory tag ids (when mode is `"tags"`)
-  - **include:** optional list of inventory ids to add after resolving the mode
+  - **include:** optional list of inventory ids to add after resolving the mode (can reference any catalog item)
   - **exclude:** optional list of inventory ids to remove after resolving the mode
-  - **excludeTags:** optional list of inventory tag ids to remove after resolving the mode
-- **sockets:** list of socket definitions including accepted item types; sockets can set `label`, `image`, and `shape`
+- **excludeTags:** optional list of inventory tag ids to remove after resolving the mode
+- **sockets:** list of socket definitions including accepted item types; sockets can set `label`, `image`, `shape`, and `hint`
 - **solution:** list of socketId → itemId relations. Supports:
   - simple list of `{ socketId, itemId }`
   - `lists` + `listId` to reuse pooled items
@@ -301,6 +304,7 @@ Players drag items into specific positions.
 
 ```yaml
 type: "drag-sockets"
+ordered: true
 backgroundImage: "/assets/board.png"
 
 items:
@@ -312,6 +316,7 @@ sockets:
   - id: "socket-top"
     position: { x: 0.5, y: 0.1 }
     accepts: ["gem-red"]
+    hint: "Place the red gem here"
 
 solution:
   - socketId: "socket-top"

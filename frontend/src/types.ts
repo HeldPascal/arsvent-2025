@@ -43,6 +43,7 @@ export interface DragSocketSlot {
   shape?: "circle" | "square" | "hex";
   label?: string;
   image?: string;
+  hint?: string;
 }
 
 export interface MemoryCard {
@@ -139,6 +140,8 @@ export type DayBlock =
       startColumnHint?: number;
       goalColumnHint?: number;
       backgroundImage?: string;
+      backgroundSize?: string;
+      boardMaxWidth?: string;
       items?: DragSocketItem[];
       sockets?: DragSocketSlot[];
       shape?: "circle" | "square" | "hex";
