@@ -281,13 +281,16 @@ Players drag items into specific positions.
 
 ### Fields
 - **type:** `"drag-sockets"`
-- **backgroundImage:** path to background image
+- **backgroundImage:** optional path to background image (defaults to empty board)
 - **shape:** optional default shape for items/sockets (`circle` if omitted)
 - **items:** list of draggable items (id, label, image, optional `shape`, optional `defaultSocketId`)
 - **inventorySource:** optional alternative to `items` that pulls items from the player inventory snapshot (mutually exclusive with `items`).
   - **mode:** `"all"` | `"ids"` | `"tags"`
   - **items:** list of inventory ids (when mode is `"ids"`)
   - **tags:** list of inventory tag ids (when mode is `"tags"`)
+  - **include:** optional list of inventory ids to add after resolving the mode
+  - **exclude:** optional list of inventory ids to remove after resolving the mode
+  - **excludeTags:** optional list of inventory tag ids to remove after resolving the mode
 - **sockets:** list of socket definitions including accepted item types; sockets can set `label`, `image`, and `shape`
 - **solution:** list of socketId → itemId relations. Supports:
   - simple list of `{ socketId, itemId }`

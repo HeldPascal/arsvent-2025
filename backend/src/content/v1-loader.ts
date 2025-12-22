@@ -465,7 +465,15 @@ const resolveDragItems = (
   if (!source || typeof source !== "object" || Array.isArray(source)) {
     throw new ContentValidationError("inventorySource must be an object");
   }
-  const sourceObj = source as { mode?: unknown; items?: unknown; tags?: unknown };
+  const sourceObj = source as {
+    mode?: unknown;
+    items?: unknown;
+    tags?: unknown;
+    include?: unknown;
+    exclude?: unknown;
+    excludeTags?: unknown;
+    "exclude-tags"?: unknown;
+  };
   const mode = typeof sourceObj.mode === "string" ? sourceObj.mode.toLowerCase().trim() : "all";
   const snapshotSet = new Set(inventorySnapshot);
   let ids: string[] = [];
@@ -492,8 +500,39 @@ const resolveDragItems = (
   } else {
     throw new ContentValidationError(`Unsupported inventorySource mode: ${String(sourceObj.mode ?? "")}`);
   }
+  const excludes =
+    sourceObj.exclude !== undefined ? ensureStringArray(sourceObj.exclude, "inventorySource.exclude must list item ids") : [];
+  const includes =
+    sourceObj.include !== undefined ? ensureStringArray(sourceObj.include, "inventorySource.include must list item ids") : [];
+  const excludeTagsRaw = sourceObj.excludeTags ?? sourceObj["exclude-tags"];
+  const excludeTags =
+    excludeTagsRaw !== undefined
+      ? ensureStringArray(excludeTagsRaw, "inventorySource.excludeTags must list tag ids")
+      : [];
+  excludes.forEach((id) => {
+    if (!snapshotSet.has(id)) {
+      throw new ContentValidationError(`Inventory item not in snapshot: ${id}`);
+    }
+  });
+  includes.forEach((id) => {
+    if (!snapshotSet.has(id)) {
+      throw new ContentValidationError(`Inventory item not in snapshot: ${id}`);
+    }
+  });
+  const excludeSet = new Set(excludes);
+  const excludeTagSet = new Set(excludeTags);
+  const baseIds = ids.filter((id) => {
+    if (excludeSet.has(id)) return false;
+    if (excludeTagSet.size === 0) return true;
+    const item = inventory.get(id);
+    if (!item) return false;
+    return !item.tags.some((tag) => excludeTagSet.has(tag));
+  });
+  includes.forEach((id) => {
+    if (!baseIds.includes(id)) baseIds.push(id);
+  });
   const seen = new Set<string>();
-  const items = ids.map((id) => {
+  const items = baseIds.map((id) => {
     if (seen.has(id)) {
       throw new ContentValidationError(`Duplicate item id: ${id}`);
     }
@@ -1152,9 +1191,6 @@ const mapToDayBlocks = (
         const backgroundImageCandidate = rawDef.backgroundImage ?? rawDef["background-image"];
         const backgroundImage =
           typeof backgroundImageCandidate === "string" ? backgroundImageCandidate : undefined;
-        if (!backgroundImage) {
-          throw new ContentValidationError("Drag-sockets puzzles require a background image");
-        }
         const socketSize = normalizeOptionSize((block.definition.raw as { size?: unknown }).size);
         const shape = rawDef.shape ? resolveShape(rawDef.shape) : "circle";
         const { items, sourceMeta } = resolveDragItems(rawDef, shape, inventory, inventorySnapshot, inventoryTags);
@@ -1170,7 +1206,7 @@ const mapToDayBlocks = (
           visible: visibleSet.has(block),
           type,
           solution,
-          backgroundImage,
+          ...(backgroundImage ? { backgroundImage } : {}),
           ...(socketSize ? { socketSize } : {}),
           ...(requiredSockets.length > 0 ? { requiredSockets } : {}),
           ...(sourceMeta ? { inventorySource: sourceMeta } : {}),

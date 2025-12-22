@@ -4,8 +4,6 @@ Ideas and improvements to tackle
 - Feature: Twitch playes Arsvent. Design and implement a connection between Arsvent and Twitch
 
 - drag-sockets:
-  - inventory filter our or add items
-  - empty background image
   - socket solution order and conditions hints (let the sockets be filled one after the other)
 
 - richer media format (animated images, videos etc.)

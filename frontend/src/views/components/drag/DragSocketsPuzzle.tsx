@@ -93,6 +93,7 @@ export default function DragSocketsPuzzle({
 
   const availableItems = items.filter((item: DragSocketItem) => !assignedSocketByItem[item.id]);
   const resolvedBackground = resolveAsset(block.backgroundImage);
+  const hasBackground = Boolean(resolvedBackground);
 
   useEffect(() => {
     if (!resolvedBackground) return;
@@ -505,9 +506,9 @@ export default function DragSocketsPuzzle({
       <div className="drag-hint">{t("dragHint")}</div>
       {errorMessage && <div className="banner error">{errorMessage}</div>}
       <div
-        className={`drag-sockets-board ${shapeClass(block.shape)} ${draggingItem ? "is-dragging" : ""}`}
+        className={`drag-sockets-board ${shapeClass(block.shape)} ${draggingItem ? "is-dragging" : ""} ${hasBackground ? "" : "no-background"}`}
         style={{
-          backgroundImage: `url(${resolvedBackground})`,
+          ...(hasBackground ? { backgroundImage: `url(${resolvedBackground})` } : {}),
           aspectRatio,
           backgroundRepeat: "no-repeat",
           backgroundSize: "contain",
