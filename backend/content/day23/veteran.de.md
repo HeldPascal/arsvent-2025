@@ -28,7 +28,22 @@ id: "style_furniture"
 Öffne den Schrank mit dem Stilmaterial, welches man zu seiner Herstellung benötigt.
 
 ```yaml puzzle
-type: "placeholder"
+type: "drag-sockets"
+background-image: "/assets/25_23_style_furniture_background.png"
+shape: "square"
+
+inventorySource:
+  mode: "tags"
+  tags: ["style"]
+
+sockets:
+  - id: "furniture-socket"
+    label: ""
+    position: { x: 0.5, y: 0.5 }
+
+solution:
+  - socketId: "furniture-socket"
+    itemId: "obsidian"
 ```
 
 ## Wait for: style_furniture
@@ -40,7 +55,33 @@ Darin befinden sich drei vollständige Rüstungen: eine leichte, eine mittlere u
 Welches Stilmaterial wurde zur Herstellung der jeweiligen Rüstung verwendet?
 
 ```yaml puzzle
-type: "placeholder"
+type: "drag-sockets"
+background-image: "/assets/25_23_style_armor_background.png"
+shape: "square"
+
+inventorySource:
+  mode: "tags"
+  tags: ["style"]
+  exclude: ["obsidian"]
+
+sockets:
+  - id: "khajiit-armor-socket"
+    label: ""
+    position: { x: 0.2, y: 0.5 }
+  - id: "redguard-armor-socket"
+    label: ""
+    position: { x: 0.5, y: 0.5 }
+  - id: "imperial-armor-socket"
+    label: ""
+    position: { x: 0.8, y: 0.5 }
+
+solution:
+  - socketId: "khajiit-armor-socket"
+    itemId: "moonstone"
+  - socketId: "redguard-armor-socket"
+    itemId: "starmetal"
+  - socketId: "imperial-armor-socket"
+    itemId: "nickel"
 ```
 
 ## Wait for: style_armor
@@ -51,7 +92,15 @@ Du nimmst die leichte Rüstung aus dem Schrank und bringst sie zu dem Schneidert
 Mit welchem Eigenschaftsmaterial kannst du die Rüstung verstärken?
 
 ```yaml puzzle
-type: "placeholder"
+type: single-choice
+options:
+  - id: "potent"
+    label: ""
+    image: "/assets/25_23_trait_option_1.png"
+  - id: "fortified"
+    label: ""
+    image: "/assets/25_23_trait_option_2.png"
+solution: "fortified"
 ```
 
 ## Wait for: trait
@@ -63,7 +112,22 @@ An der Wand hängt ein Schild, aber davor ist der Platz frei.
 Es wirkt, als würde hier etwas fehlen.
 
 ```yaml puzzle
-type: "placeholder"
+type: "drag-sockets"
+background-image: "/assets/25_23_alchemy_table_background.png"
+shape: "square"
+
+inventorySource:
+  mode: "all"
+  excludeTags: ["style"]
+
+sockets:
+  - id: "socket"
+    label: ""
+    position: { x: 0.5, y: 0.5 }
+
+solution:
+  - socketId: "socket"
+    itemId: "craftingtable"
 ```
 
 ## Wait for: alchemy_table
@@ -78,7 +142,45 @@ Wähle ein Tranklösemittel und die benötigten Reagenzien aus, um einen Trank m
 - Magicka wiederherstellen
 
 ```yaml puzzle
-type: "placeholder"
+type: "drag-sockets"
+background-image: ""
+shape: "square"
+
+inventorySource:
+  mode: "tags"
+  tags: ["alchemy"]
+
+sockets:
+  - id: "solvent"
+    label: ""
+    image: "/assets/25_23_alchemy_crafting_socket_1.png"
+    position: { x: 0.2, y: 0.5 }
+  - id: "ingredient-1"
+    label: ""
+    image: "/assets/25_23_alchemy_crafting_socket_2.png"
+    position: { x: 0.4, y: 0.5 }
+  - id: "ingredient-2"
+    label: ""
+    image: "/assets/25_23_alchemy_crafting_socket_2.png"
+    position: { x: 0.6, y: 0.5 }
+  - id: "ingredient-3"
+    label: ""
+    image: "/assets/25_23_alchemy_crafting_socket_2.png"
+    position: { x: 0.8, y: 0.5 }
+
+solution:
+  lists:
+    - id: "ingredients"
+      items: ["plant-2", "plant-1", "ingredient-2"]
+  sockets:
+    - socketId: "solvent"
+      itemId: "stardew"
+    - socketId: "ingredient-1"
+      listId: "ingredients"
+    - socketId: "ingredient-2"
+      listId: "ingredients"
+    - socketId: "ingredient-3"
+      listId: "ingredients"
 ```
 
 ## Wait for: alchemy_crafting
@@ -96,7 +198,36 @@ Um all deine Waffen gleich zu verzaubern, benötigst du noch 2 weitere Glyphen.
 Welche Runensteine benötigst du zur Herstellung derselben Glyphe, wie die du bereits besitzt?
 
 ```yaml puzzle
-type: "placeholder"
+type: "drag-sockets"
+background-image: ""
+shape: "square"
+
+inventorySource:
+  mode: "tags"
+  tags: ["enchanting"]
+  exclude: ["glyph"]
+
+sockets:
+  - id: "potency"
+    label: ""
+    image: "/assets/25_23_enchanting_crafting_socket_1.png"
+    position: { x: 0.3, y: 0.5 }
+  - id: "essence"
+    label: ""
+    image: "/assets/25_23_enchanting_crafting_socket_2.png"
+    position: { x: 0.5, y: 0.5 }
+  - id: "aspect"
+    label: ""
+    image: "/assets/25_23_enchanting_crafting_socket_3.png"
+    position: { x: 0.7, y: 0.5 }
+
+solution:
+  - socketId: "potency"
+    itemId: "rune-5"
+  - socketId: "essence"
+    itemId: "rune-3"
+  - socketId: "aspect"
+    itemId: "rune-6"
 ```
 
 ## Wait for: enchanting_crafting
