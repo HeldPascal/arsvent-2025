@@ -1933,6 +1933,19 @@ app.get("/api/admin/content/day", requireAuth, requireAdmin, async (req, res, ne
       (next as { html?: string }).html = maskHtmlAssets((block as { html?: string }).html ?? "");
     }
     if (block.backgroundImage) next.backgroundImage = maskAssetPath(block.backgroundImage) ?? block.backgroundImage;
+    if (block.backgroundVideo) {
+      const video = block.backgroundVideo;
+      const sources =
+        video.sources?.map((source) => ({
+          ...source,
+          src: maskAssetPath(source.src) ?? source.src,
+        })) ?? undefined;
+      next.backgroundVideo = {
+        ...video,
+        ...(video.src ? { src: maskAssetPath(video.src) ?? video.src } : {}),
+        ...(sources && sources.length > 0 ? { sources } : {}),
+      };
+    }
     if (block.backImage) next.backImage = maskAssetPath(block.backImage) ?? block.backImage;
     if (block.hoverBackImage) next.hoverBackImage = maskAssetPath(block.hoverBackImage) ?? block.hoverBackImage;
     if (block.options) {

@@ -101,6 +101,7 @@ type TranslationKey =
   | "gridPathResetAfterIncorrect"
   | "selectItemsHint"
   | "selectItemsRequired"
+  | "replay"
   | "pairItemsHint"
   | "pairItemsMismatch"
   | "placeholderOnlySolveNow"
@@ -225,6 +226,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     gridPathResetAfterIncorrect: "Incorrect submission. Use Reset to start over.",
     selectItemsHint: "Tap the items that belong to the answer. Tap again to unselect.",
     selectItemsRequired: "Select at least one item.",
+    replay: "Replay",
     pairItemsHint: "Match items by selecting one from each column.",
     pairItemsMismatch: "Those items do not match.",
     placeholderOnlySolveNow: "Placeholder puzzle for prototyping. Use admin “Solve now” to mark it complete.",
@@ -349,6 +351,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     gridPathResetAfterIncorrect: "Falsche Abgabe. Nutze Zurücksetzen für einen neuen Versuch.",
     selectItemsHint: "Tippe die passenden Elemente in der Szene an. Tippe erneut, um abzuwählen.",
     selectItemsRequired: "Wähle mindestens ein Element aus.",
+    replay: "Erneut abspielen",
     pairItemsHint: "Paare bilden, indem du je ein Element aus jeder Spalte wählst.",
     pairItemsMismatch: "Diese beiden Elemente passen nicht zusammen.",
     placeholderOnlySolveNow: "Platzhalter-Rätsel für Prototypen. Nur per Admin-„Jetzt lösen“ abschließbar.",

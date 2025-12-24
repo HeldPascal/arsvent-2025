@@ -908,6 +908,22 @@ a {
   gap: 12px;
 }
 
+.select-items-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.select-items-controls .drag-hint {
+  margin-bottom: 0;
+  flex: 1;
+}
+
+.select-items-replay {
+  white-space: nowrap;
+}
+
 .drag-hint,
 .puzzle-hint {
   padding: 10px 12px;
@@ -941,6 +957,16 @@ a {
 
 .select-items-board {
   overflow: hidden;
+}
+
+.select-items-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .drag-sockets-board.is-dragging::after {

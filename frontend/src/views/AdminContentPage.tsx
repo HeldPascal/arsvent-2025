@@ -1066,7 +1066,23 @@ function BlockPreview({
           {hiddenBadge}
         </div>
         {block.title ? <div className="debug-title">{block.title}</div> : null}
-        {block.backgroundImage ? (
+        {block.backgroundVideo ? (
+          <video
+            style={{ maxWidth: "100%", borderRadius: 8, margin: "6px 0" }}
+            muted
+            playsInline
+            controls={false}
+          >
+            {(block.backgroundVideo.sources?.length
+              ? block.backgroundVideo.sources
+              : block.backgroundVideo.src
+                ? [{ src: block.backgroundVideo.src, type: block.backgroundVideo.type }]
+                : []
+            ).map((source) => (
+              <source key={source.src} src={resolveAsset(source.src)} type={source.type} />
+            ))}
+          </video>
+        ) : block.backgroundImage ? (
           <img
             src={resolveAsset(block.backgroundImage)}
             alt=""

@@ -3,7 +3,7 @@ import fs from "fs/promises";
 import fsSync from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import type { DayContent, DayBlock, Locale, Mode } from "./loader.js";
+import type { DayContent, DayBlock, Locale, Mode, BackgroundVideo } from "./loader.js";
 import type { WhenCondition } from "./v1-loader.js";
 
 type TokenKind = "block" | "option" | "item" | "socket" | "card" | "asset" | "list";
@@ -111,6 +111,19 @@ const maskAsset = (value?: string | null) => {
   if (!isAssetPath(value)) return value;
   const token = ensureAssetToken(value);
   return `/content-asset/${token}`;
+};
+
+const maskBackgroundVideo = (video: BackgroundVideo): BackgroundVideo => {
+  const sources =
+    video.sources?.map((source) => ({
+      ...source,
+      src: maskAsset(source.src),
+    })) ?? undefined;
+  return {
+    ...video,
+    ...(video.src ? { src: maskAsset(video.src) } : {}),
+    ...(sources && sources.length > 0 ? { sources } : {}),
+  };
 };
 
 export const maskHtmlAssets = (html: string): string => {
@@ -259,7 +272,8 @@ export const tokenizeDayContent = (content: DayContent, ctx: TokenContext): Toke
       return {
         ...basePuzzle,
         items,
-        backgroundImage: maskAsset(block.backgroundImage),
+        ...(block.backgroundImage ? { backgroundImage: maskAsset(block.backgroundImage) } : {}),
+        ...(block.backgroundVideo ? { backgroundVideo: maskBackgroundVideo(block.backgroundVideo) } : {}),
         solution,
       };
     }

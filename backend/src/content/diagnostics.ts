@@ -236,6 +236,10 @@ const collectBlockAssetIssues = async (
     extractAssetRefsFromHtml((block as { html?: string }).html, attach);
     if (block.kind === "puzzle") {
       attach(block.backgroundImage);
+      const backgroundVideo = (block as { backgroundVideo?: { src?: string; sources?: Array<{ src: string }> } })
+        .backgroundVideo;
+      if (backgroundVideo?.src) attach(backgroundVideo.src);
+      backgroundVideo?.sources?.forEach((source) => attach(source.src));
       attach((block as { backImage?: string }).backImage);
       attach((block as { hoverBackImage?: string }).hoverBackImage);
       block.options?.forEach((opt) => attach(opt.image));

@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { DayBlock, DragSocketItem } from "../../../types";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { BackgroundVideo, DayBlock, DragSocketItem } from "../../../types";
 import { useI18n } from "../../../i18n";
 
 type SelectItemsBlock = Extract<DayBlock, { kind: "puzzle" }> & {
   type: "select-items";
   items?: DragSocketItem[];
   backgroundImage?: string;
+  backgroundVideo?: BackgroundVideo;
   shape?: "circle" | "square" | "hex";
 };
 
@@ -38,9 +39,42 @@ export default function SelectItemsPuzzle({
   const boardRef = useRef<HTMLDivElement | null>(null);
   const baseBoardWidthRef = useRef<number>(0);
   const resolvedBackground = resolveAsset(block.backgroundImage);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const autoplayedRef = useRef(false);
+  const freezeRef = useRef(false);
+  const videoConfig = useMemo(() => {
+    if (!block.backgroundVideo) return null;
+    const sources =
+      block.backgroundVideo.sources?.length
+        ? block.backgroundVideo.sources
+        : block.backgroundVideo.src
+          ? [{ src: block.backgroundVideo.src, type: block.backgroundVideo.type }]
+          : [];
+    return {
+      sources,
+      segment: block.backgroundVideo.segment,
+      freezeFrame: block.backgroundVideo.freezeFrame,
+      preload: block.backgroundVideo.preload ?? "metadata",
+    };
+  }, [block.backgroundVideo]);
+  const resolvedVideoSources = useMemo(
+    () =>
+      videoConfig?.sources?.map((source) => ({
+        ...source,
+        src: resolveAsset(source.src),
+      })) ?? [],
+    [videoConfig, resolveAsset],
+  );
+  const hasVideo = Boolean(videoConfig && resolvedVideoSources.length > 0);
+  const videoSignature = useMemo(() => {
+    if (!videoConfig) return "";
+    const sourcesKey = resolvedVideoSources.map((source) => source.src).join("|");
+    const segmentKey = videoConfig.segment ? `${videoConfig.segment.start}-${videoConfig.segment.end}` : "";
+    return `${sourcesKey}|${segmentKey}|${String(videoConfig.freezeFrame ?? "")}|${String(videoConfig.preload ?? "")}`;
+  }, [videoConfig, resolvedVideoSources]);
 
   useEffect(() => {
-    if (!resolvedBackground) return;
+    if (!resolvedBackground || hasVideo) return;
     const img = new Image();
     img.onload = () => {
       if (img.naturalWidth > 0 && img.naturalHeight > 0) {
@@ -48,7 +82,106 @@ export default function SelectItemsPuzzle({
       }
     };
     img.src = resolvedBackground;
-  }, [resolvedBackground]);
+  }, [resolvedBackground, hasVideo]);
+
+  const getSegmentBounds = useCallback(
+    (video: HTMLVideoElement) => {
+      const duration = Number.isFinite(video.duration) ? video.duration : undefined;
+      const start = Math.max(0, videoConfig?.segment?.start ?? 0);
+      let end = videoConfig?.segment?.end ?? duration;
+      if (end !== undefined) {
+        end = Math.max(start, end);
+        if (duration !== undefined) end = Math.min(end, duration);
+      }
+      let freezeTime: number;
+      if (typeof videoConfig?.freezeFrame === "number") {
+        freezeTime = videoConfig.freezeFrame;
+      } else if (videoConfig?.freezeFrame === "start") {
+        freezeTime = start;
+      } else {
+        freezeTime = end ?? duration ?? start;
+      }
+      if (duration !== undefined) {
+        freezeTime = Math.min(Math.max(0, freezeTime), duration);
+      } else {
+        freezeTime = Math.max(0, freezeTime);
+      }
+      return { start, end, freezeTime };
+    },
+    [videoConfig],
+  );
+
+  const pauseAndFreeze = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || freezeRef.current) return;
+    freezeRef.current = true;
+    const { freezeTime } = getSegmentBounds(video);
+    video.pause();
+    if (Number.isFinite(freezeTime)) {
+      video.currentTime = freezeTime;
+    }
+  }, [getSegmentBounds]);
+
+  const playSegment = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || !videoConfig) return;
+    freezeRef.current = false;
+    const { start } = getSegmentBounds(video);
+    try {
+      video.pause();
+      video.currentTime = start;
+    } catch {
+      // Ignore seek errors; video might not be ready yet.
+    }
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {
+        pauseAndFreeze();
+      });
+    }
+  }, [getSegmentBounds, pauseAndFreeze, videoConfig]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !hasVideo) return;
+    const handleTimeUpdate = () => {
+      const { end } = getSegmentBounds(video);
+      if (end !== undefined && video.currentTime >= end - 0.04) {
+        pauseAndFreeze();
+      }
+    };
+    const handleEnded = () => {
+      pauseAndFreeze();
+    };
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    video.addEventListener("ended", handleEnded);
+    return () => {
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+      video.removeEventListener("ended", handleEnded);
+    };
+  }, [getSegmentBounds, hasVideo, pauseAndFreeze, videoSignature]);
+
+  useEffect(() => {
+    autoplayedRef.current = false;
+  }, [block.id, videoSignature]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !hasVideo) return;
+    if (autoplayedRef.current) return;
+    const startPlayback = () => {
+      if (autoplayedRef.current) return;
+      autoplayedRef.current = true;
+      playSegment();
+    };
+    if (video.readyState >= 1) {
+      startPlayback();
+      return;
+    }
+    const handleLoaded = () => startPlayback();
+    video.addEventListener("loadedmetadata", handleLoaded, { once: true });
+    return () => video.removeEventListener("loadedmetadata", handleLoaded);
+  }, [hasVideo, playSegment, videoSignature]);
 
   useEffect(() => {
     const updateItemSize = () => {
@@ -76,18 +209,47 @@ export default function SelectItemsPuzzle({
 
   return (
     <div className="select-items-wrapper">
-      <div className="drag-hint">{hint ?? t("selectItemsHint")}</div>
+      <div className="select-items-controls">
+        <div className="drag-hint">{hint ?? t("selectItemsHint")}</div>
+        {hasVideo && (
+          <button type="button" className="small-btn ghost select-items-replay" onClick={playSegment}>
+            {t("replay")}
+          </button>
+        )}
+      </div>
       {errorMessage && <div className="banner error">{errorMessage}</div>}
       <div
-        className={`drag-sockets-board select-items-board ${shapeClass(block.shape)} status-${status}`}
+        className={`drag-sockets-board select-items-board ${shapeClass(block.shape)} status-${status}${hasVideo ? " has-video" : ""}`}
         style={{
-          backgroundImage: resolvedBackground ? `url(${resolvedBackground})` : undefined,
+          backgroundImage: !hasVideo && resolvedBackground ? `url(${resolvedBackground})` : undefined,
           aspectRatio,
           backgroundRepeat: "no-repeat",
           backgroundSize: "contain",
         }}
         ref={boardRef}
       >
+        {hasVideo && (
+          <video
+            ref={videoRef}
+            className="select-items-video"
+            muted
+            playsInline
+            preload={videoConfig?.preload ?? "metadata"}
+            controls={false}
+            disablePictureInPicture
+            aria-hidden="true"
+            onLoadedMetadata={(event) => {
+              const target = event.currentTarget;
+              if (target.videoWidth > 0 && target.videoHeight > 0) {
+                setAspectRatio(target.videoWidth / target.videoHeight);
+              }
+            }}
+          >
+            {resolvedVideoSources.map((source) => (
+              <source key={source.src} src={source.src} type={source.type} />
+            ))}
+          </video>
+        )}
         {items.map((item) => {
           const posX = (item.position?.x ?? 0.5) * 100;
           const posY = (item.position?.y ?? 0.5) * 100;

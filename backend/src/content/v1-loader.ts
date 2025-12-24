@@ -11,6 +11,9 @@ import type {
   MemoryCard,
   GridSize,
   GridPathSolution,
+  BackgroundVideo,
+  BackgroundVideoSource,
+  BackgroundVideoSegment,
 } from "./loader.js";
 import { ContentValidationError } from "./errors.js";
 
@@ -197,6 +200,103 @@ const normalizeOptionSize = (value: unknown): "small" | "medium" | "large" | und
     return normalized;
   }
   return undefined;
+};
+
+const normalizeBackgroundVideoSources = (raw: unknown): BackgroundVideoSource[] | undefined => {
+  if (!raw) return undefined;
+  if (typeof raw === "string") {
+    return [{ src: raw }];
+  }
+  if (!Array.isArray(raw)) {
+    throw new ContentValidationError("Background video sources must be a list");
+  }
+  const sources = raw.map((entry) => {
+    if (typeof entry === "string") {
+      return { src: entry };
+    }
+    if (entry && typeof entry === "object" && !Array.isArray(entry)) {
+      const src = (entry as { src?: unknown }).src;
+      const type = (entry as { type?: unknown }).type;
+      if (typeof src !== "string" || !src.trim()) {
+        throw new ContentValidationError("Background video sources require a src");
+      }
+      return { src, ...(typeof type === "string" && type.trim() ? { type } : {}) };
+    }
+    throw new ContentValidationError("Invalid background video source entry");
+  });
+  return sources.filter((source) => source.src.trim().length > 0);
+};
+
+const normalizeBackgroundVideoSegment = (raw: unknown): BackgroundVideoSegment | undefined => {
+  if (!raw) return undefined;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new ContentValidationError("Background video segment must be an object");
+  }
+  const segment = raw as { start?: unknown; end?: unknown };
+  const start = Number(segment.start);
+  const end = Number(segment.end);
+  if (!Number.isFinite(start) || start < 0) {
+    throw new ContentValidationError("Background video segment start must be a non-negative number");
+  }
+  if (!Number.isFinite(end) || end <= start) {
+    throw new ContentValidationError("Background video segment end must be greater than start");
+  }
+  return { start, end };
+};
+
+const normalizeFreezeFrame = (raw: unknown): BackgroundVideo["freezeFrame"] => {
+  if (raw === undefined || raw === null || raw === "") return undefined;
+  if (typeof raw === "number") {
+    if (!Number.isFinite(raw) || raw < 0) {
+      throw new ContentValidationError("Background video freezeFrame must be a non-negative number");
+    }
+    return raw;
+  }
+  if (typeof raw === "string") {
+    const normalized = raw.trim().toLowerCase();
+    if (normalized === "start" || normalized === "end") return normalized;
+    const numeric = Number(normalized);
+    if (Number.isFinite(numeric) && numeric >= 0) return numeric;
+  }
+  throw new ContentValidationError("Background video freezeFrame must be 'start', 'end', or a number");
+};
+
+const normalizeBackgroundVideo = (raw: unknown): BackgroundVideo | undefined => {
+  if (!raw) return undefined;
+  if (typeof raw === "string") {
+    return { src: raw };
+  }
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new ContentValidationError("Background video must be a string or object");
+  }
+  const obj = raw as Record<string, unknown>;
+  const src = typeof obj.src === "string" ? obj.src : undefined;
+  const type = typeof obj.type === "string" ? obj.type : undefined;
+  const sources = normalizeBackgroundVideoSources(obj.sources);
+  const segment = normalizeBackgroundVideoSegment(obj.segment);
+  const freezeFrame = normalizeFreezeFrame(obj.freezeFrame ?? obj["freeze-frame"]);
+  const preloadRaw = obj.preload ?? obj["preload"];
+  const preload =
+    typeof preloadRaw === "string" && ["auto", "metadata", "none"].includes(preloadRaw.trim().toLowerCase())
+      ? (preloadRaw.trim().toLowerCase() as BackgroundVideo["preload"])
+      : preloadRaw === undefined
+        ? undefined
+        : (() => {
+            throw new ContentValidationError("Background video preload must be auto, metadata, or none");
+          })();
+
+  if (!src && (!sources || sources.length === 0)) {
+    throw new ContentValidationError("Background video requires a src or sources");
+  }
+
+  return {
+    ...(src ? { src } : {}),
+    ...(type ? { type } : {}),
+    ...(sources && sources.length > 0 ? { sources } : {}),
+    ...(segment ? { segment } : {}),
+    ...(freezeFrame !== undefined ? { freezeFrame } : {}),
+    ...(preload ? { preload } : {}),
+  };
 };
 
 const resolveShape = (input: unknown): DragShape => {
@@ -1134,8 +1234,9 @@ const mapToDayBlocks = (
         const backgroundImageCandidate = rawDef.backgroundImage ?? rawDef["background-image"];
         const backgroundImage =
           typeof backgroundImageCandidate === "string" ? backgroundImageCandidate : undefined;
-        if (!backgroundImage) {
-          throw new ContentValidationError("Select-items puzzles require a background image");
+        const backgroundVideo = normalizeBackgroundVideo(rawDef.backgroundVideo ?? rawDef["background-video"]);
+        if (!backgroundImage && !backgroundVideo) {
+          throw new ContentValidationError("Select-items puzzles require a background image or video");
         }
         const shape = rawDef.shape ? resolveShape(rawDef.shape) : "circle";
         const items = normalizeDragItems(rawDef.items, shape, { requirePosition: true });
@@ -1181,7 +1282,8 @@ const mapToDayBlocks = (
           type,
           solution: solutionItems,
           requiredSelections,
-          backgroundImage,
+          ...(backgroundImage ? { backgroundImage } : {}),
+          ...(backgroundVideo ? { backgroundVideo } : {}),
           items,
           shape,
           solved,

@@ -81,6 +81,25 @@ export interface GridPathSolution {
   goalColumn?: number;
 }
 
+export interface BackgroundVideoSource {
+  src: string;
+  type?: string;
+}
+
+export interface BackgroundVideoSegment {
+  start: number;
+  end: number;
+}
+
+export interface BackgroundVideo {
+  src?: string;
+  type?: string;
+  sources?: BackgroundVideoSource[];
+  segment?: BackgroundVideoSegment;
+  freezeFrame?: "start" | "end" | number;
+  preload?: "auto" | "metadata" | "none";
+}
+
 export interface RiddleReward {
   title: string;
   description?: string | null;
@@ -124,6 +143,7 @@ export interface PuzzleBlock {
   requiredSelections?: number;
   ordered?: boolean;
   backgroundImage?: string;
+  backgroundVideo?: BackgroundVideo;
   backgroundSize?: string;
   boardMaxWidth?: string;
   items?: DragSocketItem[];
