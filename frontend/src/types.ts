@@ -205,6 +205,11 @@ export interface IntroPayload {
   mode: Mode;
 }
 
+export interface EpiloguePayload {
+  title: string;
+  body: string;
+}
+
 export interface AdminOverview {
     diagnostics: {
       uptimeSeconds: number;

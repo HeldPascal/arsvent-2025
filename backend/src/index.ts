@@ -18,7 +18,15 @@ import { fileURLToPath } from "url";
 import sharp from "sharp";
 import { PrismaClient } from "@prisma/client";
 import type { User as PrismaUser } from "@prisma/client";
-import { loadIntro, loadDayContent, IntroNotFoundError, RiddleNotFoundError, resolveDayPath } from "./content/loader.js";
+import {
+  loadIntro,
+  loadEpilogue,
+  loadDayContent,
+  IntroNotFoundError,
+  EpilogueNotFoundError,
+  RiddleNotFoundError,
+  resolveDayPath,
+} from "./content/loader.js";
 import type { Locale, Mode, DayContent, DayBlock } from "./content/loader.js";
 import { ContentValidationError } from "./content/errors.js";
 import { evaluateCondition } from "./content/v1-loader.js";
@@ -1287,6 +1295,28 @@ app.post("/api/intro/complete", requireAuth, async (req, res, next) => {
       return res.json({ introCompleted: true });
     });
   } catch (error) {
+    return next(error);
+  }
+});
+
+app.get("/api/epilogue", requireAuth, requireIntroComplete, async (req, res, next) => {
+  try {
+    const locale = normalizeLocale(getUserLocale(req.user as PrismaUser));
+    const isAdmin = Boolean(req.user?.isAdmin || req.user?.isSuperAdmin);
+    const lastSolved = req.user?.lastSolvedDay ?? 0;
+    if (!isAdmin && lastSolved < MAX_DAY) {
+      return res.status(403).json({ error: "Epilogue not unlocked yet" });
+    }
+    const funSwap = Boolean((req.user as PrismaUser)?.creatureSwap);
+    const content = await loadEpilogue(locale);
+    return res.json({
+      title: applyCreatureSwapText(content.title, locale, funSwap),
+      body: applyCreatureSwapText(maskHtmlAssets(content.body), locale, funSwap),
+    });
+  } catch (error) {
+    if (error instanceof EpilogueNotFoundError) {
+      return res.status(404).json({ error: "Epilogue not found" });
+    }
     return next(error);
   }
 });

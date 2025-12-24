@@ -15,6 +15,7 @@ import type { Locale, User } from "./types";
 import Layout from "./views/Layout";
 import { I18nProvider } from "./i18n";
 import IntroPage from "./views/IntroPage";
+import EpiloguePage from "./views/EpiloguePage";
 
 export default function AppRouter() {
   const [user, setUser] = useState<User | null>(null);
@@ -205,6 +206,26 @@ export default function AppRouter() {
             element={
               user ? (
                 <IntroPage user={user} onModeChange={(mode) => handleUserPatch({ mode })} onIntroComplete={handleIntroComplete} />
+              ) : loading ? (
+                <div className="panel">Loading…</div>
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/epilogue"
+            element={
+              user ? (
+                user.introCompleted ? (
+                  user.lastSolvedDay >= 24 || user.isAdmin || user.isSuperAdmin ? (
+                    <EpiloguePage user={user} />
+                  ) : (
+                    <Navigate to="/calendar" replace />
+                  )
+                ) : (
+                  <Navigate to="/intro" replace />
+                )
               ) : loading ? (
                 <div className="panel">Loading…</div>
               ) : (

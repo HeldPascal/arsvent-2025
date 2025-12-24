@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { fetchDay, submitAnswer, resetPuzzle, solvePuzzle } from "../services/api";
 import type { DayDetail, DayBlock, RiddleAnswerPayload, User } from "../types";
@@ -29,6 +29,7 @@ export default function DayPage({ user, version }: Props) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<{ block: Extract<DayBlock, { kind: "puzzle" }>; payload: RiddleAnswerPayload } | null>(null);
   const [lastResults, setLastResults] = useState<Record<string, { correct: boolean }>>({});
+  const epilogueToastShownRef = useRef(false);
   const isOverrideParam = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return params.get("override") === "1";
@@ -85,6 +86,7 @@ export default function DayPage({ user, version }: Props) {
       return;
     }
 
+    epilogueToastShownRef.current = false;
     setLoading(true);
     setError(null);
     setPendingPayload(null);
@@ -139,6 +141,19 @@ export default function DayPage({ user, version }: Props) {
         window.dispatchEvent(
           new CustomEvent("app:toast", {
             detail: { type: "error", message: t("answerIncorrect"), durationMs: 3000 },
+          }),
+        );
+      } else if (
+        !useOverride &&
+        dayNumber === 24 &&
+        resp.isSolved &&
+        user.lastSolvedDay < 24 &&
+        !epilogueToastShownRef.current
+      ) {
+        epilogueToastShownRef.current = true;
+        window.dispatchEvent(
+          new CustomEvent("app:toast", {
+            detail: { type: "success", key: "epilogueUnlocked" },
           }),
         );
       }

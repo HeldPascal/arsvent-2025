@@ -16,6 +16,8 @@ import {
   type RiddleType,
   loadIntro,
   IntroNotFoundError,
+  loadEpilogue,
+  EpilogueNotFoundError,
 } from "./loader.js";
 import { getAssetToken } from "./tokens.js";
 import { loadInventory } from "./inventory.js";
@@ -1012,6 +1014,30 @@ const collectIntroAssetIssues = async (issues: Issue[], referencedAssets: Set<st
   );
 };
 
+const collectEpilogueAssetIssues = async (issues: Issue[], referencedAssets: Set<string>) => {
+  const attach = (ref: string, locale: Locale) =>
+    validateAssetReference(ref, issues, { locale, epilogue: true }, referencedAssets);
+  await Promise.all(
+    SUPPORTED_LOCALES.map(async (locale) => {
+      try {
+        const epilogue = await loadEpilogue(locale);
+        extractAssetRefsFromHtml(epilogue.body, (ref) => {
+          void attach(ref, locale);
+        });
+      } catch (err) {
+        if (err instanceof EpilogueNotFoundError) return;
+        issues.push({
+          severity: "warning",
+          source: "content",
+          code: "EPILOGUE_LOAD_ERROR",
+          message: `Failed to load epilogue for ${locale}`,
+          details: { locale, error: (err as Error).message },
+        });
+      }
+    }),
+  );
+};
+
 export const getContentDiagnostics = async (maxDay: number): Promise<ContentDiagnostics> => {
   const variantDiagnostics: VariantDiagnostics[] = [];
   const tasks: Array<Promise<void>> = [];
@@ -1052,6 +1078,7 @@ export const getContentDiagnostics = async (maxDay: number): Promise<ContentDiag
 
     await Promise.all(tasks);
     await collectIntroAssetIssues(issues, referencedAssets);
+    await collectEpilogueAssetIssues(issues, referencedAssets);
 
     // Attach index warnings to specific variants and upgrade status to warning
     variantDiagnostics.forEach((variant) => {

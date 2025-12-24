@@ -42,6 +42,9 @@ export default function SelectItemsPuzzle({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const autoplayedRef = useRef(false);
   const freezeRef = useRef(false);
+  const isFullyVisibleRef = useRef(false);
+  const pendingPlayRef = useRef(false);
+  const pausedByVisibilityRef = useRef(false);
   const videoConfig = useMemo(() => {
     if (!block.backgroundVideo) return null;
     const sources =
@@ -125,6 +128,10 @@ export default function SelectItemsPuzzle({
   const playSegment = useCallback(() => {
     const video = videoRef.current;
     if (!video || !videoConfig) return;
+    if (!isFullyVisibleRef.current) {
+      pendingPlayRef.current = true;
+      return;
+    }
     freezeRef.current = false;
     const { start } = getSegmentBounds(video);
     try {
@@ -162,15 +169,56 @@ export default function SelectItemsPuzzle({
   }, [getSegmentBounds, hasVideo, pauseAndFreeze, videoSignature]);
 
   useEffect(() => {
+    const target = boardRef.current;
+    if (!hasVideo || !target) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const fullyVisible = Boolean(entry?.isIntersecting && entry.intersectionRatio >= 1);
+        isFullyVisibleRef.current = fullyVisible;
+        const video = videoRef.current;
+        if (!fullyVisible) {
+          if (video && !video.paused) {
+            pausedByVisibilityRef.current = true;
+            video.pause();
+          }
+          return;
+        }
+        if (!disabled && pausedByVisibilityRef.current && video) {
+          pausedByVisibilityRef.current = false;
+          const playPromise = video.play();
+          if (playPromise && typeof playPromise.catch === "function") {
+            playPromise.catch(() => {
+              pauseAndFreeze();
+            });
+          }
+        }
+        if (pendingPlayRef.current && !disabled) {
+          pendingPlayRef.current = false;
+          playSegment();
+        }
+      },
+      { threshold: 1 },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [disabled, hasVideo, pauseAndFreeze, playSegment]);
+
+  useEffect(() => {
     autoplayedRef.current = false;
+    pendingPlayRef.current = false;
+    pausedByVisibilityRef.current = false;
   }, [block.id, videoSignature]);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !hasVideo) return;
+    if (!video || !hasVideo || disabled) return;
     if (autoplayedRef.current) return;
     const startPlayback = () => {
       if (autoplayedRef.current) return;
+      if (!isFullyVisibleRef.current) {
+        pendingPlayRef.current = true;
+        return;
+      }
       autoplayedRef.current = true;
       playSegment();
     };
@@ -181,7 +229,7 @@ export default function SelectItemsPuzzle({
     const handleLoaded = () => startPlayback();
     video.addEventListener("loadedmetadata", handleLoaded, { once: true });
     return () => video.removeEventListener("loadedmetadata", handleLoaded);
-  }, [hasVideo, playSegment, videoSignature]);
+  }, [disabled, hasVideo, playSegment, videoSignature]);
 
   useEffect(() => {
     const updateItemSize = () => {

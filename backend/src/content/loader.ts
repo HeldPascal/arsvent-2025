@@ -31,6 +31,11 @@ export interface IntroContent {
   body: string;
 }
 
+export interface EpilogueContent {
+  title: string;
+  body: string;
+}
+
 export interface RiddleOption {
   id: string;
   label: string;
@@ -193,11 +198,19 @@ export class IntroNotFoundError extends Error {
   }
 }
 
+export class EpilogueNotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "EpilogueNotFoundError";
+  }
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 export const CONTENT_ROOT = path.join(__dirname, "..", "..", "content");
 
 const buildIntroPath = (locale: Locale) => path.join(CONTENT_ROOT, "intro", `intro.${locale}.md`);
+const buildEpiloguePath = (locale: Locale) => path.join(CONTENT_ROOT, "epilogue", `epilogue.${locale}.md`);
 
 export const normalizeId = (value: unknown, message: string) => {
   const id = String(value ?? "").trim();
@@ -438,6 +451,28 @@ export async function loadIntro(locale: Locale): Promise<IntroContent> {
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       throw new IntroNotFoundError("Intro not found for locale");
+    }
+    throw error;
+  }
+}
+
+export async function loadEpilogue(locale: Locale): Promise<EpilogueContent> {
+  const filePath = buildEpiloguePath(locale);
+  try {
+    const raw = await fs.readFile(filePath, "utf8");
+    const parsed = matter(raw);
+    const title = String(parsed.data.title ?? "").trim();
+    if (!title) {
+      throw new Error("Missing epilogue title");
+    }
+    const htmlBody = marked.parse(parsed.content);
+    return {
+      title,
+      body: typeof htmlBody === "string" ? htmlBody : String(htmlBody),
+    };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new EpilogueNotFoundError("Epilogue not found for locale");
     }
     throw error;
   }

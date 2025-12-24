@@ -6,6 +6,7 @@ import type {
   DayDetail,
   DaysResponse,
   IntroPayload,
+  EpiloguePayload,
   InventoryResponse,
   Locale,
   Mode,
@@ -234,5 +235,7 @@ export const fetchIntro = (locale?: "en" | "de") => {
 };
 
 export const completeIntro = () => apiFetch<{ introCompleted: boolean }>("/api/intro/complete", { method: "POST" });
+
+export const fetchEpilogue = () => apiFetch<EpiloguePayload>("/api/epilogue");
 
 export const fetchInventory = () => apiFetch<InventoryResponse>("/api/inventory");

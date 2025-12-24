@@ -15,6 +15,7 @@ export default function CalendarPage({ user, version }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { t } = useI18n();
+  const epilogueUnlocked = user.lastSolvedDay >= 24 || user.isAdmin || user.isSuperAdmin;
   const availableRef = useRef<number | null>(null);
   const unlockedRef = useRef<number | null>(null);
 
@@ -104,6 +105,7 @@ export default function CalendarPage({ user, version }: Props) {
             }}
           />
         ))}
+        {epilogueUnlocked && <EpilogueCard title={t("epilogueLabel")} />}
       </div>
     </div>
   );
@@ -116,6 +118,19 @@ function IntroCard({ title }: { title: string }) {
       <div className="day-number">0</div>
       <div className="day-status">{title}</div>
       <Link className="small-btn" to="/intro">
+        {t("open")}
+      </Link>
+    </div>
+  );
+}
+
+function EpilogueCard({ title }: { title: string }) {
+  const { t } = useI18n();
+  return (
+    <div className="day-card solved">
+      <div className="day-number">25</div>
+      <div className="day-status">{title}</div>
+      <Link className="small-btn" to="/epilogue">
         {t("open")}
       </Link>
     </div>

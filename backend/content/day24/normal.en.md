@@ -26,7 +26,71 @@ You will need major expedition to dodge it!
 One of the Warden abilities can help you with this.
 
 ```yaml puzzle
-type: "placeholder"
+type: "select-items"
+shape: "square"
+background-video:
+  sources:
+    - src: "/assets/25_24_combat_en.webm"
+      type: "video/webm"
+    - src: "/assets/25_24_combat_en.mp4"
+      type: "video/mp4"
+  segment:
+    start: 0
+    end: 3.0
+  freeze-frame: end
+  preload: metadata
+
+items:
+  - id: "quickslot"
+    label: ""
+    image: "/assets/25_23_reward.png"
+    position: { x: 0.15, y: 0.8 }
+  - id: "frontbar-1"
+    label: ""
+    image: "/assets/25_19_reward.png"
+    position: { x: 0.28, y: 0.7 }
+  - id: "frontbar-2"
+    label: ""
+    image: "/assets/25_07_reward_2.png"
+    position: { x: 0.39, y: 0.7 }
+  - id: "frontbar-3"
+    label: ""
+    image: "/assets/25_07_reward_1.png"
+    position: { x: 0.5, y: 0.7 }
+  - id: "frontbar-4"
+    label: ""
+    image: "/assets/25_13_reward_2.png"
+    position: { x: 0.61, y: 0.7 }
+  - id: "frontbar-5"
+    label: ""
+    image: "/assets/25_13_reward_4.png"
+    position: { x: 0.72, y: 0.7 }
+  - id: "backbar-1"
+    label: ""
+    image: "/assets/25_22_reward.png"
+    position: { x: 0.28, y: 0.9 }
+  - id: "backbar-2"
+    label: ""
+    image: "/assets/25_07_reward_3.png"
+    position: { x: 0.39, y: 0.9 }
+  - id: "backbar-3"
+    label: ""
+    image: "/assets/25_14_reward.png"
+    position: { x: 0.5, y: 0.9 }
+  - id: "backbar-4"
+    label: ""
+    image: "/assets/25_07_reward_4.png"
+    position: { x: 0.61, y: 0.9 }
+  - id: "backbar-5"
+    label: ""
+    image: "/assets/25_13_reward_3.png"
+    position: { x: 0.72, y: 0.9 }
+  - id: "ultimate"
+    label: ""
+    image: "/assets/25_13_reward_1.png"
+    position: { x: 0.85, y: 0.8 }
+
+solution: ["frontbar-4"]
 ```
 
 ## Wait for: expedition
@@ -37,7 +101,71 @@ In order to be prepared, you cast Minor Berserk and Minor Resolve upon yourself.
 One of the Restoration Staff abilities can help you with this.
 
 ```yaml puzzle
-type: "placeholder"
+type: "select-items"
+shape: "square"
+background-video:
+  sources:
+    - src: "/assets/25_24_combat_en.webm"
+      type: "video/webm"
+    - src: "/assets/25_24_combat_en.mp4"
+      type: "video/mp4"
+  segment:
+    start: 3.0
+    end: 6.0
+  freeze-frame: end
+  preload: metadata
+
+items:
+  - id: "quickslot"
+    label: ""
+    image: "/assets/25_23_reward.png"
+    position: { x: 0.15, y: 0.8 }
+  - id: "frontbar-1"
+    label: ""
+    image: "/assets/25_19_reward.png"
+    position: { x: 0.28, y: 0.7 }
+  - id: "frontbar-2"
+    label: ""
+    image: "/assets/25_07_reward_2.png"
+    position: { x: 0.39, y: 0.7 }
+  - id: "frontbar-3"
+    label: ""
+    image: "/assets/25_07_reward_1.png"
+    position: { x: 0.5, y: 0.7 }
+  - id: "frontbar-4"
+    label: ""
+    image: "/assets/25_13_reward_2.png"
+    position: { x: 0.61, y: 0.7 }
+  - id: "frontbar-5"
+    label: ""
+    image: "/assets/25_13_reward_4.png"
+    position: { x: 0.72, y: 0.7 }
+  - id: "backbar-1"
+    label: ""
+    image: "/assets/25_22_reward.png"
+    position: { x: 0.28, y: 0.9 }
+  - id: "backbar-2"
+    label: ""
+    image: "/assets/25_07_reward_3.png"
+    position: { x: 0.39, y: 0.9 }
+  - id: "backbar-3"
+    label: ""
+    image: "/assets/25_14_reward.png"
+    position: { x: 0.5, y: 0.9 }
+  - id: "backbar-4"
+    label: ""
+    image: "/assets/25_07_reward_4.png"
+    position: { x: 0.61, y: 0.9 }
+  - id: "backbar-5"
+    label: ""
+    image: "/assets/25_13_reward_3.png"
+    position: { x: 0.72, y: 0.9 }
+  - id: "ultimate"
+    label: ""
+    image: "/assets/25_13_reward_1.png"
+    position: { x: 0.85, y: 0.8 }
+
+solution: ["backbar-2"]
 ```
 
 ## Wait for: berserk
@@ -49,7 +177,71 @@ Protect yourself!
 The Light Armor ability can help you with this.
 
 ```yaml puzzle
-type: "placeholder"
+type: "select-items"
+shape: "square"
+background-video:
+  sources:
+    - src: "/assets/25_24_combat_en.webm"
+      type: "video/webm"
+    - src: "/assets/25_24_combat_en.mp4"
+      type: "video/mp4"
+  segment:
+    start: 6.0
+    end: 11.0
+  freeze-frame: end
+  preload: metadata
+
+items:
+  - id: "quickslot"
+    label: ""
+    image: "/assets/25_23_reward.png"
+    position: { x: 0.15, y: 0.8 }
+  - id: "frontbar-1"
+    label: ""
+    image: "/assets/25_19_reward.png"
+    position: { x: 0.28, y: 0.7 }
+  - id: "frontbar-2"
+    label: ""
+    image: "/assets/25_07_reward_2.png"
+    position: { x: 0.39, y: 0.7 }
+  - id: "frontbar-3"
+    label: ""
+    image: "/assets/25_07_reward_1.png"
+    position: { x: 0.5, y: 0.7 }
+  - id: "frontbar-4"
+    label: ""
+    image: "/assets/25_13_reward_2.png"
+    position: { x: 0.61, y: 0.7 }
+  - id: "frontbar-5"
+    label: ""
+    image: "/assets/25_13_reward_4.png"
+    position: { x: 0.72, y: 0.7 }
+  - id: "backbar-1"
+    label: ""
+    image: "/assets/25_22_reward.png"
+    position: { x: 0.28, y: 0.9 }
+  - id: "backbar-2"
+    label: ""
+    image: "/assets/25_07_reward_3.png"
+    position: { x: 0.39, y: 0.9 }
+  - id: "backbar-3"
+    label: ""
+    image: "/assets/25_14_reward.png"
+    position: { x: 0.5, y: 0.9 }
+  - id: "backbar-4"
+    label: ""
+    image: "/assets/25_07_reward_4.png"
+    position: { x: 0.61, y: 0.9 }
+  - id: "backbar-5"
+    label: ""
+    image: "/assets/25_13_reward_3.png"
+    position: { x: 0.72, y: 0.9 }
+  - id: "ultimate"
+    label: ""
+    image: "/assets/25_13_reward_1.png"
+    position: { x: 0.85, y: 0.8 }
+
+solution: ["frontbar-1"]
 ```
 
 ## Wait for: light_shield
@@ -61,7 +253,71 @@ Place a healing circle in the arena!
 One of the Restoration Staff abilities can help you with this.
 
 ```yaml puzzle
-type: "placeholder"
+type: "select-items"
+shape: "square"
+background-video:
+  sources:
+    - src: "/assets/25_24_combat_en.webm"
+      type: "video/webm"
+    - src: "/assets/25_24_combat_en.mp4"
+      type: "video/mp4"
+  segment:
+    start: 11.0
+    end: 15.0
+  freeze-frame: end
+  preload: metadata
+
+items:
+  - id: "quickslot"
+    label: ""
+    image: "/assets/25_23_reward.png"
+    position: { x: 0.15, y: 0.8 }
+  - id: "frontbar-1"
+    label: ""
+    image: "/assets/25_19_reward.png"
+    position: { x: 0.28, y: 0.7 }
+  - id: "frontbar-2"
+    label: ""
+    image: "/assets/25_07_reward_2.png"
+    position: { x: 0.39, y: 0.7 }
+  - id: "frontbar-3"
+    label: ""
+    image: "/assets/25_07_reward_1.png"
+    position: { x: 0.5, y: 0.7 }
+  - id: "frontbar-4"
+    label: ""
+    image: "/assets/25_13_reward_2.png"
+    position: { x: 0.61, y: 0.7 }
+  - id: "frontbar-5"
+    label: ""
+    image: "/assets/25_13_reward_4.png"
+    position: { x: 0.72, y: 0.7 }
+  - id: "backbar-1"
+    label: ""
+    image: "/assets/25_22_reward.png"
+    position: { x: 0.28, y: 0.9 }
+  - id: "backbar-2"
+    label: ""
+    image: "/assets/25_07_reward_3.png"
+    position: { x: 0.39, y: 0.9 }
+  - id: "backbar-3"
+    label: ""
+    image: "/assets/25_14_reward.png"
+    position: { x: 0.5, y: 0.9 }
+  - id: "backbar-4"
+    label: ""
+    image: "/assets/25_07_reward_4.png"
+    position: { x: 0.61, y: 0.9 }
+  - id: "backbar-5"
+    label: ""
+    image: "/assets/25_13_reward_3.png"
+    position: { x: 0.72, y: 0.9 }
+  - id: "ultimate"
+    label: ""
+    image: "/assets/25_13_reward_1.png"
+    position: { x: 0.85, y: 0.8 }
+
+solution: ["backbar-4"]
 ```
 
 ## Wait for: healing
@@ -76,7 +332,71 @@ Taunt her!
 The Undaunted ability can help you with this.
 
 ```yaml puzzle
-type: "placeholder"
+type: "select-items"
+shape: "square"
+background-video:
+  sources:
+    - src: "/assets/25_24_combat_en.webm"
+      type: "video/webm"
+    - src: "/assets/25_24_combat_en.mp4"
+      type: "video/mp4"
+  segment:
+    start: 15.0
+    end: 26.8
+  freeze-frame: end
+  preload: metadata
+
+items:
+  - id: "quickslot"
+    label: ""
+    image: "/assets/25_23_reward.png"
+    position: { x: 0.15, y: 0.8 }
+  - id: "frontbar-1"
+    label: ""
+    image: "/assets/25_19_reward.png"
+    position: { x: 0.28, y: 0.7 }
+  - id: "frontbar-2"
+    label: ""
+    image: "/assets/25_07_reward_2.png"
+    position: { x: 0.39, y: 0.7 }
+  - id: "frontbar-3"
+    label: ""
+    image: "/assets/25_07_reward_1.png"
+    position: { x: 0.5, y: 0.7 }
+  - id: "frontbar-4"
+    label: ""
+    image: "/assets/25_13_reward_2.png"
+    position: { x: 0.61, y: 0.7 }
+  - id: "frontbar-5"
+    label: ""
+    image: "/assets/25_13_reward_4.png"
+    position: { x: 0.72, y: 0.7 }
+  - id: "backbar-1"
+    label: ""
+    image: "/assets/25_22_reward.png"
+    position: { x: 0.28, y: 0.9 }
+  - id: "backbar-2"
+    label: ""
+    image: "/assets/25_07_reward_3.png"
+    position: { x: 0.39, y: 0.9 }
+  - id: "backbar-3"
+    label: ""
+    image: "/assets/25_14_reward.png"
+    position: { x: 0.5, y: 0.9 }
+  - id: "backbar-4"
+    label: ""
+    image: "/assets/25_07_reward_4.png"
+    position: { x: 0.61, y: 0.9 }
+  - id: "backbar-5"
+    label: ""
+    image: "/assets/25_13_reward_3.png"
+    position: { x: 0.72, y: 0.9 }
+  - id: "ultimate"
+    label: ""
+    image: "/assets/25_13_reward_1.png"
+    position: { x: 0.85, y: 0.8 }
+
+solution: ["backbar-1"]
 ```
 
 ## Wait for: taunt
@@ -88,7 +408,71 @@ Afflict Drinks-Your-Blood with Major Defile and Minor Cowardice!
 One of the Warden abilities can help you with this.
 
 ```yaml puzzle
-type: "placeholder"
+type: "select-items"
+shape: "square"
+background-video:
+  sources:
+    - src: "/assets/25_24_combat_en.webm"
+      type: "video/webm"
+    - src: "/assets/25_24_combat_en.mp4"
+      type: "video/mp4"
+  segment:
+    start: 24.0
+    end: 29.0
+  freeze-frame: end
+  preload: metadata
+
+items:
+  - id: "quickslot"
+    label: ""
+    image: "/assets/25_23_reward.png"
+    position: { x: 0.15, y: 0.8 }
+  - id: "frontbar-1"
+    label: ""
+    image: "/assets/25_19_reward.png"
+    position: { x: 0.28, y: 0.7 }
+  - id: "frontbar-2"
+    label: ""
+    image: "/assets/25_07_reward_2.png"
+    position: { x: 0.39, y: 0.7 }
+  - id: "frontbar-3"
+    label: ""
+    image: "/assets/25_07_reward_1.png"
+    position: { x: 0.5, y: 0.7 }
+  - id: "frontbar-4"
+    label: ""
+    image: "/assets/25_13_reward_2.png"
+    position: { x: 0.61, y: 0.7 }
+  - id: "frontbar-5"
+    label: ""
+    image: "/assets/25_13_reward_4.png"
+    position: { x: 0.72, y: 0.7 }
+  - id: "backbar-1"
+    label: ""
+    image: "/assets/25_22_reward.png"
+    position: { x: 0.28, y: 0.9 }
+  - id: "backbar-2"
+    label: ""
+    image: "/assets/25_07_reward_3.png"
+    position: { x: 0.39, y: 0.9 }
+  - id: "backbar-3"
+    label: ""
+    image: "/assets/25_14_reward.png"
+    position: { x: 0.5, y: 0.9 }
+  - id: "backbar-4"
+    label: ""
+    image: "/assets/25_07_reward_4.png"
+    position: { x: 0.61, y: 0.9 }
+  - id: "backbar-5"
+    label: ""
+    image: "/assets/25_13_reward_3.png"
+    position: { x: 0.72, y: 0.9 }
+  - id: "ultimate"
+    label: ""
+    image: "/assets/25_13_reward_1.png"
+    position: { x: 0.85, y: 0.8 }
+
+solution: ["backbar-5"]
 ```
 
 ## Wait for: defile
@@ -100,7 +484,71 @@ Surround yourself with damage over time!
 One of the dual wield skills can help you with this.
 
 ```yaml puzzle
-type: "placeholder"
+type: "select-items"
+shape: "square"
+background-video:
+  sources:
+    - src: "/assets/25_24_combat_en.webm"
+      type: "video/webm"
+    - src: "/assets/25_24_combat_en.mp4"
+      type: "video/mp4"
+  segment:
+    start: 29.0
+    end: 32.7
+  freeze-frame: end
+  preload: metadata
+
+items:
+  - id: "quickslot"
+    label: ""
+    image: "/assets/25_23_reward.png"
+    position: { x: 0.15, y: 0.8 }
+  - id: "frontbar-1"
+    label: ""
+    image: "/assets/25_19_reward.png"
+    position: { x: 0.28, y: 0.7 }
+  - id: "frontbar-2"
+    label: ""
+    image: "/assets/25_07_reward_2.png"
+    position: { x: 0.39, y: 0.7 }
+  - id: "frontbar-3"
+    label: ""
+    image: "/assets/25_07_reward_1.png"
+    position: { x: 0.5, y: 0.7 }
+  - id: "frontbar-4"
+    label: ""
+    image: "/assets/25_13_reward_2.png"
+    position: { x: 0.61, y: 0.7 }
+  - id: "frontbar-5"
+    label: ""
+    image: "/assets/25_13_reward_4.png"
+    position: { x: 0.72, y: 0.7 }
+  - id: "backbar-1"
+    label: ""
+    image: "/assets/25_22_reward.png"
+    position: { x: 0.28, y: 0.9 }
+  - id: "backbar-2"
+    label: ""
+    image: "/assets/25_07_reward_3.png"
+    position: { x: 0.39, y: 0.9 }
+  - id: "backbar-3"
+    label: ""
+    image: "/assets/25_14_reward.png"
+    position: { x: 0.5, y: 0.9 }
+  - id: "backbar-4"
+    label: ""
+    image: "/assets/25_07_reward_4.png"
+    position: { x: 0.61, y: 0.9 }
+  - id: "backbar-5"
+    label: ""
+    image: "/assets/25_13_reward_3.png"
+    position: { x: 0.72, y: 0.9 }
+  - id: "ultimate"
+    label: ""
+    image: "/assets/25_13_reward_1.png"
+    position: { x: 0.85, y: 0.8 }
+
+solution: ["frontbar-2"]
 ```
 
 ## Wait for: dmg_over_time
@@ -113,7 +561,71 @@ Absorb the projectile!
 One of the Warden abilities can help you.
 
 ```yaml puzzle
-type: "placeholder"
+type: "select-items"
+shape: "square"
+background-video:
+  sources:
+    - src: "/assets/25_24_combat_en.webm"
+      type: "video/webm"
+    - src: "/assets/25_24_combat_en.mp4"
+      type: "video/mp4"
+  segment:
+    start: 32.7
+    end: 37.0
+  freeze-frame: end
+  preload: metadata
+
+items:
+  - id: "quickslot"
+    label: ""
+    image: "/assets/25_23_reward.png"
+    position: { x: 0.15, y: 0.8 }
+  - id: "frontbar-1"
+    label: ""
+    image: "/assets/25_19_reward.png"
+    position: { x: 0.28, y: 0.7 }
+  - id: "frontbar-2"
+    label: ""
+    image: "/assets/25_07_reward_2.png"
+    position: { x: 0.39, y: 0.7 }
+  - id: "frontbar-3"
+    label: ""
+    image: "/assets/25_07_reward_1.png"
+    position: { x: 0.5, y: 0.7 }
+  - id: "frontbar-4"
+    label: ""
+    image: "/assets/25_13_reward_2.png"
+    position: { x: 0.61, y: 0.7 }
+  - id: "frontbar-5"
+    label: ""
+    image: "/assets/25_13_reward_4.png"
+    position: { x: 0.72, y: 0.7 }
+  - id: "backbar-1"
+    label: ""
+    image: "/assets/25_22_reward.png"
+    position: { x: 0.28, y: 0.9 }
+  - id: "backbar-2"
+    label: ""
+    image: "/assets/25_07_reward_3.png"
+    position: { x: 0.39, y: 0.9 }
+  - id: "backbar-3"
+    label: ""
+    image: "/assets/25_14_reward.png"
+    position: { x: 0.5, y: 0.9 }
+  - id: "backbar-4"
+    label: ""
+    image: "/assets/25_07_reward_4.png"
+    position: { x: 0.61, y: 0.9 }
+  - id: "backbar-5"
+    label: ""
+    image: "/assets/25_13_reward_3.png"
+    position: { x: 0.72, y: 0.9 }
+  - id: "ultimate"
+    label: ""
+    image: "/assets/25_13_reward_1.png"
+    position: { x: 0.85, y: 0.8 }
+
+solution: ["frontbar-5"]
 ```
 
 ## Wait for: shimmering_shield
@@ -125,7 +637,71 @@ Summon an animal guardian!
 One of the Warden abilities can help you with this.
 
 ```yaml puzzle
-type: "placeholder"
+type: "select-items"
+shape: "square"
+background-video:
+  sources:
+    - src: "/assets/25_24_combat_en.webm"
+      type: "video/webm"
+    - src: "/assets/25_24_combat_en.mp4"
+      type: "video/mp4"
+  segment:
+    start: 37.0
+    end: 39.8
+  freeze-frame: end
+  preload: metadata
+
+items:
+  - id: "quickslot"
+    label: ""
+    image: "/assets/25_23_reward.png"
+    position: { x: 0.15, y: 0.8 }
+  - id: "frontbar-1"
+    label: ""
+    image: "/assets/25_19_reward.png"
+    position: { x: 0.28, y: 0.7 }
+  - id: "frontbar-2"
+    label: ""
+    image: "/assets/25_07_reward_2.png"
+    position: { x: 0.39, y: 0.7 }
+  - id: "frontbar-3"
+    label: ""
+    image: "/assets/25_07_reward_1.png"
+    position: { x: 0.5, y: 0.7 }
+  - id: "frontbar-4"
+    label: ""
+    image: "/assets/25_13_reward_2.png"
+    position: { x: 0.61, y: 0.7 }
+  - id: "frontbar-5"
+    label: ""
+    image: "/assets/25_13_reward_4.png"
+    position: { x: 0.72, y: 0.7 }
+  - id: "backbar-1"
+    label: ""
+    image: "/assets/25_22_reward.png"
+    position: { x: 0.28, y: 0.9 }
+  - id: "backbar-2"
+    label: ""
+    image: "/assets/25_07_reward_3.png"
+    position: { x: 0.39, y: 0.9 }
+  - id: "backbar-3"
+    label: ""
+    image: "/assets/25_14_reward.png"
+    position: { x: 0.5, y: 0.9 }
+  - id: "backbar-4"
+    label: ""
+    image: "/assets/25_07_reward_4.png"
+    position: { x: 0.61, y: 0.9 }
+  - id: "backbar-5"
+    label: ""
+    image: "/assets/25_13_reward_3.png"
+    position: { x: 0.72, y: 0.9 }
+  - id: "ultimate"
+    label: ""
+    image: "/assets/25_13_reward_1.png"
+    position: { x: 0.85, y: 0.8 }
+
+solution: ["ultimate"]
 ```
 
 ## Wait for: ult
@@ -137,7 +713,71 @@ Increase your critical damage for one last surge!
 Your potion can help you with this.
 
 ```yaml puzzle
-type: "placeholder"
+type: "select-items"
+shape: "square"
+background-video:
+  sources:
+    - src: "/assets/25_24_combat_en.webm"
+      type: "video/webm"
+    - src: "/assets/25_24_combat_en.mp4"
+      type: "video/mp4"
+  segment:
+    start: 39.8
+    end: 44.0
+  freeze-frame: end
+  preload: metadata
+
+items:
+  - id: "quickslot"
+    label: ""
+    image: "/assets/25_23_reward.png"
+    position: { x: 0.15, y: 0.8 }
+  - id: "frontbar-1"
+    label: ""
+    image: "/assets/25_19_reward.png"
+    position: { x: 0.28, y: 0.7 }
+  - id: "frontbar-2"
+    label: ""
+    image: "/assets/25_07_reward_2.png"
+    position: { x: 0.39, y: 0.7 }
+  - id: "frontbar-3"
+    label: ""
+    image: "/assets/25_07_reward_1.png"
+    position: { x: 0.5, y: 0.7 }
+  - id: "frontbar-4"
+    label: ""
+    image: "/assets/25_13_reward_2.png"
+    position: { x: 0.61, y: 0.7 }
+  - id: "frontbar-5"
+    label: ""
+    image: "/assets/25_13_reward_4.png"
+    position: { x: 0.72, y: 0.7 }
+  - id: "backbar-1"
+    label: ""
+    image: "/assets/25_22_reward.png"
+    position: { x: 0.28, y: 0.9 }
+  - id: "backbar-2"
+    label: ""
+    image: "/assets/25_07_reward_3.png"
+    position: { x: 0.39, y: 0.9 }
+  - id: "backbar-3"
+    label: ""
+    image: "/assets/25_14_reward.png"
+    position: { x: 0.5, y: 0.9 }
+  - id: "backbar-4"
+    label: ""
+    image: "/assets/25_07_reward_4.png"
+    position: { x: 0.61, y: 0.9 }
+  - id: "backbar-5"
+    label: ""
+    image: "/assets/25_13_reward_3.png"
+    position: { x: 0.72, y: 0.9 }
+  - id: "ultimate"
+    label: ""
+    image: "/assets/25_24_active_ulti.png"
+    position: { x: 0.85, y: 0.8 }
+
+solution: ["quickslot"]
 ```
 
 ## Wait for: potion
@@ -149,7 +789,70 @@ Now or never: Attack Drinks-Your-Blood with 4 rapid attacks!
 One of the dual wield skills can help you with this.
 
 ```yaml puzzle
-type: "placeholder"
+type: "select-items"
+shape: "square"
+background-video:
+  sources:
+    - src: "/assets/25_24_combat_en.webm"
+      type: "video/webm"
+    - src: "/assets/25_24_combat_en.mp4"
+      type: "video/mp4"
+  segment:
+    start: 44.0
+    end: 46.0
+  freeze-frame: end
+  preload: metadata
+
+items:
+  - id: "quickslot"
+    label: ""
+    position: { x: 0.15, y: 0.8 }
+  - id: "frontbar-1"
+    label: ""
+    image: "/assets/25_19_reward.png"
+    position: { x: 0.28, y: 0.7 }
+  - id: "frontbar-2"
+    label: ""
+    image: "/assets/25_07_reward_2.png"
+    position: { x: 0.39, y: 0.7 }
+  - id: "frontbar-3"
+    label: ""
+    image: "/assets/25_07_reward_1.png"
+    position: { x: 0.5, y: 0.7 }
+  - id: "frontbar-4"
+    label: ""
+    image: "/assets/25_13_reward_2.png"
+    position: { x: 0.61, y: 0.7 }
+  - id: "frontbar-5"
+    label: ""
+    image: "/assets/25_13_reward_4.png"
+    position: { x: 0.72, y: 0.7 }
+  - id: "backbar-1"
+    label: ""
+    image: "/assets/25_22_reward.png"
+    position: { x: 0.28, y: 0.9 }
+  - id: "backbar-2"
+    label: ""
+    image: "/assets/25_07_reward_3.png"
+    position: { x: 0.39, y: 0.9 }
+  - id: "backbar-3"
+    label: ""
+    image: "/assets/25_14_reward.png"
+    position: { x: 0.5, y: 0.9 }
+  - id: "backbar-4"
+    label: ""
+    image: "/assets/25_07_reward_4.png"
+    position: { x: 0.61, y: 0.9 }
+  - id: "backbar-5"
+    label: ""
+    image: "/assets/25_13_reward_3.png"
+    position: { x: 0.72, y: 0.9 }
+  - id: "ultimate"
+    label: ""
+    image: "/assets/25_24_active_ulti.png"
+    position: { x: 0.85, y: 0.8 }
+
+solution: ["frontbar-3"]
 ```
 
 ## Wait for: attack
@@ -161,29 +864,105 @@ Deal damage to her one last time and capture her soul!
 The last remaining ability can help you with this.
 
 ```yaml puzzle
-type: "placeholder"
+type: "select-items"
+shape: "square"
+background-video:
+  sources:
+    - src: "/assets/25_24_combat_en.webm"
+      type: "video/webm"
+    - src: "/assets/25_24_combat_en.mp4"
+      type: "video/mp4"
+  segment:
+    start: 46.0
+    end: 48.1
+  freeze-frame: end
+  preload: metadata
+
+items:
+  - id: "quickslot"
+    label: ""
+    position: { x: 0.15, y: 0.8 }
+  - id: "frontbar-1"
+    label: ""
+    image: "/assets/25_19_reward.png"
+    position: { x: 0.28, y: 0.7 }
+  - id: "frontbar-2"
+    label: ""
+    image: "/assets/25_07_reward_2.png"
+    position: { x: 0.39, y: 0.7 }
+  - id: "frontbar-3"
+    label: ""
+    image: "/assets/25_07_reward_1.png"
+    position: { x: 0.5, y: 0.7 }
+  - id: "frontbar-4"
+    label: ""
+    image: "/assets/25_13_reward_2.png"
+    position: { x: 0.61, y: 0.7 }
+  - id: "frontbar-5"
+    label: ""
+    image: "/assets/25_13_reward_4.png"
+    position: { x: 0.72, y: 0.7 }
+  - id: "backbar-1"
+    label: ""
+    image: "/assets/25_22_reward.png"
+    position: { x: 0.28, y: 0.9 }
+  - id: "backbar-2"
+    label: ""
+    image: "/assets/25_07_reward_3.png"
+    position: { x: 0.39, y: 0.9 }
+  - id: "backbar-3"
+    label: ""
+    image: "/assets/25_14_reward.png"
+    position: { x: 0.5, y: 0.9 }
+  - id: "backbar-4"
+    label: ""
+    image: "/assets/25_07_reward_4.png"
+    position: { x: 0.61, y: 0.9 }
+  - id: "backbar-5"
+    label: ""
+    image: "/assets/25_13_reward_3.png"
+    position: { x: 0.72, y: 0.9 }
+  - id: "ultimate"
+    label: ""
+    image: "/assets/25_24_active_ulti.png"
+    position: { x: 0.85, y: 0.8 }
+
+solution: ["backbar-3"]
 ```
 
 ## Wait for: trap
 
+## Puzzle
+id: "finale"
+Drinks-Your-Blood was defeated.
+**Celebrate your victory over Drinks-Your-Blood!**
+
+```yaml puzzle
+type: "select-items"
+shape: "square"
+background-video:
+  sources:
+    - src: "/assets/25_24_combat_en.webm"
+      type: "video/webm"
+    - src: "/assets/25_24_combat_en.mp4"
+      type: "video/mp4"
+  segment:
+    start: 48.1
+    end: 52.5
+  freeze-frame: end
+  preload: metadata
+
+items:
+  - id: "fin"
+    label: "VICTORY"
+    position: { x: 0.5, y: 0.9 }
+
+solution: ["fin"]
+```
+
+## Wait for: finale
+
 ## Story
 You did it!
-Drinks-Your-Blood, the Worm Cult's general, has been defeated.
-Not only that, but you have bound her to the very soul gem she herself created to torment others.
-You feel the trapped souls rushing her life essence.
-Before your eyes, the dreaded Drinks-Your-Blood dissolves into nothing but pure emptiness.
-Without its creator, the soul gem can no longer hold any souls.
-You feel the other souls one by one leaving the soul gem to finally begin their journey to Aetherius.
-Thurwe Hrorikson, Ursalette Metrane, K’ren-Dar, Maleric Pontecus, Ciira Imutis, Enniz at-Hunding, Gin-Ei Xeirdes, Lytril Telvanni, Estile, Falemon, N’aabi, Erendas Dres, Logorok Mogdza, Hilthe Snowdaughter, Oraar Ugrud, Razaami, Itius Spurelus, Uralest Jeneve, Latharek, Magrub Grakish, Vilonia Woeus, and finally Telnidra.
-At long last, you are alone for a moment.
-And then you stand once more before the destoyed camp of the Worm Cult.
-In your hands, you hold the soul gem.
-It gleams clean and pure, no longer evil and dangerous.
-
-![Seelenstein](/assets/pure_soul_gem.png)
-
-You are not sure how much time has passed.
-Was it 24 minutes, hours, or days?
-However, you do know that Tamriel is a bit safer than it was before you embarked on this adventure.
-You should seek out Prince Azah.
-He surely has a reward for you.
+Your mission was completed successfully.
+What comes next?
