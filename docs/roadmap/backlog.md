@@ -14,6 +14,8 @@ spec before work begins.
 These items are current production pain points and should receive pragmatic,
 short-term solutions even before larger platform work.
 
+These still require a spec and a ticket before implementation.
+
 - Mobile Sessions Are Very Short  
   Investigate and mitigate session loss on mobile (auth/session lifetime, refresh,
   storage strategy). Provide a pragmatic fix to avoid user frustration.
@@ -24,7 +26,8 @@ short-term solutions even before larger platform work.
 
 - Replace Polling/Pulling With Server-Driven Updates  
   Reduce UI polling by switching key flows to server-driven updates (e.g. SSE/WebSocket),
-  improving responsiveness and reducing load.
+  improving responsiveness and reducing load. This is a short-term investigation
+  tied to the long-term “Server-Driven UI Updates” platform item below.
 
 ---
 

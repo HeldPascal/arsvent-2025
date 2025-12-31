@@ -72,6 +72,9 @@ Users must be able to trust the system:
 
 Admin power is visible and intentional, never hidden.
 
+Where identity is required (e.g. Discord-auth events), feedback anonymity is a
+feature choice and may still be admin-attributable for abuse handling.
+
 ---
 
 ### Events Over Features
