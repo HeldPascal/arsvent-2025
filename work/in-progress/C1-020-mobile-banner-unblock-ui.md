@@ -1,7 +1,7 @@
 # C1-020 — Mobile Banner Does Not Block UI
 
 ## Status
-Ready
+In Progress
 
 ## Related Spec
 - docs/specs/C1-mobile-session-and-ux-fixes.md (C1.2)
