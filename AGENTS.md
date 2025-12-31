@@ -52,3 +52,38 @@ Discord-authenticated Advent calendar web app for Ars Necandi. Users log in with
 - Always run `npm run lint` and `npm run build` in every app you touch (backend or frontend) before wrapping up.
 - Keep content paths/patterns intact for loaders.
 - Keep Dockerfiles aligned: they rely on `npm run build` in each app; lint runs in CI.
+
+## Ticket Workflow (File-Based Kanban)
+
+This repository uses a file-based ticket workflow.
+
+### Structure
+- `work/backlog/` — planned but not ready
+- `work/ready/` — fully specified, ready to implement
+- `work/in-progress/` — currently being worked on
+- `work/review/` — awaiting review or validation
+- `work/done/` — completed and archived
+
+### Rules
+- One ticket = one Markdown file.
+- Tickets move by being moved between folders.
+- Agents must:
+  - read the linked spec in `docs/specs/` before implementation,
+  - update the ticket file if assumptions or scope change,
+  - never skip acceptance criteria.
+
+### Specs vs Tickets
+- Specs in `docs/specs/` describe **what** and **why**.
+- Tickets in `work/` describe **how and when**.
+
+Agents should not implement features that are not covered by a spec or an explicit ticket.
+
+## Roadmap Backlog
+
+The file `docs/roadmap/backlog.md` is an idea and theme inventory.
+
+Agents must not:
+- implement features directly from the backlog
+- derive tickets without an explicit spec
+
+Backlog items must first be promoted to a spec in `docs/specs/`.
