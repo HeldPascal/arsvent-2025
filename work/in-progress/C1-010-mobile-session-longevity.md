@@ -1,7 +1,7 @@
 # C1-010 — Mobile Session Longevity
 
 ## Status
-Backlog
+In Progress
 
 ## Related Spec
 - docs/specs/C1-mobile-session-and-ux-fixes.md (C1.1)
@@ -23,4 +23,3 @@ Improve mobile session longevity without weakening security.
 - [ ] Mobile sessions last longer than current behavior
 - [ ] Session loss scenarios are reduced or clearly messaged
 - [ ] Desktop session behavior remains unchanged
-
