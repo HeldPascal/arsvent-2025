@@ -87,6 +87,27 @@ Agents should not implement features that are not covered by a spec or an explic
 - Tickets must link to the relevant spec section (e.g., `docs/specs/A1-feedback-and-prizes.md (A1.1)`).
 - Ticket numbering uses the full 2–3 digit range within a given `track+spec` (e.g., `A1-001`…`A1-999`). If more are needed, advance the spec number (e.g., `A2-001`).
 
+## ADRs (Architecture Decision Records)
+
+Use ADRs to capture decisions that impact architecture, operations, data model, or security.
+
+### ADR Location
+- `docs/adr/` (numbered files)
+- Template: `docs/adr/0000-template.md`
+
+### ADR Naming
+- `NNNN-short-title.md` (e.g., `0001-session-storage.md`)
+- Use the next available number.
+
+### ADR Content
+- Keep it short: Context → Decision → Consequences → Alternatives → References.
+- Link to relevant specs/tickets in References.
+
+### ADR Lifecycle
+- Create an ADR when a decision is durable or costly to reverse (architecture, ops, data model, security), or when there are meaningful tradeoffs.
+- Update an ADR when the decision changes or is superseded; mark the old ADR as Deprecated and add a link to the new one.
+- Avoid ADRs for small, local, or short-lived experiments.
+
 ## Roadmap Backlog
 
 The file `docs/roadmap/backlog.md` is an idea and theme inventory.
