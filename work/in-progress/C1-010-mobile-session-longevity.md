@@ -23,3 +23,11 @@ Improve mobile session longevity without weakening security.
 - [ ] Mobile sessions last longer than current behavior
 - [ ] Session loss scenarios are reduced or clearly messaged
 - [ ] Desktop session behavior remains unchanged
+
+## Findings
+- Session cookie is session-only (no `maxAge`/`expires`).
+- iOS Safari drops the session when the app is closed and reopened.
+
+## Plan
+- Set a persistent `maxAge` for the session cookie.
+- Enable `rolling` to refresh expiry on activity.
