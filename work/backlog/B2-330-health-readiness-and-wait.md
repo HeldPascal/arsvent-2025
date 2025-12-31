@@ -1,4 +1,4 @@
-# 3300 — Health/Readiness Endpoints + Deploy Wait
+# B2-330 — Health/Readiness Endpoints + Deploy Wait
 
 ## Status
 Backlog

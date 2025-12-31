@@ -78,6 +78,15 @@ This repository uses a file-based ticket workflow.
 
 Agents should not implement features that are not covered by a spec or an explicit ticket.
 
+### Naming Conventions
+- Spec IDs use a lettered track + number (e.g., `A1`, `B2`) and section suffixes for sub-items (e.g., `A1.1`).
+- A “track” is a thematic bucket of related work (e.g., prizes, staging, deploys) that can be planned and reviewed independently.
+- Track overflow uses a spreadsheet-style sequence: `A`…`Z`, then `AA`, `AB`, etc.
+- Ticket filenames use `track+spec` + `-` + ticket number (2–3 digits) + `-` + short title (e.g., `A1-110-feedback-module.md`).
+- Ticket headers use the same `track+spec` + ticket number and a title with an em dash: `A1-110 — Feedback Module`.
+- Tickets must link to the relevant spec section (e.g., `docs/specs/A1-feedback-and-prizes.md (A1.1)`).
+- Ticket numbering uses the full 2–3 digit range within a given `track+spec` (e.g., `A1-001`…`A1-999`). If more are needed, advance the spec number (e.g., `A2-001`).
+
 ## Roadmap Backlog
 
 The file `docs/roadmap/backlog.md` is an idea and theme inventory.

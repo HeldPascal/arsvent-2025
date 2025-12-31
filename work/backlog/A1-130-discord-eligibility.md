@@ -1,4 +1,4 @@
-# 1300 — Discord-Based Eligibility
+# A1-130 — Discord-Based Eligibility
 
 ## Status
 Backlog

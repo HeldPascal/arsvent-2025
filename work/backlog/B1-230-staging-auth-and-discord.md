@@ -1,4 +1,4 @@
-# 2300 — Staging Auth & Discord Setup
+# B1-230 — Staging Auth & Discord Setup
 
 ## Status
 Backlog
