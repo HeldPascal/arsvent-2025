@@ -1,7 +1,7 @@
 # C1-010 — Mobile Session Longevity
 
 ## Status
-In Progress
+Review
 
 ## Related Spec
 - docs/specs/C1-mobile-session-and-ux-fixes.md (C1.1)
@@ -20,9 +20,9 @@ Improve mobile session longevity without weakening security.
 - Avoid regressions for desktop sessions
 
 ## Acceptance Criteria
-- [ ] Mobile sessions last longer than current behavior
-- [ ] Session loss scenarios are reduced or clearly messaged
-- [ ] Desktop session behavior remains unchanged
+- [ ] Mobile sessions last longer than current behavior (pending prod deploy validation)
+- [ ] Session loss scenarios are reduced or clearly messaged (pending prod deploy validation)
+- [ ] Desktop session behavior remains unchanged (pending prod deploy validation)
 
 ## Findings
 - Session cookie is session-only (no `maxAge`/`expires`).
