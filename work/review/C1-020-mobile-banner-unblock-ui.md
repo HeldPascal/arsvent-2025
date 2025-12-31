@@ -1,7 +1,7 @@
 # C1-020 — Mobile Banner Does Not Block UI
 
 ## Status
-In Progress
+Review
 
 ## Related Spec
 - docs/specs/C1-mobile-session-and-ux-fixes.md (C1.2)
@@ -24,3 +24,14 @@ more room for page content.
 ## Acceptance Criteria
 - [ ] Header occupies significantly less vertical space on mobile
 - [ ] Content area is visibly larger on mobile without losing access to navigation
+
+## Findings (Initial)
+- The global header is the `topbar` in `frontend/src/views/Layout.tsx` and is `position: sticky`.
+- Mobile styles (<=640px) stack the header, but do not reduce logo size or padding.
+- Brand logo is 84px square and the header has 18px vertical padding plus a 72px min-height.
+
+## Decision
+- Make the header non-sticky on mobile viewports to free vertical space.
+
+## Implementation Notes
+- Remove mobile sticky behavior; header scrolls away with content on small screens.
