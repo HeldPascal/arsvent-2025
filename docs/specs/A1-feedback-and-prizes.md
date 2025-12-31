@@ -55,13 +55,13 @@ As a user, I want to submit feedback anonymously, so that nobody (including admi
   - `users.has_submitted_feedback = true`
 - Admin UI must only expose:
   - aggregate rating counts,
-  - list of free-text comments (without metadata that allows correlation).
+  - list of free-text comments (timestamps allowed and considered non-attributable by policy).
 
 ### Admin View
 - Aggregate counts per emoji.
 - Total number of feedback submissions.
 - Free-text list (if enabled).
-- No per-entry timestamp display (or display only day-level granularity if necessary).
+- Per-entry timestamps may be displayed and are considered non-attributable by policy.
 
 ## Acceptance Criteria
 - Users can submit feedback exactly once.
@@ -209,7 +209,7 @@ As an admin, I want to run a prize draw in draft mode, review it, publish it, an
 
 ## Rules
 - Separate pool `VETERAN`.
-- Eligibility: user completed the entire calendar on Veteran difficulty (definition must match existing completion logic).
+- Eligibility: user completed the entire calendar on Veteran difficulty and is in VETERAN mode at draw time (mode can be downgraded later).
 - Prize count may be smaller than eligible users.
 
 ## Lifecycle
@@ -229,8 +229,8 @@ The app can remain online and playable after the main event period, but prizes s
 ## Requirements
 - Event setting: `prizes.cutoff_at` (nullable datetime)
 - If `cutoff_at` is set and current time is after it:
-  - no new prize eligibility is granted for users who start/finish after cutoff
-  - UI must clearly show: “No prizes are available anymore (played after cutoff).”
+  - no new prize eligibility is granted for users who finish after cutoff
+  - UI must clearly show: “No prizes are available anymore (finished after cutoff).”
 - Users must also see eligibility messaging (A1.3).
 
 ## Acceptance Criteria

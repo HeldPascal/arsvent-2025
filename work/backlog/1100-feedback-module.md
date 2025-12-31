@@ -33,7 +33,9 @@ Allow users to submit anonymous, one-time feedback for an event.
 
 ## Admin Requirements
 - View aggregated emoji counts
+- View total number of feedback submissions
 - View free-text feedback list (if enabled)
+- Per-entry timestamps are allowed
 - No per-entry metadata that allows attribution
 
 ## Acceptance Criteria

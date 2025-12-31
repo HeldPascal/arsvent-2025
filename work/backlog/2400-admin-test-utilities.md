@@ -13,6 +13,7 @@ Provide admin-only helpers for staging.
 - Unlock days
 - Force completion
 - Simulate eligibility
+- Bypass time locks
 
 ## Constraints
 - Only available when IS_PRODUCTION=false

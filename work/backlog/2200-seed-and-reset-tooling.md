@@ -20,7 +20,8 @@ Allow repeatable setup of staging data.
   - Discord links
   - roles
   - events
-  - completion states
+  - content
+  - completion states (including Veteran completion)
 - Reset:
   - wipe DB
   - re-run migrations

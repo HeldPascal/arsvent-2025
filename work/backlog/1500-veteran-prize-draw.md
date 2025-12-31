@@ -17,7 +17,7 @@ Run a separate prize draw for Veteran-complete users.
 ## Functional Requirements
 - Eligibility:
   - full calendar completed
-  - difficulty = VETERAN
+  - difficulty = VETERAN at draw time (mode can be downgraded later)
 - Draw lifecycle identical to MAIN pool
 
 ## Acceptance Criteria

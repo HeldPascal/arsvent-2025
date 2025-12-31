@@ -17,7 +17,7 @@ Clearly communicate prize availability and eligibility to users.
 - Event config:
   - `prizes.cutoff_at` (nullable)
 - After cutoff:
-  - no new prize eligibility
+  - no new prize eligibility (completion timestamp after cutoff does not count)
   - existing published draws unaffected
 - UI messages:
   - not eligible
