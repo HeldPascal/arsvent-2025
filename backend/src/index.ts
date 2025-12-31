@@ -44,6 +44,7 @@ const {
   DISCORD_CLIENT_SECRET,
   DISCORD_CALLBACK_URL,
   SESSION_SECRET = "dev-secret",
+  SESSION_MAX_AGE_MS = "",
   FRONTEND_ORIGIN = "http://localhost:5173",
   REDIS_URL = "redis://localhost:6379",
   SUPER_ADMIN_DISCORD_ID = "",
@@ -215,11 +216,13 @@ app.get("/content-asset/:token", async (req, res) => {
 });
 
 const isProd = process.env.NODE_ENV === "production";
+const sessionMaxAgeMs = Number(SESSION_MAX_AGE_MS) || 1000 * 60 * 60 * 24 * 14;
 
 app.use(
   session({
     secret: SESSION_SECRET,
     resave: false,
+    rolling: true,
     saveUninitialized: false,
     proxy: isProd,
     store: sessionStore,
@@ -227,6 +230,7 @@ app.use(
       httpOnly: true,
       secure: isProd,
       sameSite: "lax",
+      maxAge: sessionMaxAgeMs,
     },
   }),
 );
