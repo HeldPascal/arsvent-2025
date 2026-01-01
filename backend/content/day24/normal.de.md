@@ -96,7 +96,7 @@ solution: ["frontbar-4"]
 ## Wait for: expedition
 
 ## Puzzle
-id: "slayer"
+id: "berserk"
 Um ihr gewappnet zu sein, wirkst du kleinere Raserei und kleinere Entschlossenheit auf dich.
 Eine der Fähigkeiten des Heilungsstabs kann dir dabei helfen.
 
