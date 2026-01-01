@@ -18,12 +18,15 @@ production behavior while remaining isolated.
 - Prevent any interaction with production data or users.
 - Reduce deployment risk by validating changes before prod deploy.
 - Improve developer confidence and iteration speed.
+- Staging auto-deploys from `main` to reduce manual steps (no manual trigger).
+- Staging runs on the same VPS with separate ports and domain.
 
 ## Non-Goals
 - Zero-downtime production deploys (handled separately).
 - Load / stress testing.
 - Kubernetes or orchestration changes.
 - Feature flags or multi-tenant runtime routing.
+- Replacing production deploy flow (handled in B2).
 
 ---
 
@@ -76,6 +79,10 @@ These flags control:
 - Staging uses a **separate Discord application**.
 - Callback URLs must be environment-specific.
 - Test Discord server is used for staging.
+ 
+### Domain & Ports
+- Staging uses a separate domain (e.g., `staging.<domain>`).
+- Staging runs on the same VPS with distinct service ports.
 
 ---
 
@@ -121,6 +128,10 @@ These tools must never be enabled in production.
   - assign real prizes
   - write to production DBs
 - Guardrails must exist to prevent misconfiguration.
+ 
+## Repo & Ops
+- Ops scripts and compose configuration should be version controlled.
+- Environment files and data directories remain server-specific and untracked.
 
 ---
 
@@ -129,3 +140,4 @@ These tools must never be enabled in production.
 - No staging action can affect production data.
 - Staging environment can be reset and re-seeded at will.
 - Admin-only test tools are inaccessible in production.
+- Staging auto-deploys from `main` without manual trigger.

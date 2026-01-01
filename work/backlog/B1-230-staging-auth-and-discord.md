@@ -13,7 +13,9 @@ Isolate authentication and Discord integration for staging.
 - Separate Discord app
 - Separate callback URLs
 - Test Discord server
+- Separate domain for staging
 
 ## Acceptance Criteria
 - [ ] Staging auth uses different credentials
 - [ ] Production credentials cannot be used accidentally
+- [ ] Staging callback URLs are bound to the staging domain

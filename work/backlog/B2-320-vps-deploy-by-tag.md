@@ -12,17 +12,20 @@ Deploy by pulling prebuilt images on the VPS and switching containers quickly.
 ## Scope
 - Update compose configuration to use image tags (no local build)
 - Deploy script:
-  - enable maintenance (optional)
+  - ensure maintenance is enabled
   - docker login to registry
   - pull images by SHA tag
   - run migrations
   - restart services
-  - disable maintenance
+  - disable maintenance after readiness
+- Record releases in `releases.log` and update `current_release` / `previous_release`
 
 ## Constraints
 - Use immutable tags `:<git-sha>` for all prod deploys.
+- Maintenance mode is always enabled during deploy.
 
 ## Acceptance Criteria
 - [ ] VPS can deploy a specified SHA without building images
 - [ ] Maintenance window covers only restart + final checks
 - [ ] Compose config supports selecting the target SHA via env var
+- [ ] Releases are logged with tag and timestamp

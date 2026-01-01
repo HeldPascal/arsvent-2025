@@ -14,6 +14,7 @@ Build backend/frontend container images in CI and push them to a registry using 
 - Push to registry (e.g., GHCR)
 - Tag images by git SHA
 - Optionally build `staging-latest` / `prod-latest` tags (non-authoritative)
+- Store image tags for deploy scripts to consume
 
 ## Acceptance Criteria
 - [ ] CI produces two images (backend, frontend)

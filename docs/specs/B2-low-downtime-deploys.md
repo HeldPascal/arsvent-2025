@@ -19,6 +19,7 @@ This spec focuses on deployment mechanics, not a full platform re-architecture.
 - Deploy by pulling prebuilt images, applying migrations, and switching containers quickly.
 - Short, predictable maintenance window.
 - Safe rollback for non-destructive releases.
+- Release logging for staging and production.
 
 ## Non-Goals
 - Kubernetes / microservices migration.
@@ -36,18 +37,24 @@ This spec focuses on deployment mechanics, not a full platform re-architecture.
 - Tags:
   - immutable: `:<git-sha>`
   - optional convenience: `:staging-latest`, `:prod-latest` (avoid using for deploy logic)
+  - example: `ghcr.io/<org>/arsvent-backend:<git-sha>`
 
 ### Deploy Phase (VPS)
 - VPS pulls images by immutable tag.
-- Maintenance mode is enabled only for the switching window.
+- Maintenance mode is always enabled during deploys and disabled after readiness checks.
 - DB migrations run before traffic resumes.
 - Containers are restarted with the new images.
 - Maintenance mode is disabled.
+- Release metadata is written to:
+  - `releases.log`
+  - `current_release`
+  - `previous_release`
 
 ### Rollback
 - If deploy fails before switching traffic, abort and keep running old containers.
 - If deploy fails after switching, re-deploy last known good tag.
 - DB rollback is not guaranteed; prefer forward-compatible migrations.
+- Provide a one-command rollback script that uses `previous_release`.
 
 ---
 
@@ -63,7 +70,8 @@ This spec focuses on deployment mechanics, not a full platform re-architecture.
 
 ## Maintenance Window
 - Target downtime: < 10–30 seconds (depends on container restart time).
-- Maintenance window includes only:
+- Maintenance is always enabled during deploys and disabled after readiness checks.
+- The window includes only:
   - enabling maintenance page,
   - stopping/restarting containers,
   - any final health checks,
@@ -75,6 +83,7 @@ This spec focuses on deployment mechanics, not a full platform re-architecture.
 ## Health Checks & Readiness
 - Backend exposes:
   - `/healthz` (process up)
+  - `/livez` (process up + dependencies minimally reachable)
   - `/readyz` (DB reachable + migrations applied or compatible)
 - Deploy script waits for readiness before disabling maintenance.
 - If readiness fails, auto-rollback to previous tag.
@@ -94,3 +103,4 @@ This spec focuses on deployment mechanics, not a full platform re-architecture.
 - Downtime window is limited to container switch + readiness checks.
 - Rollback to previous version is possible by tag.
 - Deploy logs clearly show which commit SHA is running.
+- Release metadata is captured for staging and production.

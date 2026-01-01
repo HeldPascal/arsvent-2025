@@ -12,11 +12,13 @@ Ensure deploy only completes when the new version is actually ready.
 ## Scope
 - Backend endpoints:
   - GET /healthz
+  - GET /livez (process up + dependencies minimally reachable)
   - GET /readyz (DB reachable + app can serve traffic)
 - Deploy script waits for readiness before disabling maintenance
 - Timeouts and clear error output
 
 ## Acceptance Criteria
 - [ ] /healthz returns success when process is up
+- [ ] /livez returns success when the service can handle requests
 - [ ] /readyz fails when DB is unreachable or app cannot serve
 - [ ] Deploy waits for /readyz and aborts/rolls back on failure

@@ -26,6 +26,7 @@ Allow repeatable setup of staging data.
   - wipe DB
   - re-run migrations
   - re-seed
+  - guarded against production
 
 ## Acceptance Criteria
 - [ ] Seed script creates usable test data

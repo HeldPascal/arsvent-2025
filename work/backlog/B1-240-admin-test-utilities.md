@@ -17,6 +17,7 @@ Provide admin-only helpers for staging.
 
 ## Constraints
 - Only available when IS_PRODUCTION=false
+- Hidden behind staging domain only
 
 ## Acceptance Criteria
 - [ ] Utilities are hidden in production
