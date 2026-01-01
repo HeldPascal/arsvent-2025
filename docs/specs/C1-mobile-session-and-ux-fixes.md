@@ -42,11 +42,10 @@ Mobile users lose sessions too quickly, causing re-auth and lost progress.
 The mobile devices banner obstructs interaction on small screens.
 
 ## Requirements
-- Banner must not cover primary interactions on typical mobile viewports.
-- Banner is dismissible or auto-collapses when it would obstruct UI.
+- Header must shrink or collapse on mobile viewports to free content space.
+- Header must not overlap or block page content.
 - Behavior is consistent across common mobile browsers.
 
 ## Acceptance Criteria
-- Banner never blocks taps for core actions on mobile.
-- Banner can be dismissed and stays dismissed for the session.
-
+- Header occupies significantly less vertical space on mobile.
+- Content area is visibly larger on mobile without losing access to navigation.
