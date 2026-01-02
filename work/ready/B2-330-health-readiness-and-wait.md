@@ -1,7 +1,7 @@
 # B2-330 — Health/Readiness Endpoints + Deploy Wait
 
 ## Status
-Backlog
+Ready
 
 ## Related Spec
 - docs/specs/B2-low-downtime-deploys.md
@@ -16,6 +16,14 @@ Ensure deploy only completes when the new version is actually ready.
   - GET /readyz (DB reachable + app can serve traffic)
 - Deploy script waits for readiness before disabling maintenance
 - Timeouts and clear error output
+
+## Implementation Notes
+- Endpoints are unauthenticated and return JSON `{ status: "ok" }` or `{ status: "error", reason: "<msg>" }`.
+- `/healthz` checks the process only (no external deps).
+- `/livez` checks process + minimal deps (e.g., Redis reachable if required).
+- `/readyz` checks DB connectivity and any required migrations.
+- Deploy script polls `/readyz` with a timeout (e.g., 60s) before disabling maintenance.
+- On timeout or non-200, deploy fails and triggers rollback logic.
 
 ## Acceptance Criteria
 - [ ] /healthz returns success when process is up
