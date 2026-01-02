@@ -1,7 +1,7 @@
 # B1-210 — Staging Environment Basics
 
 ## Status
-Ready
+In Progress
 
 ## Related Spec
 - docs/specs/B1-test-and-staging-environment.md
