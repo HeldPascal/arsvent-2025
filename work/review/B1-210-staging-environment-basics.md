@@ -1,7 +1,7 @@
 # B1-210 — Staging Environment Basics
 
 ## Status
-In Progress
+Review
 
 ## Related Spec
 - docs/specs/B1-test-and-staging-environment.md
@@ -52,3 +52,8 @@ Introduce a fully isolated staging environment.
 - [ ] Environment flags are enforced in code
 - [ ] Staging traffic is isolated by domain and port
 - [ ] Staging env files and data directories exist at the defined VPS paths
+
+## Progress
+- Staging nginx server block enabled and TLS cert installed on VPS.
+- Staging env/data directories and env files created at the defined VPS paths.
+- Staging deploy deferred until automated deployment is restored.
