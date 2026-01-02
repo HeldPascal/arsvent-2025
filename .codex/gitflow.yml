@@ -1,0 +1,48 @@
+# .codex/gitflow.yml
+# Repo-local policy for gitflow-orchestrator (all keys optional).
+# Keep this file small and pragmatic.
+
+conventional_commits: auto        # auto | on | off
+subject_max_len: 72
+
+types:
+  - feat
+  - fix
+  - refactor
+  - perf
+  - test
+  - docs
+  - chore
+  - ci
+  - build
+  - style
+  - revert
+
+scopes:
+  mode: auto                      # auto | fixed
+  fixed:
+    - frontend
+    - backend
+    - infra
+    - docs
+    - tests
+    - ci
+    - deps
+
+ticket:
+  prefix: ""                      # e.g., "JIRA-" or "ARS-"
+  in_subject: false               # true => "feat(api): JIRA-123 add ..."
+  in_footer: true                 # true => add footer lines
+  footer_label: "Refs"            # e.g., "Refs", "Closes", "Fixes"
+
+commit_limits:
+  max_commits: 5
+  prefer_fewer: true
+
+staging:
+  prefer_patch_mode: true
+  avoid_unstage_suggestions: true
+
+body:
+  required_types: []              # Body must be present for these types (e.g., [refactor, perf])
+  preferred_types: []             # Body should be present unless trivial (e.g., [feat, fix])
