@@ -58,6 +58,7 @@ These flags control:
 - logging verbosity
 - admin-only test utilities
 - safety checks (e.g. prize draws)
+See `docs/ops/environment-variables.md` for the centralized list and defaults.
 
 ---
 

@@ -26,13 +26,8 @@ Defined in `docker-compose.yml`:
 
 ### Env Files
 - `/opt/arsvent-2025/env/backend.env`
-  - `NODE_ENV=production`, `PORT=4000`
-  - `DATABASE_URL="file:/app/data/prod.db"`
-  - `REDIS_URL=redis://redis:6379`
-  - Discord OAuth and session secrets
-  - `FRONTEND_ORIGIN` for CORS/redirects
 - `/opt/arsvent-2025/env/frontend.env`
-  - `VITE_BACKEND_URL` (public API base)
+- Full list, defaults, and examples: `docs/ops/environment-variables.md`
 
 ### Database
 - SQLite file: `/opt/arsvent-2025/data/backend/prod.db`
