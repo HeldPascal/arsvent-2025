@@ -19,6 +19,8 @@ Defaults come from the codebase; values marked "required" must be set explicitly
 | `NODE_ENV` | Enables production behavior (secure cookies, trust proxy). | Empty | `production` or `development`. |
 | `CONTENT_TOKEN_SECRET` | HMAC secret for content asset tokens. | Uses `SESSION_SECRET` | Required if `SESSION_SECRET` is unset. Keep stable across restarts. |
 | `DATABASE_URL` | Prisma datasource connection string. | Required | SQLite: `file:./dev.db` (dev) or `file:/app/data/prod.db` (prod). Postgres later. |
+| `APP_ENV` | High-level environment selector. | `development` if unset | `production`, `staging`, or `development`. Must be set explicitly in staging/production. |
+| `IS_PRODUCTION` | Explicit production guard flag (used for safety checks and admin/test gating). | Derived from `APP_ENV` if unset | `true` or `false`. Required when `APP_ENV=production` and must match `APP_ENV`. |
 
 ## Frontend (build/runtime)
 
@@ -37,14 +39,16 @@ Defaults come from the codebase; values marked "required" must be set explicitly
 | `BACKUPS_TO_KEEP` | How many DB backups to retain. | `7` | Integer count. |
 | `IMAGE_TAG` | Image tag to deploy for backend/frontend. | Required for tag-based deploys | Immutable tag (e.g. git SHA) referenced by compose. |
 
-## Spec-only / planned flags
-
-These variables are described in specs but are not yet wired into the codebase.
+## Docker Compose (`docker-compose.yml`)
 
 | Variable | Purpose | Default | Possible values / notes |
 | --- | --- | --- | --- |
-| `APP_ENV` | High-level environment selector. | None | `production` or `staging` (spec: `docs/specs/B1-test-and-staging-environment.md`). |
-| `IS_PRODUCTION` | Convenience boolean for production-only behavior. | None | `true` or `false` (spec: `docs/specs/B1-test-and-staging-environment.md`). |
+| `BACKEND_ENV_FILE` | Backend env file path. | `/opt/arsvent-2025/env/backend.env` | Staging: `/opt/arsvent-2025/env/backend.staging.env`. |
+| `FRONTEND_ENV_FILE` | Frontend env file path. | `/opt/arsvent-2025/env/frontend.env` | Staging: `/opt/arsvent-2025/env/frontend.staging.env`. |
+| `BACKEND_DATA_DIR` | Backend data directory. | `/opt/arsvent-2025/data/backend` | Staging: `/opt/arsvent-2025/data/backend-staging`. |
+| `REDIS_DATA_DIR` | Redis data directory. | `/opt/arsvent-2025/data/redis` | Staging: `/opt/arsvent-2025/data/redis-staging`. |
+| `BACKEND_PORT` | Host port bound to backend container. | `4000` | Staging: `4100`. |
+| `FRONTEND_PORT` | Host port bound to frontend container. | `4173` | Staging: `4273`. |
 
 ## Examples
 

@@ -2,23 +2,21 @@ services:
   backend:
     build:
       context: ./backend
-    container_name: arsvent-backend
     env_file:
-      - /opt/arsvent-2025/env/backend.env
+      - ${BACKEND_ENV_FILE:-/opt/arsvent-2025/env/backend.env}
     volumes:
-      - /opt/arsvent-2025/data/backend:/app/data
+      - ${BACKEND_DATA_DIR:-/opt/arsvent-2025/data/backend}:/app/data
     restart: unless-stopped
     expose:
       - "4000"
     ports:
-      - "127.0.0.1:4000:4000"
+      - "127.0.0.1:${BACKEND_PORT:-4000}:4000"
 
   redis:
     image: redis:7-alpine
-    container_name: arsvent-redis
     restart: unless-stopped
     volumes:
-      - /opt/arsvent-2025/data/redis:/data
+      - ${REDIS_DATA_DIR:-/opt/arsvent-2025/data/redis}:/data
     command: ["redis-server", "--appendonly", "yes"]
 
   frontend:
@@ -28,9 +26,9 @@ services:
         # Inject the backend URL into Vite build
         VITE_BACKEND_URL: ${VITE_BACKEND_URL}
     env_file:
-      - /opt/arsvent-2025/env/frontend.env
+      - ${FRONTEND_ENV_FILE:-/opt/arsvent-2025/env/frontend.env}
     restart: unless-stopped
     expose:
       - "80"
     ports:
-      - "127.0.0.1:4173:80"
+      - "127.0.0.1:${FRONTEND_PORT:-4173}:80"

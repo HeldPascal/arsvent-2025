@@ -48,10 +48,36 @@ const {
   FRONTEND_ORIGIN = "http://localhost:5173",
   REDIS_URL = "redis://localhost:6379",
   SUPER_ADMIN_DISCORD_ID = "",
+  APP_ENV,
+  IS_PRODUCTION,
 } = process.env;
 
 if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET || !DISCORD_CALLBACK_URL) {
   throw new Error("Missing Discord OAuth environment variables.");
+}
+
+const appEnvRaw = APP_ENV?.toLowerCase();
+const resolvedAppEnv =
+  appEnvRaw === "production" || appEnvRaw === "staging" || appEnvRaw === "development" ? appEnvRaw : undefined;
+if (APP_ENV && !resolvedAppEnv) {
+  throw new Error("APP_ENV must be 'production', 'staging', or 'development'");
+}
+const appEnv = resolvedAppEnv ?? "development";
+const nodeEnv = process.env.NODE_ENV?.toLowerCase();
+if (appEnv === "production" && nodeEnv && nodeEnv !== "production") {
+  throw new Error("NODE_ENV must be 'production' when APP_ENV=production");
+}
+
+const isProductionFlag = IS_PRODUCTION?.toLowerCase();
+const resolvedIsProduction =
+  isProductionFlag === "true" ? true : isProductionFlag === "false" ? false : undefined;
+if (appEnv === "production" && resolvedIsProduction === undefined) {
+  throw new Error("IS_PRODUCTION must be set explicitly in production");
+}
+
+const isProd = resolvedIsProduction ?? appEnv === "production";
+if (resolvedIsProduction !== undefined && resolvedIsProduction !== (appEnv === "production")) {
+  throw new Error("IS_PRODUCTION must match APP_ENV");
 }
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -215,7 +241,8 @@ app.get("/content-asset/:token", async (req, res) => {
   });
 });
 
-const isProd = process.env.NODE_ENV === "production";
+app.locals.appEnv = appEnv;
+app.locals.isProduction = isProd;
 const sessionMaxAgeMs = Number(SESSION_MAX_AGE_MS) || 1000 * 60 * 60 * 24 * 14;
 
 app.use(

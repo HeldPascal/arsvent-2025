@@ -66,6 +66,16 @@ Defined in `docker-compose.yml`:
 - Separate env files, SQLite DB, and Redis data directory.
 - Auto-deploy staging on `main` push.
 
+#### Staging Ports and Paths
+- Backend port: `4100` (container `4000`)
+- Frontend port: `4273` (container `80`)
+- Env files:
+  - `/opt/arsvent-2025/env/backend.staging.env`
+  - `/opt/arsvent-2025/env/frontend.staging.env`
+- Data directories:
+  - `/opt/arsvent-2025/data/backend-staging`
+  - `/opt/arsvent-2025/data/redis-staging`
+
 ### CI-Built Images
 - CI builds backend/frontend images and pushes to registry.
 - VPS deploys by pulling immutable SHA tags.
