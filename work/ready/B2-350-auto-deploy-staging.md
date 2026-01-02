@@ -1,7 +1,7 @@
 # B2-350 — Auto-Deploy Staging on Main
 
 ## Status
-Backlog
+Ready
 
 ## Related Spec
 - docs/specs/B1-test-and-staging-environment.md
@@ -15,6 +15,13 @@ Deploy staging automatically on `main` push using CI-built images.
 - Deploy to staging environment on VPS
 - Always enable maintenance mode during deploy
 
+## Implementation Notes
+- Workflow: `.github/workflows/deploy.yml`
+- Trigger: `on: push` for `main`
+- Deploy command targets staging explicitly (env or arg), e.g. `APP_ENV=staging`
+- SSH user/host from repo secrets (`DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`)
+- Log the SHA used for deployment in workflow output
+
 ## Functional Requirements
 - Use immutable image tags from CI
 - No manual trigger required for staging deploys
@@ -24,4 +31,3 @@ Deploy staging automatically on `main` push using CI-built images.
 - [ ] Staging deploys automatically on `main` push
 - [ ] Deployment uses SHA-tagged images
 - [ ] Maintenance mode is enabled during deploy
-
