@@ -35,6 +35,7 @@ Defaults come from the codebase; values marked "required" must be set explicitly
 | `BACKUP_DIR` | Directory for database backups. | Required | Example: `/opt/arsvent-2025/backups/backend-db`. |
 | `BRANCH` | Git branch to deploy. | `main` | Optional override for deployment. |
 | `BACKUPS_TO_KEEP` | How many DB backups to retain. | `7` | Integer count. |
+| `IMAGE_TAG` | Image tag to deploy for backend/frontend. | Required for tag-based deploys | Immutable tag (e.g. git SHA) referenced by compose. |
 
 ## Spec-only / planned flags
 
