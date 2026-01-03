@@ -1,7 +1,7 @@
 # B1-220 — Seed & Reset Tooling
 
 ## Status
-Ready
+In Progress
 
 ## Related Spec
 - docs/specs/B1-test-and-staging-environment.md
