@@ -79,6 +79,19 @@ const isProd = resolvedIsProduction ?? appEnv === "production";
 if (resolvedIsProduction !== undefined && resolvedIsProduction !== (appEnv === "production")) {
   throw new Error("IS_PRODUCTION must match APP_ENV");
 }
+if (appEnv !== "development") {
+  const callbackUrl = new URL(DISCORD_CALLBACK_URL);
+  const frontendUrl = new URL(FRONTEND_ORIGIN);
+  if (callbackUrl.origin !== frontendUrl.origin) {
+    throw new Error("DISCORD_CALLBACK_URL must match FRONTEND_ORIGIN origin in staging/production");
+  }
+  if (!callbackUrl.pathname.endsWith("/auth/discord/callback")) {
+    throw new Error("DISCORD_CALLBACK_URL must end with /auth/discord/callback in staging/production");
+  }
+  if (callbackUrl.protocol !== "https:" || frontendUrl.protocol !== "https:") {
+    throw new Error("DISCORD_CALLBACK_URL and FRONTEND_ORIGIN must use https in staging/production");
+  }
+}
 
 const PORT = Number(process.env.PORT) || 3000;
 const prisma = new PrismaClient();

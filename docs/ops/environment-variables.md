@@ -9,10 +9,10 @@ Defaults come from the codebase; values marked "required" must be set explicitly
 | --- | --- | --- | --- |
 | `DISCORD_CLIENT_ID` | Discord OAuth client id. | Required | From the Discord application. |
 | `DISCORD_CLIENT_SECRET` | Discord OAuth client secret. | Required | From the Discord application. |
-| `DISCORD_CALLBACK_URL` | OAuth callback URL for Discord. | Required | Must match the Discord app; e.g. `http://localhost:4000/auth/discord/callback`. |
+| `DISCORD_CALLBACK_URL` | OAuth callback URL for Discord. | Required | Must match the Discord app; e.g. `http://localhost:4000/auth/discord/callback`. In staging/production, must use https and share origin with `FRONTEND_ORIGIN`. |
 | `SESSION_SECRET` | Session cookie signing secret (also used as fallback for content tokens). | `dev-secret` | Set a strong random value in production. |
 | `SESSION_MAX_AGE_MS` | Session cookie max age in milliseconds. | 14 days | Numeric milliseconds; empty or invalid falls back to 14 days. |
-| `FRONTEND_ORIGIN` | CORS origin + login redirect base. | `http://localhost:5173` | Must match the frontend origin (scheme + host + port). |
+| `FRONTEND_ORIGIN` | CORS origin + login redirect base. | `http://localhost:5173` | Must match the frontend origin (scheme + host + port). In staging/production, must share origin with `DISCORD_CALLBACK_URL`. |
 | `REDIS_URL` | Redis connection URL for sessions. | `redis://localhost:6379` | If Redis is unavailable, backend falls back to in-memory sessions (not for production). |
 | `SUPER_ADMIN_DISCORD_ID` | Discord user id that is always treated as super admin. | Empty | Optional; if set, the matching user is elevated on login. |
 | `PORT` | HTTP port the backend listens on. | `3000` | Common values: `4000` (prod), `3000` (fallback). |
