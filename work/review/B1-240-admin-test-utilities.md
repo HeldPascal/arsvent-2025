@@ -1,7 +1,7 @@
 # B1-240 — Admin Test Utilities
 
 ## Status
-In Progress
+Review
 
 ## Related Spec
 - docs/specs/B1-test-and-staging-environment.md
@@ -29,3 +29,8 @@ Provide admin-only helpers for staging.
 - [ ] Utilities are hidden in production
 - [ ] Utilities simplify E2E testing
 - [ ] All endpoints are gated by env and admin role checks
+
+## Progress
+- Added staging/development-only admin test endpoints under `/api/admin/test/`.
+- Added admin test UI page with unlock, force completion, and eligibility toggles (hidden outside staging/dev).
+- Bypass time locks implemented as “unlock all” (sets unlockedDay to max contiguous content day).
