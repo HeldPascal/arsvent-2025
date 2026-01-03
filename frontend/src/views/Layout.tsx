@@ -24,6 +24,8 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
   const location = useLocation();
   const handledAuthRef = useRef<string | null>(null);
   const [screenshotting, setScreenshotting] = useState(false);
+  const allowTestTools =
+    user?.isProduction === false && (user?.appEnv === "staging" || user?.appEnv === "development");
   const [toasts, setToasts] = useState<
     Array<{ id: number; type: "success" | "error" | "info"; message?: string; key?: string; durationMs?: number }>
   >([]);
@@ -190,6 +192,11 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
                   {user.isAdmin || user.isSuperAdmin ? (
                     <button className="ghost nav-link" onClick={() => closeMenuAnd(() => navigate("/admin"))}>
                       Admin
+                    </button>
+                  ) : null}
+                  {allowTestTools && (user.isAdmin || user.isSuperAdmin) ? (
+                    <button className="ghost nav-link" onClick={() => closeMenuAnd(() => navigate("/admin/test"))}>
+                      Test tools
                     </button>
                   ) : null}
                   <button className="ghost logout-btn" onClick={() => closeMenuAnd(onLogout)}>

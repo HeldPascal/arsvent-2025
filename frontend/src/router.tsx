@@ -10,6 +10,7 @@ import AdminAuditPage from "./views/AdminAuditPage";
 import AdminContentPage from "./views/AdminContentPage";
 import AdminAssetsBrowser from "./views/AdminAssetsBrowser";
 import AdminInventoryBrowser from "./views/AdminInventoryBrowser";
+import AdminTestPage from "./views/AdminTestPage";
 import { fetchMe, updateLocale as apiUpdateLocale } from "./services/api";
 import type { Locale, User } from "./types";
 import Layout from "./views/Layout";
@@ -39,6 +40,8 @@ export default function AppRouter() {
   const backendBase = import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ?? "";
   const logoutUrl = `${backendBase}/auth/logout`;
   const normalizeMode = (mode: string): User["mode"] => (mode === "VETERAN" || mode === "VET" ? "VETERAN" : "NORMAL");
+  const allowTestTools = (u: User | null) =>
+    Boolean(u && u.isProduction === false && (u.appEnv === "staging" || u.appEnv === "development"));
 
   const pushToast = (detail: { type: "success" | "error" | "info"; message?: string; key?: string; durationMs?: number }) => {
     window.dispatchEvent(new CustomEvent("app:toast", { detail }));
@@ -375,6 +378,26 @@ export default function AppRouter() {
               user ? (
                 user.isAdmin || user.isSuperAdmin ? (
                   <AdminInventoryBrowser />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              ) : loading ? (
+                <div className="panel">Loading…</div>
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/admin/test"
+            element={
+              user ? (
+                user.isAdmin || user.isSuperAdmin ? (
+                  allowTestTools(user) ? (
+                    <AdminTestPage user={user} />
+                  ) : (
+                    <Navigate to="/admin" replace />
+                  )
                 ) : (
                   <Navigate to="/" replace />
                 )

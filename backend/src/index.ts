@@ -376,6 +376,14 @@ const requireSuperAdmin: RequestHandler = (req, res, next) => {
   return res.status(403).json({ error: "Forbidden" });
 };
 
+const isTestEnv = appEnv === "staging" || appEnv === "development";
+const requireTestEnv: RequestHandler = (_req, res, next) => {
+  if (!isProd && isTestEnv) {
+    return next();
+  }
+  return res.status(403).json({ error: "Test utilities are disabled in this environment" });
+};
+
 const MAX_DAY = 24;
 const getContentDaySet = async () => {
   try {
@@ -1174,7 +1182,12 @@ app.post("/auth/logout", (req, res, next) => {
 
 app.get("/api/auth/me", requireAuth, (req, res) => {
   const user = req.user as PrismaUser;
-  return res.json({ ...user, mode: normalizeModeValue(user.mode) });
+  return res.json({
+    ...user,
+    mode: normalizeModeValue(user.mode),
+    appEnv,
+    isProduction: isProd,
+  });
 });
 
 app.post("/api/user/locale", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
@@ -2232,6 +2245,135 @@ app.post("/api/admin/unlock/set", requireAuth, requireAdmin, async (req, res, ne
     const newVal = await setUnlockedDay(unlockedDay, req.user?.id);
     await logAdminAction("admin:unlock-set", req.user?.id, { from: current, to: newVal });
     res.json({ unlockedDay: newVal });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/admin/test/unlock/increment", requireAuth, requireAdmin, requireTestEnv, async (req, res, next) => {
+  try {
+    const current = await getUnlockedDay();
+    if (current >= MAX_DAY) {
+      return res.status(400).json({ error: "All days are already unlocked." });
+    }
+    const { maxContiguousContentDay } = await getContentAvailability();
+    const next = Math.min(current + 1, MAX_DAY);
+    if (next > maxContiguousContentDay) {
+      return res.status(400).json({ error: `Cannot unlock day ${next}: missing content for the next day.` });
+    }
+    const newVal = await setUnlockedDay(next, req.user?.id);
+    await logAdminAction("admin:test:unlock-next", req.user?.id, { from: current, to: newVal });
+    res.json({ unlockedDay: newVal });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/admin/test/unlock/set", requireAuth, requireAdmin, requireTestEnv, async (req, res, next) => {
+  try {
+    const { unlockedDay } = req.body as { unlockedDay?: number };
+    if (!Number.isInteger(unlockedDay) || unlockedDay === undefined || unlockedDay < 0 || unlockedDay > MAX_DAY) {
+      return res.status(400).json({ error: "unlockedDay must be between 0 and 24" });
+    }
+    const current = await getUnlockedDay();
+    const { maxContiguousContentDay } = await getContentAvailability();
+    if (unlockedDay > maxContiguousContentDay) {
+      const missingDay = Math.min(maxContiguousContentDay + 1, MAX_DAY);
+      return res
+        .status(400)
+        .json({ error: `Cannot unlock day ${unlockedDay}: missing content for day ${missingDay}.` });
+    }
+    const newVal = await setUnlockedDay(unlockedDay, req.user?.id);
+    await logAdminAction("admin:test:unlock-set", req.user?.id, { from: current, to: newVal });
+    res.json({ unlockedDay: newVal });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/admin/test/unlock/all", requireAuth, requireAdmin, requireTestEnv, async (req, res, next) => {
+  try {
+    const current = await getUnlockedDay();
+    const { maxContiguousContentDay } = await getContentAvailability();
+    const newVal = await setUnlockedDay(maxContiguousContentDay, req.user?.id);
+    await logAdminAction("admin:test:unlock-all", req.user?.id, { from: current, to: newVal });
+    res.json({ unlockedDay: newVal });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/admin/test/users/:id/complete", requireAuth, requireAdmin, requireTestEnv, async (req, res, next) => {
+  try {
+    const targetId = req.params.id;
+    if (!targetId) {
+      return res.status(400).json({ error: "User id is required" });
+    }
+    const { day } = req.body as { day?: number };
+    if (!Number.isInteger(day) || day === undefined || day < 0 || day > MAX_DAY) {
+      return res.status(400).json({ error: "day must be between 0 and 24" });
+    }
+    const target = await prisma.user.findUnique({ where: { id: targetId } });
+    if (!target) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    if (target.isSuperAdmin && !isSuperAdminUser(req.user)) {
+      return res.status(403).json({ error: "Cannot modify super admin progress" });
+    }
+
+    const solvedAt = day > 0 ? new Date() : null;
+    const updated = await prisma.user.update({
+      where: { id: target.id },
+      data: {
+        lastSolvedDay: day,
+        lastSolvedAt: solvedAt,
+        introCompleted: day > 0 ? true : target.introCompleted,
+        stateVersion: { increment: 1 },
+      },
+    });
+    await logAdminAction("admin:test:force-complete", req.user?.id, { targetId: target.id, day });
+    res.json({ id: updated.id, lastSolvedDay: updated.lastSolvedDay, lastSolvedAt: updated.lastSolvedAt });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/admin/test/users/:id/eligibility", requireAuth, requireAdmin, requireTestEnv, async (req, res, next) => {
+  try {
+    const targetId = req.params.id;
+    if (!targetId) {
+      return res.status(400).json({ error: "User id is required" });
+    }
+    const { eligible } = req.body as { eligible?: boolean };
+    if (typeof eligible !== "boolean") {
+      return res.status(400).json({ error: "eligible must be boolean" });
+    }
+    const target = await prisma.user.findUnique({ where: { id: targetId } });
+    if (!target) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    if (target.isSuperAdmin && !isSuperAdminUser(req.user)) {
+      return res.status(403).json({ error: "Cannot modify super admin eligibility" });
+    }
+
+    const lastSolvedDay = eligible ? MAX_DAY : 0;
+    const lastSolvedAt = eligible ? new Date() : null;
+    const updated = await prisma.user.update({
+      where: { id: target.id },
+      data: {
+        introCompleted: eligible ? true : false,
+        lastSolvedDay,
+        lastSolvedAt,
+        stateVersion: { increment: 1 },
+      },
+    });
+    await logAdminAction("admin:test:set-eligibility", req.user?.id, { targetId: target.id, eligible });
+    res.json({
+      id: updated.id,
+      introCompleted: updated.introCompleted,
+      lastSolvedDay: updated.lastSolvedDay,
+      lastSolvedAt: updated.lastSolvedAt,
+    });
   } catch (error) {
     next(error);
   }

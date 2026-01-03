@@ -112,6 +112,8 @@ export interface User {
   sessionVersion: number;
   stateVersion: number;
   lastSolvedDay: number;
+  appEnv?: "development" | "staging" | "production";
+  isProduction?: boolean;
 }
 
 export interface DaySummary {
