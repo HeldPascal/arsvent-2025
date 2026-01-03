@@ -1,7 +1,7 @@
 # B1-230 — Staging Auth & Discord Setup
 
 ## Status
-Ready
+In Progress
 
 ## Related Spec
 - docs/specs/B1-test-and-staging-environment.md
