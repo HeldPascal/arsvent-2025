@@ -1,7 +1,7 @@
 # B1-240 — Admin Test Utilities
 
 ## Status
-Ready
+In Progress
 
 ## Related Spec
 - docs/specs/B1-test-and-staging-environment.md
