@@ -7,7 +7,11 @@
     "dev": "nodemon --watch src --ext ts --exec tsx src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint . --ext .ts",
+    "seed:staging": "tsx scripts/seed-staging.ts",
+    "reset:staging": "tsx scripts/reset-staging.ts",
+    "seed:development": "APP_ENV=development IS_PRODUCTION=false tsx scripts/seed-development.ts",
+    "reset:development": "APP_ENV=development IS_PRODUCTION=false tsx scripts/reset-development.ts"
   },
   "keywords": [],
   "author": "",
