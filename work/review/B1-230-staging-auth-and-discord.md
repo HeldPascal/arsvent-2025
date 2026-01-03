@@ -1,7 +1,7 @@
 # B1-230 — Staging Auth & Discord Setup
 
 ## Status
-In Progress
+Review
 
 ## Related Spec
 - docs/specs/B1-test-and-staging-environment.md
@@ -31,3 +31,7 @@ Isolate authentication and Discord integration for staging.
 - [ ] Production credentials cannot be used accidentally
 - [ ] Staging callback URLs are bound to the staging domain
 - [ ] Staging env file contains the dedicated Discord credentials and callback URL
+
+## Progress
+- Discord app created for staging; redirect URL configured.
+- Discord portal has no obvious guild restriction setting; server-side guard deferred (out of scope for this ticket).
