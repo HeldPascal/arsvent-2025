@@ -1,7 +1,7 @@
 # B1-220 — Seed & Reset Tooling
 
 ## Status
-In Progress
+Review
 
 ## Related Spec
 - docs/specs/B1-test-and-staging-environment.md
@@ -44,3 +44,8 @@ Allow repeatable setup of staging data.
 - [ ] Seed script creates usable test data
 - [ ] Reset script cannot run in production
 - [ ] Seed/reset scripts are runnable via npm scripts and logged clearly
+
+## Progress
+- Added seed/reset scripts for staging and development with environment guards.
+- Reset wipes DB + Redis, runs migrations, then seeds.
+- Seed data includes real admin users plus synthetic test users and audit logs.
