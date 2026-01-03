@@ -1,7 +1,7 @@
 # B2-320 — VPS Deploy by Immutable Tag
 
 ## Status
-Ready
+In Progress
 
 ## Related Spec
 - docs/specs/B2-low-downtime-deploys.md
