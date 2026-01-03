@@ -1,7 +1,7 @@
 # B2-310 — CI Build & Push Images
 
 ## Status
-In Progress
+Review
 
 ## Related Spec
 - docs/specs/B2-low-downtime-deploys.md
