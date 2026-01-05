@@ -2,14 +2,6 @@ name: Deploy to VPS
 
 on:
   workflow_dispatch:
-    inputs:
-      with_maintenance:
-        description: "Enable maintenance mode during deployment?"
-        required: true
-        type: choice
-        options:
-          - "yes"
-          - "no"
 
 jobs:
   deploy:
@@ -23,8 +15,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          envs: WITH_MAINTENANCE,BRANCH
+          envs: BRANCH
           script: |
-            export WITH_MAINTENANCE="${{ github.event.inputs.with_maintenance }}"
             export BRANCH="${{ github.ref_name }}"
             /opt/arsvent-2025/deploy.sh

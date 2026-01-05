@@ -32,21 +32,33 @@ Defaults come from the codebase; values marked "required" must be set explicitly
 
 | Variable | Purpose | Default | Possible values / notes |
 | --- | --- | --- | --- |
-| `APP_DIR` | Absolute path to the repo on the VPS. | Required | Example: `/opt/arsvent-2025/app`. |
-| `DB_PATH` | Absolute path to the SQLite database file. | Required | Example: `/opt/arsvent-2025/data/backend/prod.db`. |
-| `BACKUP_DIR` | Directory for database backups. | Required | Example: `/opt/arsvent-2025/backups/backend-db`. |
+| `DEPLOY_ENV` | Environment label for release logs. | Required | Example: `staging`. |
+| `DEPLOY_DIR` | Base directory for relative paths. | Required | Example: `/path/to/deploy-root`. |
+| `APP_DIR` | App repo dir (absolute or relative to `DEPLOY_DIR`). | Optional | Defaults to `app`. |
+| `ENV_DIR` | Env dir (absolute or relative to `DEPLOY_DIR`). | Optional | Defaults to `env`. |
+| `DATA_DIR` | Data dir (absolute or relative to `DEPLOY_DIR`). | Optional | Defaults to `data`. |
+| `BACKUPS_DIR` | Backups dir (absolute or relative to `DEPLOY_DIR`). | Optional | Defaults to `backups`. |
+| `DB_BACKUP_DIR` | DB backups dir (absolute or relative to `DEPLOY_DIR`). | Optional | Defaults to `backups/backend-db`. |
+| `DB_PATH` | DB path (absolute or relative to `DEPLOY_DIR`). | Optional | Defaults to `data/backend/prod.db`. |
 | `BRANCH` | Git branch to deploy. | `main` | Optional override for deployment. |
 | `BACKUPS_TO_KEEP` | How many DB backups to retain. | `7` | Integer count. |
+| `NGINX_RELOAD_CMD` | Command used to reload nginx. | `sudo systemctl reload nginx` | Override if sudo is not available. |
+| `COMPOSE_PROJECT_NAME` | Docker Compose project name override. | `arsvent-${DEPLOY_ENV}` | Set to keep envs isolated (e.g., `arsvent-staging`). |
 | `IMAGE_TAG` | Image tag to deploy for backend/frontend. | Required for tag-based deploys | Immutable tag (e.g. git SHA) referenced by compose. |
+| `IMAGE_REGISTRY_OWNER` | GHCR owner/org for images. | Required | Should match `ghcr.io/<owner>/arsvent-*`. |
+| `RELEASES_DIR` | Release metadata dir (absolute or relative to `DEPLOY_DIR`). | Optional | Defaults to `releases`. |
+| `MAINTENANCE_DIR` | Maintenance dir (absolute or relative to `DEPLOY_DIR`). | Optional | Defaults to `maintenance`. |
+| `MAINTENANCE_FLAG` | Maintenance flag file (absolute or relative to `DEPLOY_DIR`). | Optional | Defaults to `maintenance/MAINTENANCE_ON`. |
+| `COMPOSE_FILE` | Compose file path (absolute or relative to `DEPLOY_DIR`). | Optional | Defaults to `app/ops/docker-compose.yml`. |
 
-## Docker Compose (`docker-compose.yml`)
+## Docker Compose (`ops/docker-compose.yml`)
 
 | Variable | Purpose | Default | Possible values / notes |
 | --- | --- | --- | --- |
-| `BACKEND_ENV_FILE` | Backend env file path. | `/opt/arsvent-2025/env/backend.env` | Staging: `/opt/arsvent-2025/env/backend.staging.env`. |
-| `FRONTEND_ENV_FILE` | Frontend env file path. | `/opt/arsvent-2025/env/frontend.env` | Staging: `/opt/arsvent-2025/env/frontend.staging.env`. |
-| `BACKEND_DATA_DIR` | Backend data directory. | `/opt/arsvent-2025/data/backend` | Staging: `/opt/arsvent-2025/data/backend-staging`. |
-| `REDIS_DATA_DIR` | Redis data directory. | `/opt/arsvent-2025/data/redis` | Staging: `/opt/arsvent-2025/data/redis-staging`. |
+| `BACKEND_ENV_FILE` | Backend env file path. | Optional | Defaults to `env/backend.env`. |
+| `FRONTEND_ENV_FILE` | Frontend env file path. | Optional | Defaults to `env/frontend.env`. |
+| `BACKEND_DATA_DIR` | Backend data directory. | Optional | Defaults to `data/backend`. |
+| `REDIS_DATA_DIR` | Redis data directory. | Optional | Defaults to `data/redis`. |
 | `BACKEND_PORT` | Host port bound to backend container. | `4000` | Staging: `4100`. |
 | `FRONTEND_PORT` | Host port bound to frontend container. | `4173` | Staging: `4273`. |
 

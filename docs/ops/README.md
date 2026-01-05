@@ -7,30 +7,30 @@ work stays consistent and repeatable.
 ## Current Production Setup
 
 ### VPS Layout
-- App root: `/opt/arsvent-2025/app`
-- Env files: `/opt/arsvent-2025/env/`
-- Data: `/opt/arsvent-2025/data/`
-- Maintenance assets: `/opt/arsvent-2025/maintenance/`
-- Backups: `/opt/arsvent-2025/backups/`
+- App root: configurable (see `ops/deploy.env.example`)
+- Env files: configurable
+- Data: configurable
+- Maintenance assets: configurable
+- Backups: configurable
 
 ### Services and Ports (Docker Compose)
-Defined in `docker-compose.yml`:
+Defined in `ops/docker-compose.yml`:
 - `backend` (Node/Express)
-  - Exposed: `4000` (bound to `127.0.0.1:4000`)
-  - Volume: `/opt/arsvent-2025/data/backend` -> `/app/data`
+  - Exposed: `4000` (bound to configured host port)
+  - Volume: `BACKEND_DATA_DIR` -> `/app/data`
 - `frontend` (Vite build, served on container port 80)
-  - Exposed: `4173` (bound to `127.0.0.1:4173`)
+  - Exposed: configured host port
 - `redis`
   - Image: `redis:7-alpine`
-  - Volume: `/opt/arsvent-2025/data/redis` -> `/data`
+  - Volume: `REDIS_DATA_DIR` -> `/data`
 
 ### Env Files
-- `/opt/arsvent-2025/env/backend.env`
-- `/opt/arsvent-2025/env/frontend.env`
-- Full list, defaults, and examples: `docs/ops/environment-variables.md`
+- Backend env file path configured via `BACKEND_ENV_FILE`
+- Frontend env file path configured via `FRONTEND_ENV_FILE`
+- Full list and examples: `docs/ops/environment-variables.md`
 
 ### Database
-- SQLite file: `/opt/arsvent-2025/data/backend/prod.db`
+- SQLite file: `DB_PATH`
 
 ### Nginx
 - TLS via Certbot (Let's Encrypt) for `arsvent25.arsnecandi.de`
@@ -39,24 +39,28 @@ Defined in `docker-compose.yml`:
   - `/api/` and `/auth/` -> `127.0.0.1:4000` (backend)
   - `/content-asset/` -> backend with cache enabled
 - Maintenance mode:
-  - Checks `/opt/arsvent-2025/maintenance/MAINTENANCE_ON`
-  - Returns 503 and serves `maintenance.html` when enabled
+  - Checks `MAINTENANCE_FLAG`
+  - Returns 503 and serves `maintenance.html` when enabled (from `MAINTENANCE_DIR`)
+  - Repo sources: `ops/maintenance.html` (deploy script toggles maintenance)
 
 ### Deploy Flow
 - GitHub Actions workflow: `.github/workflows/deploy.yml`
   - Manual `workflow_dispatch` only
-  - SSH to VPS and runs `/opt/arsvent-2025/deploy.sh`
-- VPS wrapper: `/opt/arsvent-2025/deploy.sh`
-  - Toggles maintenance on/off
-  - Calls `/opt/arsvent-2025/app/ops/deploy.sh`
+  - SSH to VPS and runs the wrapper script
+- VPS wrapper script
+  - Sources a local env file (see `ops/deploy.env.example`)
+  - Note: the example wrapper uses a relative path (`./env/deploy.env`). If the wrapper is executed from a
+    different working directory, it will fail to locate the env file. Either `cd` into the wrapper directory
+    before running it, or update the wrapper to resolve the env path relative to the script location.
+  - Calls `<app_root>/ops/deploy.sh`
 - Repo script: `ops/deploy.sh`
   - `git fetch/checkout/pull` on branch
-  - Builds images locally on VPS
+  - Pulls prebuilt images by `IMAGE_TAG`
   - `docker compose down`, backup SQLite, migrate, `up -d`
 
 ### Backups
 - SQLite backups created during deploy
-- Stored under `/opt/arsvent-2025/backups/backend-db/`
+- Stored under `BACKUP_DIR`
 
 ## Planned Direction (In Scope for B1/B2)
 
@@ -70,11 +74,11 @@ Defined in `docker-compose.yml`:
 - Backend port: `4100` (container `4000`)
 - Frontend port: `4273` (container `80`)
 - Env files:
-  - `/opt/arsvent-2025/env/backend.staging.env`
-  - `/opt/arsvent-2025/env/frontend.staging.env`
+  - staging `BACKEND_ENV_FILE`
+  - staging `FRONTEND_ENV_FILE`
 - Data directories:
-  - `/opt/arsvent-2025/data/backend-staging`
-  - `/opt/arsvent-2025/data/redis-staging`
+  - staging `BACKEND_DATA_DIR`
+  - staging `REDIS_DATA_DIR`
 
 ### CI-Built Images
 - CI builds backend/frontend images and pushes to registry.
