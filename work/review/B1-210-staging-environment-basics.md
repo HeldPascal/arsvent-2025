@@ -30,7 +30,7 @@ Introduce a fully isolated staging environment.
   - `DATABASE_URL="file:/app/data/staging.db"`
   - `REDIS_URL=redis://redis:6379`
 - Compose isolation:
-  - single `docker-compose.yml`
+  - single `ops/docker-compose.yml`
   - `COMPOSE_PROJECT_NAME=arsvent-2025-staging` (prod remains `arsvent-2025`)
   - staging runs its own Redis container (same compose file, isolated by project name)
 - Nginx:

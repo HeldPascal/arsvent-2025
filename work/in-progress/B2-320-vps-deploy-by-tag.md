@@ -38,3 +38,10 @@ Deploy by pulling prebuilt images on the VPS and switching containers quickly.
 - [ ] Maintenance window covers only restart + final checks
 - [ ] Compose config supports selecting the target SHA via env var
 - [ ] Releases are logged with tag and timestamp
+
+## Progress
+- Moved compose file to `ops/docker-compose.yml` and switched services to GHCR images by `IMAGE_TAG`.
+- Deploy script now pulls by tag, runs migrations, restarts services, and records releases.
+- Deploy script now handles maintenance window; wrapper no longer toggles maintenance.
+- Added repo maintenance HTML and a VPS wrapper env template for easier configuration.
+- Added example wrapper script and renamed env template to `deploy.env.example`.
