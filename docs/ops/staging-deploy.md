@@ -33,9 +33,11 @@ IMAGE_REGISTRY_OWNER="heldpascal"
 Add staging overrides:
 
 ```
+BRANCH="<BRANCH>"
 COMPOSE_PROJECT_NAME="arsvent-staging"
 BACKEND_PORT=4100
 FRONTEND_PORT=4273
+DB_PATH="data/backend/staging.db"
 ```
 
 ## 4) Create backend/frontend env files
@@ -71,6 +73,12 @@ cp /opt/arsvent-2025/staging/app/ops/deploy.wrapper.example.sh /opt/arsvent-2025
 
 ## 6) Deploy by tag
 
+Prerequisite (once per VPS user): authenticate to GHCR so private images can be pulled.
+
+```
+docker login ghcr.io
+```
+
 ```
 /opt/arsvent-2025/staging/deploy.sh /opt/arsvent-2025/staging/env/deploy.env <IMAGE_TAG_SHA>
 ```
@@ -84,6 +92,29 @@ with a prefixed prompt:
 /opt/arsvent-2025/staging/app/ops/activate-deploy-env.sh /opt/arsvent-2025/staging/env/deploy.env
 docker compose -f "$COMPOSE_FILE" ps
 exit
+```
+
+## 6b) Optional: seed/reset staging data
+
+Run these from the compose environment shell. The backend image doesn't
+include the seed scripts, so mount them from the repo:
+
+```
+docker compose -f "$COMPOSE_FILE" run --rm \
+  -v "$APP_DIR/backend/scripts:/app/scripts:ro" \
+  -v "$APP_DIR/backend/tsconfig.json:/app/tsconfig.json:ro" \
+  --entrypoint /app/node_modules/.bin/tsx \
+  backend /app/scripts/seed-staging.ts
+```
+
+Reset (destructive):
+
+```
+docker compose -f "$COMPOSE_FILE" run --rm \
+  -v "$APP_DIR/backend/scripts:/app/scripts:ro" \
+  -v "$APP_DIR/backend/tsconfig.json:/app/tsconfig.json:ro" \
+  --entrypoint /app/node_modules/.bin/tsx \
+  backend /app/scripts/reset-staging.ts
 ```
 
 ## 7) Verify
