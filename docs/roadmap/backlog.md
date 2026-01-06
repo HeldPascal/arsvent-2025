@@ -101,6 +101,9 @@ spec before work begins.
 - Health & Readiness  
   Runtime health and readiness endpoints for monitoring and orchestration.
 
+- Service Metrics & Capacity Signals  
+  Capture load/capacity metrics for core resources to enable future scaling and dashboards.
+
 - Codebase Audit (Security & Best Practices)  
   Periodic review of the existing codebase and infrastructure for security issues and
   best practices (auth/session handling, dependency hygiene, secrets, logging, input
