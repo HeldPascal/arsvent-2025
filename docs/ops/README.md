@@ -48,19 +48,22 @@ Defined in `ops/docker-compose.yml`:
   - Manual `workflow_dispatch` only
   - SSH to VPS and runs the wrapper script
 - VPS wrapper script
-  - Sources a local env file (see `ops/deploy.env.example`)
-  - Note: the example wrapper uses a relative path (`./env/deploy.env`). If the wrapper is executed from a
-    different working directory, it will fail to locate the env file. Either `cd` into the wrapper directory
-    before running it, or update the wrapper to resolve the env path relative to the script location.
-  - Calls `<app_root>/ops/deploy.sh`
+  - Takes the env file path and image tag as args
+  - Loads `BRANCH` and `APP_DIR` from the env file
+  - Calls `<app_root>/ops/deploy.sh` with `ENV_FILE` set
 - Repo script: `ops/deploy.sh`
   - `git fetch/checkout/pull` on branch
   - Pulls prebuilt images by `IMAGE_TAG`
   - `docker compose down`, backup SQLite, migrate, `up -d`
+- Shared env loader: `ops/load-deploy-env.sh`
+  - Sources `deploy.env` and resolves derived paths for scripts
+  - `load_deploy_env` accepts an optional image tag argument
+- Manual compose helper: `ops/activate-deploy-env.sh` (pass the deploy env file path)
+  - Starts a subshell with a `(arsvent:<env>)` prompt and the same env resolution
 
 ### Backups
 - SQLite backups created during deploy
-- Stored under `BACKUP_DIR`
+- Stored under `DB_BACKUP_DIR`
 
 ## Planned Direction (In Scope for B1/B2)
 
