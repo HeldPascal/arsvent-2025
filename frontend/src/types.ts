@@ -256,6 +256,19 @@ export interface AdminOverview {
   recentAudit?: AdminAuditEntry[];
 }
 
+export interface VersionMetadata {
+  imageTag: string | null;
+  commitSha: string | null;
+  dirty: boolean | null;
+  builtAt: string | null;
+}
+
+export interface AdminVersionResponse {
+  backend: VersionMetadata;
+  frontend: VersionMetadata;
+  updatedAt: string;
+}
+
 export type IssueSeverity = "info" | "warning" | "error";
 export type IssueSource = "inventory" | "asset" | "content" | "consistency" | "link";
 export interface ContentIssue {

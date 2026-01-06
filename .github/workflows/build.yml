@@ -35,6 +35,9 @@ jobs:
       - name: Set registry owner (lowercase)
         run: echo "REGISTRY_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
 
+      - name: Set build metadata
+        run: echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -68,6 +71,11 @@ jobs:
           tags: |
             ghcr.io/${{ env.REGISTRY_OWNER }}/arsvent-backend:${{ steps.image_tag.outputs.ARTIFACTS_SHA }}
             ghcr.io/${{ env.REGISTRY_OWNER }}/arsvent-backend:latest
+          build-args: |
+            IMAGE_TAG=${{ steps.image_tag.outputs.ARTIFACTS_SHA }}
+            COMMIT_SHA=${{ github.sha }}
+            DIRTY=false
+            BUILT_AT=${{ env.BUILD_TIME }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -94,5 +102,10 @@ jobs:
           tags: |
             ghcr.io/${{ env.REGISTRY_OWNER }}/arsvent-frontend:${{ steps.image_tag.outputs.ARTIFACTS_SHA }}
             ghcr.io/${{ env.REGISTRY_OWNER }}/arsvent-frontend:latest
+          build-args: |
+            IMAGE_TAG=${{ steps.image_tag.outputs.ARTIFACTS_SHA }}
+            COMMIT_SHA=${{ github.sha }}
+            DIRTY=false
+            BUILT_AT=${{ env.BUILD_TIME }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

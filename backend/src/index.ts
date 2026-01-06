@@ -15,6 +15,8 @@ import fs from "fs/promises";
 import fsSync from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { execFile } from "child_process";
+import { promisify } from "util";
 import sharp from "sharp";
 import { PrismaClient } from "@prisma/client";
 import type { User as PrismaUser } from "@prisma/client";
@@ -99,6 +101,106 @@ const app = express();
 const superAdminId = SUPER_ADMIN_DISCORD_ID?.trim() || null;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const execFileAsync = promisify(execFile);
+
+type VersionPayload = {
+  imageTag: string | null;
+  commitSha: string | null;
+  dirty: boolean | null;
+  builtAt: string | null;
+};
+
+const normalizeVersionPayload = (value?: Partial<VersionPayload> | null): VersionPayload => ({
+  imageTag: typeof value?.imageTag === "string" && value.imageTag.trim() ? value.imageTag : null,
+  commitSha: typeof value?.commitSha === "string" && value.commitSha.trim() ? value.commitSha : null,
+  dirty: typeof value?.dirty === "boolean" ? value.dirty : null,
+  builtAt: typeof value?.builtAt === "string" && value.builtAt.trim() ? value.builtAt : null,
+});
+
+const readVersionFile = async (filePath: string): Promise<VersionPayload | null> => {
+  try {
+    const raw = await fs.readFile(filePath, "utf-8");
+    const parsed = JSON.parse(raw) as Partial<VersionPayload>;
+    return normalizeVersionPayload(parsed);
+  } catch {
+    return null;
+  }
+};
+
+const findGitRoot = (startDir: string): string | null => {
+  let current = startDir;
+  while (true) {
+    if (fsSync.existsSync(path.join(current, ".git"))) {
+      return current;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) return null;
+    current = parent;
+  }
+};
+
+const getGitVersionInfo = async (cwd: string): Promise<Pick<VersionPayload, "commitSha" | "dirty">> => {
+  const gitRoot = findGitRoot(cwd);
+  if (!gitRoot) {
+    return { commitSha: null, dirty: null };
+  }
+  let commitSha: string | null = null;
+  let dirty: boolean | null = null;
+  try {
+    const { stdout } = await execFileAsync("git", ["rev-parse", "HEAD"], { cwd: gitRoot });
+    commitSha = stdout.trim() || null;
+  } catch {
+    commitSha = null;
+  }
+  try {
+    const { stdout } = await execFileAsync("git", ["status", "--porcelain"], { cwd: gitRoot });
+    dirty = stdout.trim().length > 0;
+  } catch {
+    dirty = null;
+  }
+  return { commitSha, dirty };
+};
+
+const resolveBackendVersion = async (): Promise<VersionPayload> => {
+  const versionPath = path.join(process.cwd(), "version.json");
+  const fromFile = await readVersionFile(versionPath);
+  const resolved = normalizeVersionPayload(fromFile ?? {});
+
+  if (!resolved.imageTag && process.env.IMAGE_TAG) {
+    resolved.imageTag = process.env.IMAGE_TAG;
+  }
+
+  if (!resolved.commitSha || resolved.dirty === null) {
+    const gitInfo = await getGitVersionInfo(process.cwd());
+    if (!resolved.commitSha) resolved.commitSha = gitInfo.commitSha;
+    if (resolved.dirty === null) resolved.dirty = gitInfo.dirty;
+  }
+
+  return resolved;
+};
+
+const fetchFrontendVersion = async (): Promise<VersionPayload> => {
+  let url: string;
+  try {
+    url = new URL("/version.json", FRONTEND_ORIGIN).toString();
+  } catch {
+    return normalizeVersionPayload({});
+  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 1500);
+  try {
+    const response = await fetch(url, { signal: controller.signal, headers: { accept: "application/json" } });
+    if (!response.ok) {
+      return normalizeVersionPayload({});
+    }
+    const data = (await response.json()) as Partial<VersionPayload>;
+    return normalizeVersionPayload(data);
+  } catch {
+    return normalizeVersionPayload({});
+  } finally {
+    clearTimeout(timeout);
+  }
+};
 
 const createSessionStore = async (): Promise<session.Store | undefined> => {
   try {
@@ -1968,6 +2070,15 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
       recentUsers: recentUsers.map((u) => ({ ...u, mode: normalizeModeValue(u.mode) })),
       recentSolves: recentSolves.map((u) => ({ ...u, mode: normalizeModeValue(u.mode) })),
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/admin/version", requireAuth, requireAdmin, async (_req, res, next) => {
+  try {
+    const [backend, frontend] = await Promise.all([resolveBackendVersion(), fetchFrontendVersion()]);
+    res.json({ backend, frontend, updatedAt: new Date().toISOString() });
   } catch (error) {
     next(error);
   }

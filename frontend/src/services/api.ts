@@ -1,5 +1,6 @@
 import type {
   AdminOverview,
+  AdminVersionResponse,
   AdminContentDayDetail,
   ContentDiagnostics,
   AdminUserSummary,
@@ -177,6 +178,7 @@ export const updateCreatureSwap = (creatureSwap: boolean) =>
   });
 
 export const fetchAdminOverview = () => apiFetch<AdminOverview>("/api/admin/overview");
+export const fetchAdminVersion = () => apiFetch<AdminVersionResponse>("/api/admin/version");
 
 export const fetchAdminUsers = () => apiFetch<AdminUserSummary[]>("/api/admin/users");
 

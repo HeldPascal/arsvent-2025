@@ -65,6 +65,20 @@ Defined in `ops/docker-compose.yml`:
 - SQLite backups created during deploy
 - Stored under `DB_BACKUP_DIR`
 
+### Version Metadata
+- Backend reads `./version.json` from its working directory.
+- Frontend serves `/version.json` from its static output.
+- Schema:
+  ```
+  {
+    "imageTag": "string | null",
+    "commitSha": "string | null",
+    "dirty": "boolean | null",
+    "builtAt": "string | null"
+  }
+  ```
+- `IMAGE_TAG` is optional and used when `version.json` is missing.
+
 ## Planned Direction (In Scope for B1/B2)
 
 ### Staging Environment
