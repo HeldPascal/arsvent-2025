@@ -1,7 +1,7 @@
 # B2-320 — VPS Deploy by Immutable Tag
 
 ## Status
-In Progress
+Review
 
 ## Related Spec
 - docs/specs/B2-low-downtime-deploys.md
@@ -13,11 +13,11 @@ Deploy by pulling prebuilt images on the VPS and switching containers quickly.
 - Update compose configuration to use image tags (no local build)
 - Deploy script:
   - ensure maintenance is enabled
-  - docker login to registry
+  - docker login to registry (prerequisite for private images)
   - pull images by SHA tag
   - run migrations
   - restart services
-  - disable maintenance after readiness
+  - disable maintenance after readiness (deferred to B2-330)
 - Record releases in `releases.log` and update `current_release` / `previous_release`
 
 ## Constraints
@@ -27,7 +27,7 @@ Deploy by pulling prebuilt images on the VPS and switching containers quickly.
 ## Implementation Notes
 - Compose: images reference a single `IMAGE_TAG` env var for both backend and frontend.
 - Deploy script: update `ops/deploy.sh` to accept a SHA (arg or env) and export `IMAGE_TAG`.
-- VPS wrapper: `/opt/arsvent-2025/deploy.sh` continues toggling maintenance before/after.
+- VPS wrapper: `/opt/arsvent-2025/deploy.sh` no longer toggles maintenance.
 - Release metadata written under `/opt/arsvent-2025/releases/`:
   - `releases.log`
   - `current_release`
@@ -45,3 +45,5 @@ Deploy by pulling prebuilt images on the VPS and switching containers quickly.
 - Deploy script now handles maintenance window; wrapper no longer toggles maintenance.
 - Added repo maintenance HTML and a VPS wrapper env template for easier configuration.
 - Added example wrapper script and renamed env template to `deploy.env.example`.
+- Staging deploy flow documented in `docs/ops/staging-deploy.md`.
+- Staging deployment validated on VPS (manual steps completed).
