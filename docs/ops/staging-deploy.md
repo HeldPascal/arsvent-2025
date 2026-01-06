@@ -94,6 +94,9 @@ docker compose -f "$COMPOSE_FILE" ps
 exit
 ```
 
+If `IMAGE_TAG` is not set in `deploy.env`, the helper will fall back to the
+last deployed tag from `${RELEASES_DIR}/current_release`.
+
 ## 6b) Optional: seed/reset staging data
 
 Run these from the compose environment shell. The backend image doesn't

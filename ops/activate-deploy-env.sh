@@ -12,6 +12,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/load-deploy-env.sh"
 load_deploy_env "$ENV_FILE"
 
+if [ -z "${IMAGE_TAG:-}" ] && [ -n "${RELEASES_DIR:-}" ] && [ -f "${RELEASES_DIR}/current_release" ]; then
+  IMAGE_TAG="$(cat "${RELEASES_DIR}/current_release" | tr -d '\n')"
+  export IMAGE_TAG
+fi
+
 if [ -z "${IMAGE_REGISTRY_OWNER:-}" ] || [ -z "${IMAGE_TAG:-}" ]; then
   echo "[compose-env] IMAGE_REGISTRY_OWNER/IMAGE_TAG not set. Compose may warn."
 fi
