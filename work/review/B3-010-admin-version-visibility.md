@@ -1,7 +1,7 @@
 # B3-010 — Admin Version Visibility
 
 ## Status
-In Progress
+Review
 
 ## Related Spec
 - docs/specs/B3-admin-version-visibility.md (B3.1)
