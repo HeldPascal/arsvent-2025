@@ -1,7 +1,7 @@
 # B2-330 — Health/Readiness Endpoints + Deploy Wait
 
 ## Status
-Ready
+In Progress
 
 ## Related Spec
 - docs/specs/B2-low-downtime-deploys.md
