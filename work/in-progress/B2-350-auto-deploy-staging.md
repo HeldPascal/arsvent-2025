@@ -8,23 +8,23 @@ In Progress
 - docs/specs/B2-low-downtime-deploys.md
 
 ## Goal
-Deploy staging automatically on `main` push using CI-built images.
+Deploy staging automatically after the CI build on `main` completes using CI-built images.
 
 ## Scope
-- Update GitHub Actions to trigger on `main` push
+- Update GitHub Actions to trigger on `workflow_run` for the build workflow on `main`
 - Deploy to staging environment on VPS
 - Always enable maintenance mode during deploy
 
 ## Implementation Notes
 - Workflow: `.github/workflows/deploy.yml`
-- Trigger: `on: push` for `main`
+- Trigger: `on: workflow_run` for the build workflow on `main` (manual dispatch allowed)
 - Deploy command targets staging explicitly (env or arg), e.g. `APP_ENV=staging`
 - SSH user/host from repo secrets (`DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`)
 - Log the SHA used for deployment in workflow output
 
 ## Functional Requirements
 - Use immutable image tags from CI
-- No manual trigger required for staging deploys
+- No manual trigger required for staging deploys (manual dispatch allowed)
 - Deploy logs indicate the deployed SHA
 
 ## Acceptance Criteria
