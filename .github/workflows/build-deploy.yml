@@ -180,20 +180,29 @@ jobs:
 
   deploy_production:
     runs-on: ubuntu-latest
-    needs: build
+    needs:
+      - build
+      - deploy_staging
     environment: production
     if: >-
       ${{
         always() &&
-        github.event_name == 'workflow_dispatch' &&
-        inputs.run_deploy_production == 'true' &&
+        needs.build.result == 'success' &&
         (
-          inputs.run_build == 'true' ||
-          inputs.image_tag != ''
-        ) &&
-        (
-          inputs.run_build == 'false' ||
-          needs.build.result == 'success'
+          (
+            github.event_name == 'push' &&
+            needs.deploy_staging.result == 'success'
+          ) ||
+          (
+            github.event_name == 'workflow_dispatch' &&
+            inputs.run_deploy_production == 'true' &&
+            inputs.run_deploy_staging == 'true' &&
+            needs.deploy_staging.result == 'success' &&
+            (
+              inputs.run_build == 'true' ||
+              inputs.image_tag != ''
+            )
+          )
         )
       }}
     env:
