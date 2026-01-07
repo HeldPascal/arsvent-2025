@@ -44,8 +44,9 @@ Defined in `ops/docker-compose.yml`:
   - Repo sources: `ops/maintenance.html` (deploy script toggles maintenance)
 
 ### Deploy Flow
-- GitHub Actions workflow: `.github/workflows/deploy.yml`
-  - Manual `workflow_dispatch` only
+- GitHub Actions workflow: `.github/workflows/build-deploy.yml`
+  - Builds images and deploys staging on `main` push
+  - Manual `workflow_dispatch` supports build-only or deploy-only runs
   - SSH to VPS and runs the wrapper script
 - VPS wrapper script
   - Takes the env file path and image tag as args
@@ -60,6 +61,7 @@ Defined in `ops/docker-compose.yml`:
   - `load_deploy_env` accepts an optional image tag argument
 - Manual compose helper: `ops/activate-deploy-env.sh` (pass the deploy env file path)
   - Starts a subshell with a `(arsvent:<env>)` prompt and the same env resolution
+- Bootstrap instructions: `docs/ops/bootstrap-vps.md`
 
 ### Backups
 - SQLite backups created during deploy
@@ -118,16 +120,15 @@ Defined in `ops/docker-compose.yml`:
 - Most ops scripts and config live in repo; env/data remain server-specific.
 
 ## Preliminary Decisions (Draft)
-- Staging deploys automatically from `main` on push/merge (no manual trigger).
+- Staging deploys automatically from `main` on push/merge (manual trigger allowed).
 - Production remains a manual promotion by immutable image tag.
 - Maintenance mode is always enabled during deploys and disabled after readiness.
 - CI builds and pushes images; VPS only pulls and runs them.
 - SSH remains the mechanism for VPS commands; the trigger is automated.
 
 ## Findings / Gaps (Draft)
-- Deploy workflow and VPS wrapper scripts must be updated to remove manual triggers.
+- GitHub environment variables (`DEPLOY_SCRIPT`, `DEPLOY_ENV_FILE`) must be set.
 - Registry naming/tagging convention is defined in B2 and should be applied consistently.
-- Health/live/ready endpoints must be added and wired into deploy scripts.
 
 ## Migration Plan (Step-by-Step)
 1) Define staging domain, ports, and nginx server block for staging.

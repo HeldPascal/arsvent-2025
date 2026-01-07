@@ -45,5 +45,5 @@ Deploy by pulling prebuilt images on the VPS and switching containers quickly.
 - Deploy script now handles maintenance window; wrapper no longer toggles maintenance.
 - Added repo maintenance HTML and a VPS wrapper env template for easier configuration.
 - Added example wrapper script and renamed env template to `deploy.env.example`.
-- Staging deploy flow documented in `docs/ops/staging-deploy.md`.
+- Staging deploy flow documented in `docs/ops/bootstrap-vps.md`.
 - Staging deployment validated on VPS (manual steps completed).
