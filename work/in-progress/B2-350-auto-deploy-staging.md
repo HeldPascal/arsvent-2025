@@ -1,7 +1,7 @@
 # B2-350 — Auto-Deploy Staging on Main
 
 ## Status
-Ready
+In Progress
 
 ## Related Spec
 - docs/specs/B1-test-and-staging-environment.md
