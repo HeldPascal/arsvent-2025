@@ -11,15 +11,17 @@ In Progress
 Deploy staging automatically after the CI build on `main` completes using CI-built images.
 
 ## Scope
-- Update GitHub Actions to trigger on `workflow_run` for the build workflow on `main`
+- Update GitHub Actions to run deploy as a dependent job in the build workflow
 - Deploy to staging environment on VPS
 - Always enable maintenance mode during deploy
 
 ## Implementation Notes
-- Workflow: `.github/workflows/deploy.yml`
-- Trigger: `on: workflow_run` for the build workflow on `main` (manual dispatch allowed)
+- Workflow: `.github/workflows/build-deploy.yml` (deploy job depends on build)
+- Trigger: `on: push` for `main` (manual dispatch allowed with inputs)
 - Deploy command targets staging explicitly (env or arg), e.g. `APP_ENV=staging`
 - SSH user/host from repo secrets (`DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`)
+- GitHub environment vars required: `DEPLOY_SCRIPT`, `DEPLOY_ENV_FILE`
+- Manual dispatch inputs: `run_build`, `run_deploy`, optional `image_tag` for deploy-only runs
 - Log the SHA used for deployment in workflow output
 
 ## Functional Requirements

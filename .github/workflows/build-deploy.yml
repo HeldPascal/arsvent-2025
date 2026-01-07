@@ -1,7 +1,19 @@
-name: Build and Check
+name: Build and Deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      run_build:
+        description: "Run build job"
+        required: false
+        default: "true"
+      run_deploy:
+        description: "Run deploy job"
+        required: false
+        default: "true"
+      image_tag:
+        description: "Image tag (required when run_build=false and run_deploy=true)"
+        required: false
   push:
     branches:
       - main
@@ -9,6 +21,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || inputs.run_build == 'true'
     permissions:
       contents: read
       packages: write
@@ -109,3 +122,54 @@ jobs:
             BUILT_AT=${{ env.BUILD_TIME }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment: staging
+    if: >-
+      ${{
+        always() &&
+        (
+          github.event_name != 'workflow_dispatch' ||
+          inputs.run_deploy == 'true'
+        ) &&
+        (
+          github.event_name != 'workflow_dispatch' ||
+          inputs.run_build == 'true' ||
+          inputs.image_tag != ''
+        ) &&
+        (
+          github.event_name == 'workflow_dispatch' ||
+          needs.build.result == 'success'
+        )
+      }}
+    env:
+      DEPLOY_SCRIPT: ${{ vars.DEPLOY_SCRIPT }}
+      DEPLOY_ENV_FILE: ${{ vars.DEPLOY_ENV_FILE }}
+      DEPLOY_SHA: >-
+        ${{
+          github.event_name == 'workflow_dispatch' &&
+          inputs.run_build == 'false' &&
+          inputs.image_tag || github.sha
+        }}
+
+    steps:
+      - name: Validate deploy inputs
+        if: github.event_name == 'workflow_dispatch' && inputs.run_build == 'false'
+        run: |
+          if [ -z "${{ inputs.image_tag }}" ]; then
+            echo "image_tag is required when run_build=false and run_deploy=true."
+            exit 1
+          fi
+
+      - name: Run deployment on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SSH_PORT }}
+          script: |
+            echo "[deploy] Deploying SHA: ${{ env.DEPLOY_SHA }}"
+            "${{ env.DEPLOY_SCRIPT }}" "${{ env.DEPLOY_ENV_FILE }}" "${{ env.DEPLOY_SHA }}"
