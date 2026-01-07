@@ -1,7 +1,7 @@
 # B2-340 — Rollback Strategy & Runbook
 
 ## Status
-In Progress
+Review
 
 ## Related Spec
 - docs/specs/B2-low-downtime-deploys.md
