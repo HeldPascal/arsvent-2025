@@ -1,7 +1,7 @@
 # B2-360 — Deployment Transition & Bootstrap
 
 ## Status
-Ready
+In Progress
 
 ## Related Spec
 - docs/specs/B1-test-and-staging-environment.md
