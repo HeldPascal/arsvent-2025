@@ -15,6 +15,11 @@
 # Optional: compose naming
 # - COMPOSE_PROJECT_NAME: compose project name override
 #
+# Optional: readiness checks
+# - READY_URL: readiness URL (default: http://127.0.0.1:${BACKEND_PORT}/readyz)
+# - READY_TIMEOUT_SECONDS: readiness timeout in seconds (default: 60)
+# - READY_INTERVAL_SECONDS: readiness poll interval in seconds (default: 2)
+#
 # Optional: env paths (absolute or relative to DEPLOY_DIR)
 # - ENV_DIR: env dir (default: env)
 # - BACKEND_ENV_FILE: backend env file (default: env/backend.env)
@@ -108,6 +113,9 @@ load_deploy_env() {
   export FRONTEND_PORT="${FRONTEND_PORT:-4173}"
   export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-arsvent-${DEPLOY_ENV}}"
   export NGINX_RELOAD_CMD="${NGINX_RELOAD_CMD:-sudo systemctl reload nginx}"
+  export READY_URL="${READY_URL:-http://127.0.0.1:${BACKEND_PORT}/readyz}"
+  export READY_TIMEOUT_SECONDS="${READY_TIMEOUT_SECONDS:-60}"
+  export READY_INTERVAL_SECONDS="${READY_INTERVAL_SECONDS:-2}"
 
   resolve_export_path APP_DIR "app"
   resolve_export_path ENV_DIR "env"

@@ -83,6 +83,58 @@ record_release() {
   echo "$line" >> "$RELEASES_DIR/releases.log"
 }
 
+rollback_to_previous() {
+  local rollback_tag=""
+  if [ -f "$RELEASES_DIR/current_release" ]; then
+    rollback_tag="$(cat "$RELEASES_DIR/current_release" | tr -d '\n')"
+  elif [ -f "$RELEASES_DIR/previous_release" ]; then
+    rollback_tag="$(cat "$RELEASES_DIR/previous_release" | tr -d '\n')"
+  fi
+
+  if [ -z "$rollback_tag" ]; then
+    echo "[deploy] No rollback tag found; cannot rollback."
+    return 1
+  fi
+
+  if [ "$rollback_tag" = "$IMAGE_TAG" ]; then
+    echo "[deploy] Rollback tag matches current target; skipping rollback."
+    return 1
+  fi
+
+  echo "[deploy] Rolling back to $rollback_tag..."
+  IMAGE_TAG="$rollback_tag"
+  export IMAGE_TAG
+
+  docker compose -f "$COMPOSE_FILE" pull
+  docker compose -f "$COMPOSE_FILE" down
+  docker compose -f "$COMPOSE_FILE" up -d
+
+  if ! wait_for_ready; then
+    echo "[deploy] Rollback readiness failed."
+    return 1
+  fi
+
+  record_release
+  echo "[deploy] Rollback completed."
+  return 0
+}
+
+wait_for_ready() {
+  local deadline=$((SECONDS + READY_TIMEOUT_SECONDS))
+  echo "[deploy] Waiting for readiness at ${READY_URL} (timeout ${READY_TIMEOUT_SECONDS}s)..."
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    local code
+    code="$(curl -s -o /dev/null -w "%{http_code}" "$READY_URL" || true)"
+    if [ "$code" = "200" ]; then
+      echo "[deploy] Readiness check passed."
+      return 0
+    fi
+    sleep "$READY_INTERVAL_SECONDS"
+  done
+  echo "[deploy] Readiness check timed out."
+  return 1
+}
+
 echo "[deploy] Starting deployment in $APP_DIR on branch $BRANCH"
 cd "$APP_DIR"
 
@@ -112,6 +164,17 @@ docker compose -f "$COMPOSE_FILE" run --rm backend npx prisma migrate deploy
 
 echo "[deploy] Starting services..."
 docker compose -f "$COMPOSE_FILE" up -d
+
+if ! wait_for_ready; then
+  echo "[deploy] Readiness failed. Attempting rollback."
+  if ! rollback_to_previous; then
+    echo "[deploy] Rollback failed. Keeping maintenance mode enabled."
+    exit 1
+  fi
+  echo "[deploy] Rollback succeeded; exiting maintenance window."
+  disable_maintenance
+  exit 1
+fi
 
 echo "[deploy] Recording release..."
 record_release

@@ -179,6 +179,25 @@ const resolveBackendVersion = async (): Promise<VersionPayload> => {
   return resolved;
 };
 
+const respondHealth = (res: Response, ok: boolean, reason?: string) => {
+  if (ok) {
+    return res.status(200).json({ status: "ok" });
+  }
+  return res.status(503).json({ status: "error", reason: reason ?? "unknown" });
+};
+
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
+  let timer: NodeJS.Timeout;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out`)), timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer!);
+  }
+};
+
 const fetchFrontendVersion = async (): Promise<VersionPayload> => {
   let url: string;
   try {
@@ -217,6 +236,81 @@ const createSessionStore = async (): Promise<session.Store | undefined> => {
   }
 };
 const sessionStore = await createSessionStore();
+const _usesRedisStore = sessionStore instanceof RedisStore;
+
+let healthRedisClient: ReturnType<typeof createRedisClient> | null = null;
+const getHealthRedisClient = () => {
+  if (!healthRedisClient) {
+    healthRedisClient = createRedisClient({ url: REDIS_URL });
+    healthRedisClient.on("error", (err: unknown) => {
+      console.warn("[health] Redis error", err);
+    });
+  }
+  return healthRedisClient;
+};
+
+const checkRedisHealth = async (required: boolean) => {
+  if (!required) {
+    return { ok: true };
+  }
+  try {
+    const client = getHealthRedisClient();
+    if (!client.isOpen) {
+      await withTimeout(client.connect(), 1000, "Redis connect");
+    }
+    await withTimeout(client.ping(), 1000, "Redis ping");
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: "Redis unreachable" };
+  }
+};
+
+const checkDbHealth = async () => {
+  try {
+    await withTimeout(prisma.$queryRaw`SELECT 1`, 1000, "DB check");
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: "Database unreachable" };
+  }
+};
+
+const checkMigrationsHealth = async () => {
+  const migrationsDir = path.join(process.cwd(), "prisma", "migrations");
+  if (!fsSync.existsSync(migrationsDir)) {
+    return { ok: true };
+  }
+  let expected: string[] = [];
+  try {
+    const entries = await fs.readdir(migrationsDir, { withFileTypes: true });
+    expected = entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+  } catch {
+    return { ok: false, reason: "Failed to read migrations directory" };
+  }
+  if (expected.length === 0) {
+    return { ok: true };
+  }
+  try {
+    const rows = await withTimeout(
+      prisma.$queryRaw<
+        Array<{ migration_name: string; finished_at: Date | null; rolled_back_at: Date | null }>
+      >`SELECT migration_name, finished_at, rolled_back_at FROM _prisma_migrations`,
+      1000,
+      "Migration check",
+    );
+    const applied = new Set(
+      rows
+        .filter((row) => row.finished_at && !row.rolled_back_at)
+        .map((row) => row.migration_name),
+    );
+    const missing = expected.filter((name) => !applied.has(name));
+    if (missing.length > 0) {
+      return { ok: false, reason: `Pending migrations: ${missing.join(", ")}` };
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: "Migrations table missing or unreadable" };
+  }
+};
 
 type SessionWithVersion = ExpressSession &
   Partial<SessionData> & {
@@ -2073,6 +2167,36 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
   } catch (error) {
     next(error);
   }
+});
+
+app.get("/healthz", (_req, res) => {
+  return respondHealth(res, true);
+});
+
+app.get("/livez", async (_req, res) => {
+  const redis = await checkRedisHealth(appEnv !== "development");
+  if (!redis.ok) {
+    return respondHealth(res, false, redis.reason);
+  }
+  return respondHealth(res, true);
+});
+
+app.get("/readyz", async (_req, res) => {
+  const db = await checkDbHealth();
+  if (!db.ok) {
+    return respondHealth(res, false, db.reason);
+  }
+  const [redis, migrations] = await Promise.all([
+    checkRedisHealth(appEnv !== "development"),
+    checkMigrationsHealth(),
+  ]);
+  const reasons: string[] = [];
+  if (!redis.ok && redis.reason) reasons.push(redis.reason);
+  if (!migrations.ok && migrations.reason) reasons.push(migrations.reason);
+  if (reasons.length > 0) {
+    return respondHealth(res, false, reasons.join("; "));
+  }
+  return respondHealth(res, true);
 });
 
 app.get("/api/admin/version", requireAuth, requireAdmin, async (_req, res, next) => {
