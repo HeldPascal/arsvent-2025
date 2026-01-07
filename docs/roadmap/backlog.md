@@ -101,6 +101,10 @@ spec before work begins.
 - Health & Readiness  
   Runtime health and readiness endpoints for monitoring and orchestration.
 
+- Schema Version Tracking  
+  Track a single app-level schema version in the database so readiness checks
+  can validate migrations without scanning files or Prisma metadata.
+
 - Service Metrics & Capacity Signals  
   Capture load/capacity metrics for core resources to enable future scaling and dashboards.
 

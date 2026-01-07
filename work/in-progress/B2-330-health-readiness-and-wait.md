@@ -16,6 +16,8 @@ Ensure deploy only completes when the new version is actually ready.
   - GET /readyz (DB reachable + app can serve traffic)
 - Deploy script waits for readiness before disabling maintenance
 - Timeouts and clear error output
+- Scope addition: add Docker Compose healthcheck(s) using the new endpoints so container health is visible in `docker compose ps`.
+- Deploy script rolls back to `current_release` when readiness fails.
 
 ## Implementation Notes
 - Endpoints are unauthenticated and return JSON `{ status: "ok" }` or `{ status: "error", reason: "<msg>" }`.

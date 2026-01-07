@@ -44,6 +44,9 @@ Defaults come from the codebase; values marked "required" must be set explicitly
 | `BACKUPS_TO_KEEP` | How many DB backups to retain. | `7` | Integer count. |
 | `NGINX_RELOAD_CMD` | Command used to reload nginx. | `sudo systemctl reload nginx` | Override if sudo is not available. |
 | `COMPOSE_PROJECT_NAME` | Docker Compose project name override. | `arsvent-${DEPLOY_ENV}` | Set to keep envs isolated (e.g., `arsvent-staging`). |
+| `READY_URL` | Readiness URL to poll after deploy. | `http://127.0.0.1:${BACKEND_PORT}/readyz` | Override if backend is exposed elsewhere. |
+| `READY_TIMEOUT_SECONDS` | Readiness timeout in seconds. | `60` | Deploy fails after this threshold. |
+| `READY_INTERVAL_SECONDS` | Readiness poll interval in seconds. | `2` | Lower values increase load on backend. |
 | `IMAGE_TAG` | Image tag to deploy for backend/frontend. | Required for tag-based deploys | Immutable tag (e.g. git SHA) referenced by compose; admin version UI may use it when set. |
 | `IMAGE_REGISTRY_OWNER` | GHCR owner/org for images. | Required | Should match `ghcr.io/<owner>/arsvent-*`. |
 | `RELEASES_DIR` | Release metadata dir (absolute or relative to `DEPLOY_DIR`). | Optional | Defaults to `releases`. |
