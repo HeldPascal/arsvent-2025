@@ -76,6 +76,9 @@ record_release() {
   local ts
   ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   local line="${ts} env=${DEPLOY_ENV} sha=${IMAGE_TAG}"
+  if [ -n "${RELEASE_TAGS:-}" ]; then
+    line="${line} tags=${RELEASE_TAGS}"
+  fi
   if [ -f "$RELEASES_DIR/current_release" ]; then
     cp "$RELEASES_DIR/current_release" "$RELEASES_DIR/previous_release"
   fi
@@ -114,7 +117,7 @@ rollback_to_previous() {
     return 1
   fi
 
-  record_release
+  RELEASE_TAGS="rollback" record_release
   echo "[deploy] Rollback completed."
   return 0
 }
