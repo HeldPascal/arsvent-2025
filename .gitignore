@@ -15,6 +15,7 @@ Thumbs.db
 
 # Build / artifacts
 *.tsbuildinfo
+version.json
 
 # Backend
 backend/dist/

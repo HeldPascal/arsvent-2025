@@ -1,30 +1,33 @@
 name: Deploy to VPS
 
 on:
+  workflow_run:
+    workflows:
+      - Build and Check
+    types:
+      - completed
+    branches:
+      - main
   workflow_dispatch:
-    inputs:
-      with_maintenance:
-        description: "Enable maintenance mode during deployment?"
-        required: true
-        type: choice
-        options:
-          - "yes"
-          - "no"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: staging
+    if: (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || github.event_name == 'workflow_dispatch'
+    env:
+      DEPLOY_SCRIPT: ${{ vars.DEPLOY_SCRIPT }}
+      DEPLOY_ENV_FILE: ${{ vars.DEPLOY_ENV_FILE }}
+      DEPLOY_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
     steps:
       - name: Run deployment on VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          envs: WITH_MAINTENANCE,BRANCH
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SSH_PORT }}
           script: |
-            export WITH_MAINTENANCE="${{ github.event.inputs.with_maintenance }}"
-            export BRANCH="${{ github.ref_name }}"
-            /opt/arsvent-2025/deploy.sh
+            echo "[deploy] Deploying SHA: ${DEPLOY_SHA}"
+            "${DEPLOY_SCRIPT}" "${DEPLOY_ENV_FILE}" "${DEPLOY_SHA}"

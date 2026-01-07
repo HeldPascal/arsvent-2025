@@ -1,5 +1,6 @@
 import type {
   AdminOverview,
+  AdminVersionResponse,
   AdminContentDayDetail,
   ContentDiagnostics,
   AdminUserSummary,
@@ -177,6 +178,7 @@ export const updateCreatureSwap = (creatureSwap: boolean) =>
   });
 
 export const fetchAdminOverview = () => apiFetch<AdminOverview>("/api/admin/overview");
+export const fetchAdminVersion = () => apiFetch<AdminVersionResponse>("/api/admin/version");
 
 export const fetchAdminUsers = () => apiFetch<AdminUserSummary[]>("/api/admin/users");
 
@@ -211,6 +213,36 @@ export const adminUnlockSet = (unlockedDay: number) =>
     method: "POST",
     body: JSON.stringify({ unlockedDay }),
   });
+
+export const adminTestUnlockNext = () =>
+  apiFetch<{ unlockedDay: number }>("/api/admin/test/unlock/increment", { method: "POST" });
+
+export const adminTestUnlockSet = (unlockedDay: number) =>
+  apiFetch<{ unlockedDay: number }>("/api/admin/test/unlock/set", {
+    method: "POST",
+    body: JSON.stringify({ unlockedDay }),
+  });
+
+export const adminTestUnlockAll = () =>
+  apiFetch<{ unlockedDay: number }>("/api/admin/test/unlock/all", { method: "POST" });
+
+export const adminTestForceComplete = (userId: string, day: number) =>
+  apiFetch<{ id: string; lastSolvedDay: number; lastSolvedAt: string | null }>(
+    `/api/admin/test/users/${userId}/complete`,
+    {
+      method: "POST",
+      body: JSON.stringify({ day }),
+    },
+  );
+
+export const adminTestSetEligibility = (userId: string, eligible: boolean) =>
+  apiFetch<{ id: string; introCompleted: boolean; lastSolvedDay: number; lastSolvedAt: string | null }>(
+    `/api/admin/test/users/${userId}/eligibility`,
+    {
+      method: "POST",
+      body: JSON.stringify({ eligible }),
+    },
+  );
 
 export const fetchAdminContentDiagnostics = () => apiFetch<ContentDiagnostics>("/api/admin/content/diagnostics");
 

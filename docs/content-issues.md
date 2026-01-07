@@ -76,7 +76,7 @@ Grouped by source, then severity (error → warning → info).
 ## Consistency (source: `consistency`)
 **Warning**
 - `INVENTORY_INCONSISTENT` — Cross-locale inventory mismatch (missing/extra ids).
-- `CONTENT_CROSS_LOCALE_ID_MISMATCH` — Content ids differ between locales for the same day/mode. *(Temporarily disabled.)*
+- `CONTENT_CROSS_LOCALE_ID_MISMATCH` — Content ids differ between locales for the same day/mode. *(Temporarily disabled; id patterns and handling are not finalized.)*
 
 **Info**
 - `CONTENT_CROSS_LOCALE_TITLE_MISMATCH` — Content titles differ between locales for the same day/mode.

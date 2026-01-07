@@ -15,6 +15,8 @@ import fs from "fs/promises";
 import fsSync from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { execFile } from "child_process";
+import { promisify } from "util";
 import sharp from "sharp";
 import { PrismaClient } from "@prisma/client";
 import type { User as PrismaUser } from "@prisma/client";
@@ -44,13 +46,53 @@ const {
   DISCORD_CLIENT_SECRET,
   DISCORD_CALLBACK_URL,
   SESSION_SECRET = "dev-secret",
+  SESSION_MAX_AGE_MS = "",
   FRONTEND_ORIGIN = "http://localhost:5173",
   REDIS_URL = "redis://localhost:6379",
   SUPER_ADMIN_DISCORD_ID = "",
+  APP_ENV,
+  IS_PRODUCTION,
 } = process.env;
 
 if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET || !DISCORD_CALLBACK_URL) {
   throw new Error("Missing Discord OAuth environment variables.");
+}
+
+const appEnvRaw = APP_ENV?.toLowerCase();
+const resolvedAppEnv =
+  appEnvRaw === "production" || appEnvRaw === "staging" || appEnvRaw === "development" ? appEnvRaw : undefined;
+if (APP_ENV && !resolvedAppEnv) {
+  throw new Error("APP_ENV must be 'production', 'staging', or 'development'");
+}
+const appEnv = resolvedAppEnv ?? "development";
+const nodeEnv = process.env.NODE_ENV?.toLowerCase();
+if (appEnv === "production" && nodeEnv && nodeEnv !== "production") {
+  throw new Error("NODE_ENV must be 'production' when APP_ENV=production");
+}
+
+const isProductionFlag = IS_PRODUCTION?.toLowerCase();
+const resolvedIsProduction =
+  isProductionFlag === "true" ? true : isProductionFlag === "false" ? false : undefined;
+if (appEnv === "production" && resolvedIsProduction === undefined) {
+  throw new Error("IS_PRODUCTION must be set explicitly in production");
+}
+
+const isProd = resolvedIsProduction ?? appEnv === "production";
+if (resolvedIsProduction !== undefined && resolvedIsProduction !== (appEnv === "production")) {
+  throw new Error("IS_PRODUCTION must match APP_ENV");
+}
+if (appEnv !== "development") {
+  const callbackUrl = new URL(DISCORD_CALLBACK_URL);
+  const frontendUrl = new URL(FRONTEND_ORIGIN);
+  if (callbackUrl.origin !== frontendUrl.origin) {
+    throw new Error("DISCORD_CALLBACK_URL must match FRONTEND_ORIGIN origin in staging/production");
+  }
+  if (!callbackUrl.pathname.endsWith("/auth/discord/callback")) {
+    throw new Error("DISCORD_CALLBACK_URL must end with /auth/discord/callback in staging/production");
+  }
+  if (callbackUrl.protocol !== "https:" || frontendUrl.protocol !== "https:") {
+    throw new Error("DISCORD_CALLBACK_URL and FRONTEND_ORIGIN must use https in staging/production");
+  }
 }
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -59,6 +101,125 @@ const app = express();
 const superAdminId = SUPER_ADMIN_DISCORD_ID?.trim() || null;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const execFileAsync = promisify(execFile);
+
+type VersionPayload = {
+  imageTag: string | null;
+  commitSha: string | null;
+  dirty: boolean | null;
+  builtAt: string | null;
+};
+
+const normalizeVersionPayload = (value?: Partial<VersionPayload> | null): VersionPayload => ({
+  imageTag: typeof value?.imageTag === "string" && value.imageTag.trim() ? value.imageTag : null,
+  commitSha: typeof value?.commitSha === "string" && value.commitSha.trim() ? value.commitSha : null,
+  dirty: typeof value?.dirty === "boolean" ? value.dirty : null,
+  builtAt: typeof value?.builtAt === "string" && value.builtAt.trim() ? value.builtAt : null,
+});
+
+const readVersionFile = async (filePath: string): Promise<VersionPayload | null> => {
+  try {
+    const raw = await fs.readFile(filePath, "utf-8");
+    const parsed = JSON.parse(raw) as Partial<VersionPayload>;
+    return normalizeVersionPayload(parsed);
+  } catch {
+    return null;
+  }
+};
+
+const findGitRoot = (startDir: string): string | null => {
+  let current = startDir;
+  while (true) {
+    if (fsSync.existsSync(path.join(current, ".git"))) {
+      return current;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) return null;
+    current = parent;
+  }
+};
+
+const getGitVersionInfo = async (cwd: string): Promise<Pick<VersionPayload, "commitSha" | "dirty">> => {
+  const gitRoot = findGitRoot(cwd);
+  if (!gitRoot) {
+    return { commitSha: null, dirty: null };
+  }
+  let commitSha: string | null = null;
+  let dirty: boolean | null = null;
+  try {
+    const { stdout } = await execFileAsync("git", ["rev-parse", "HEAD"], { cwd: gitRoot });
+    commitSha = stdout.trim() || null;
+  } catch {
+    commitSha = null;
+  }
+  try {
+    const { stdout } = await execFileAsync("git", ["status", "--porcelain"], { cwd: gitRoot });
+    dirty = stdout.trim().length > 0;
+  } catch {
+    dirty = null;
+  }
+  return { commitSha, dirty };
+};
+
+const resolveBackendVersion = async (): Promise<VersionPayload> => {
+  const versionPath = path.join(process.cwd(), "version.json");
+  const fromFile = await readVersionFile(versionPath);
+  const resolved = normalizeVersionPayload(fromFile ?? {});
+
+  if (!resolved.imageTag && process.env.IMAGE_TAG) {
+    resolved.imageTag = process.env.IMAGE_TAG;
+  }
+
+  if (!resolved.commitSha || resolved.dirty === null) {
+    const gitInfo = await getGitVersionInfo(process.cwd());
+    if (!resolved.commitSha) resolved.commitSha = gitInfo.commitSha;
+    if (resolved.dirty === null) resolved.dirty = gitInfo.dirty;
+  }
+
+  return resolved;
+};
+
+const respondHealth = (res: Response, ok: boolean, reason?: string) => {
+  if (ok) {
+    return res.status(200).json({ status: "ok" });
+  }
+  return res.status(503).json({ status: "error", reason: reason ?? "unknown" });
+};
+
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
+  let timer: NodeJS.Timeout;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out`)), timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer!);
+  }
+};
+
+const fetchFrontendVersion = async (): Promise<VersionPayload> => {
+  let url: string;
+  try {
+    url = new URL("/version.json", FRONTEND_ORIGIN).toString();
+  } catch {
+    return normalizeVersionPayload({});
+  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 1500);
+  try {
+    const response = await fetch(url, { signal: controller.signal, headers: { accept: "application/json" } });
+    if (!response.ok) {
+      return normalizeVersionPayload({});
+    }
+    const data = (await response.json()) as Partial<VersionPayload>;
+    return normalizeVersionPayload(data);
+  } catch {
+    return normalizeVersionPayload({});
+  } finally {
+    clearTimeout(timeout);
+  }
+};
 
 const createSessionStore = async (): Promise<session.Store | undefined> => {
   try {
@@ -75,6 +236,81 @@ const createSessionStore = async (): Promise<session.Store | undefined> => {
   }
 };
 const sessionStore = await createSessionStore();
+const _usesRedisStore = sessionStore instanceof RedisStore;
+
+let healthRedisClient: ReturnType<typeof createRedisClient> | null = null;
+const getHealthRedisClient = () => {
+  if (!healthRedisClient) {
+    healthRedisClient = createRedisClient({ url: REDIS_URL });
+    healthRedisClient.on("error", (err: unknown) => {
+      console.warn("[health] Redis error", err);
+    });
+  }
+  return healthRedisClient;
+};
+
+const checkRedisHealth = async (required: boolean) => {
+  if (!required) {
+    return { ok: true };
+  }
+  try {
+    const client = getHealthRedisClient();
+    if (!client.isOpen) {
+      await withTimeout(client.connect(), 1000, "Redis connect");
+    }
+    await withTimeout(client.ping(), 1000, "Redis ping");
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: "Redis unreachable" };
+  }
+};
+
+const checkDbHealth = async () => {
+  try {
+    await withTimeout(prisma.$queryRaw`SELECT 1`, 1000, "DB check");
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: "Database unreachable" };
+  }
+};
+
+const checkMigrationsHealth = async () => {
+  const migrationsDir = path.join(process.cwd(), "prisma", "migrations");
+  if (!fsSync.existsSync(migrationsDir)) {
+    return { ok: true };
+  }
+  let expected: string[] = [];
+  try {
+    const entries = await fs.readdir(migrationsDir, { withFileTypes: true });
+    expected = entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+  } catch {
+    return { ok: false, reason: "Failed to read migrations directory" };
+  }
+  if (expected.length === 0) {
+    return { ok: true };
+  }
+  try {
+    const rows = await withTimeout(
+      prisma.$queryRaw<
+        Array<{ migration_name: string; finished_at: Date | null; rolled_back_at: Date | null }>
+      >`SELECT migration_name, finished_at, rolled_back_at FROM _prisma_migrations`,
+      1000,
+      "Migration check",
+    );
+    const applied = new Set(
+      rows
+        .filter((row) => row.finished_at && !row.rolled_back_at)
+        .map((row) => row.migration_name),
+    );
+    const missing = expected.filter((name) => !applied.has(name));
+    if (missing.length > 0) {
+      return { ok: false, reason: `Pending migrations: ${missing.join(", ")}` };
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: "Migrations table missing or unreadable" };
+  }
+};
 
 type SessionWithVersion = ExpressSession &
   Partial<SessionData> & {
@@ -214,12 +450,15 @@ app.get("/content-asset/:token", async (req, res) => {
   });
 });
 
-const isProd = process.env.NODE_ENV === "production";
+app.locals.appEnv = appEnv;
+app.locals.isProduction = isProd;
+const sessionMaxAgeMs = Number(SESSION_MAX_AGE_MS) || 1000 * 60 * 60 * 24 * 14;
 
 app.use(
   session({
     secret: SESSION_SECRET,
     resave: false,
+    rolling: true,
     saveUninitialized: false,
     proxy: isProd,
     store: sessionStore,
@@ -227,6 +466,7 @@ app.use(
       httpOnly: true,
       secure: isProd,
       sameSite: "lax",
+      maxAge: sessionMaxAgeMs,
     },
   }),
 );
@@ -330,6 +570,14 @@ const requireSuperAdmin: RequestHandler = (req, res, next) => {
     return next();
   }
   return res.status(403).json({ error: "Forbidden" });
+};
+
+const isTestEnv = appEnv === "staging" || appEnv === "development";
+const requireTestEnv: RequestHandler = (_req, res, next) => {
+  if (!isProd && isTestEnv) {
+    return next();
+  }
+  return res.status(403).json({ error: "Test utilities are disabled in this environment" });
 };
 
 const MAX_DAY = 24;
@@ -1130,7 +1378,12 @@ app.post("/auth/logout", (req, res, next) => {
 
 app.get("/api/auth/me", requireAuth, (req, res) => {
   const user = req.user as PrismaUser;
-  return res.json({ ...user, mode: normalizeModeValue(user.mode) });
+  return res.json({
+    ...user,
+    mode: normalizeModeValue(user.mode),
+    appEnv,
+    isProduction: isProd,
+  });
 });
 
 app.post("/api/user/locale", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
@@ -1916,6 +2169,45 @@ app.get("/api/admin/overview", requireAuth, requireAdmin, async (_req, res, next
   }
 });
 
+app.get("/healthz", (_req, res) => {
+  return respondHealth(res, true);
+});
+
+app.get("/livez", async (_req, res) => {
+  const redis = await checkRedisHealth(appEnv !== "development");
+  if (!redis.ok) {
+    return respondHealth(res, false, redis.reason);
+  }
+  return respondHealth(res, true);
+});
+
+app.get("/readyz", async (_req, res) => {
+  const db = await checkDbHealth();
+  if (!db.ok) {
+    return respondHealth(res, false, db.reason);
+  }
+  const [redis, migrations] = await Promise.all([
+    checkRedisHealth(appEnv !== "development"),
+    checkMigrationsHealth(),
+  ]);
+  const reasons: string[] = [];
+  if (!redis.ok && redis.reason) reasons.push(redis.reason);
+  if (!migrations.ok && migrations.reason) reasons.push(migrations.reason);
+  if (reasons.length > 0) {
+    return respondHealth(res, false, reasons.join("; "));
+  }
+  return respondHealth(res, true);
+});
+
+app.get("/api/admin/version", requireAuth, requireAdmin, async (_req, res, next) => {
+  try {
+    const [backend, frontend] = await Promise.all([resolveBackendVersion(), fetchFrontendVersion()]);
+    res.json({ backend, frontend, updatedAt: new Date().toISOString() });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.get("/api/admin/content/diagnostics", requireAuth, requireAdmin, async (_req, res, next) => {
   try {
     const diagnostics = await getContentDiagnostics(MAX_DAY);
@@ -2188,6 +2480,135 @@ app.post("/api/admin/unlock/set", requireAuth, requireAdmin, async (req, res, ne
     const newVal = await setUnlockedDay(unlockedDay, req.user?.id);
     await logAdminAction("admin:unlock-set", req.user?.id, { from: current, to: newVal });
     res.json({ unlockedDay: newVal });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/admin/test/unlock/increment", requireAuth, requireAdmin, requireTestEnv, async (req, res, next) => {
+  try {
+    const current = await getUnlockedDay();
+    if (current >= MAX_DAY) {
+      return res.status(400).json({ error: "All days are already unlocked." });
+    }
+    const { maxContiguousContentDay } = await getContentAvailability();
+    const next = Math.min(current + 1, MAX_DAY);
+    if (next > maxContiguousContentDay) {
+      return res.status(400).json({ error: `Cannot unlock day ${next}: missing content for the next day.` });
+    }
+    const newVal = await setUnlockedDay(next, req.user?.id);
+    await logAdminAction("admin:test:unlock-next", req.user?.id, { from: current, to: newVal });
+    res.json({ unlockedDay: newVal });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/admin/test/unlock/set", requireAuth, requireAdmin, requireTestEnv, async (req, res, next) => {
+  try {
+    const { unlockedDay } = req.body as { unlockedDay?: number };
+    if (!Number.isInteger(unlockedDay) || unlockedDay === undefined || unlockedDay < 0 || unlockedDay > MAX_DAY) {
+      return res.status(400).json({ error: "unlockedDay must be between 0 and 24" });
+    }
+    const current = await getUnlockedDay();
+    const { maxContiguousContentDay } = await getContentAvailability();
+    if (unlockedDay > maxContiguousContentDay) {
+      const missingDay = Math.min(maxContiguousContentDay + 1, MAX_DAY);
+      return res
+        .status(400)
+        .json({ error: `Cannot unlock day ${unlockedDay}: missing content for day ${missingDay}.` });
+    }
+    const newVal = await setUnlockedDay(unlockedDay, req.user?.id);
+    await logAdminAction("admin:test:unlock-set", req.user?.id, { from: current, to: newVal });
+    res.json({ unlockedDay: newVal });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/admin/test/unlock/all", requireAuth, requireAdmin, requireTestEnv, async (req, res, next) => {
+  try {
+    const current = await getUnlockedDay();
+    const { maxContiguousContentDay } = await getContentAvailability();
+    const newVal = await setUnlockedDay(maxContiguousContentDay, req.user?.id);
+    await logAdminAction("admin:test:unlock-all", req.user?.id, { from: current, to: newVal });
+    res.json({ unlockedDay: newVal });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/admin/test/users/:id/complete", requireAuth, requireAdmin, requireTestEnv, async (req, res, next) => {
+  try {
+    const targetId = req.params.id;
+    if (!targetId) {
+      return res.status(400).json({ error: "User id is required" });
+    }
+    const { day } = req.body as { day?: number };
+    if (!Number.isInteger(day) || day === undefined || day < 0 || day > MAX_DAY) {
+      return res.status(400).json({ error: "day must be between 0 and 24" });
+    }
+    const target = await prisma.user.findUnique({ where: { id: targetId } });
+    if (!target) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    if (target.isSuperAdmin && !isSuperAdminUser(req.user)) {
+      return res.status(403).json({ error: "Cannot modify super admin progress" });
+    }
+
+    const solvedAt = day > 0 ? new Date() : null;
+    const updated = await prisma.user.update({
+      where: { id: target.id },
+      data: {
+        lastSolvedDay: day,
+        lastSolvedAt: solvedAt,
+        introCompleted: day > 0 ? true : target.introCompleted,
+        stateVersion: { increment: 1 },
+      },
+    });
+    await logAdminAction("admin:test:force-complete", req.user?.id, { targetId: target.id, day });
+    res.json({ id: updated.id, lastSolvedDay: updated.lastSolvedDay, lastSolvedAt: updated.lastSolvedAt });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/admin/test/users/:id/eligibility", requireAuth, requireAdmin, requireTestEnv, async (req, res, next) => {
+  try {
+    const targetId = req.params.id;
+    if (!targetId) {
+      return res.status(400).json({ error: "User id is required" });
+    }
+    const { eligible } = req.body as { eligible?: boolean };
+    if (typeof eligible !== "boolean") {
+      return res.status(400).json({ error: "eligible must be boolean" });
+    }
+    const target = await prisma.user.findUnique({ where: { id: targetId } });
+    if (!target) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    if (target.isSuperAdmin && !isSuperAdminUser(req.user)) {
+      return res.status(403).json({ error: "Cannot modify super admin eligibility" });
+    }
+
+    const lastSolvedDay = eligible ? MAX_DAY : 0;
+    const lastSolvedAt = eligible ? new Date() : null;
+    const updated = await prisma.user.update({
+      where: { id: target.id },
+      data: {
+        introCompleted: eligible ? true : false,
+        lastSolvedDay,
+        lastSolvedAt,
+        stateVersion: { increment: 1 },
+      },
+    });
+    await logAdminAction("admin:test:set-eligibility", req.user?.id, { targetId: target.id, eligible });
+    res.json({
+      id: updated.id,
+      introCompleted: updated.introCompleted,
+      lastSolvedDay: updated.lastSolvedDay,
+      lastSolvedAt: updated.lastSolvedAt,
+    });
   } catch (error) {
     next(error);
   }

@@ -1,0 +1,49 @@
+# B2-320 — VPS Deploy by Immutable Tag
+
+## Status
+Review
+
+## Related Spec
+- docs/specs/B2-low-downtime-deploys.md
+
+## Goal
+Deploy by pulling prebuilt images on the VPS and switching containers quickly.
+
+## Scope
+- Update compose configuration to use image tags (no local build)
+- Deploy script:
+  - ensure maintenance is enabled
+  - docker login to registry (prerequisite for private images)
+  - pull images by SHA tag
+  - run migrations
+  - restart services
+  - disable maintenance after readiness (deferred to B2-330)
+- Record releases in `releases.log` and update `current_release` / `previous_release`
+
+## Constraints
+- Use immutable tags `:<git-sha>` for all prod deploys.
+- Maintenance mode is always enabled during deploy.
+
+## Implementation Notes
+- Compose: images reference a single `IMAGE_TAG` env var for both backend and frontend.
+- Deploy script: update `ops/deploy.sh` to accept a SHA (arg or env) and export `IMAGE_TAG`.
+- VPS wrapper: `/opt/arsvent-2025/deploy.sh` no longer toggles maintenance.
+- Release metadata written under `/opt/arsvent-2025/releases/`:
+  - `releases.log`
+  - `current_release`
+  - `previous_release`
+
+## Acceptance Criteria
+- [ ] VPS can deploy a specified SHA without building images
+- [ ] Maintenance window covers only restart + final checks
+- [ ] Compose config supports selecting the target SHA via env var
+- [ ] Releases are logged with tag and timestamp
+
+## Progress
+- Moved compose file to `ops/docker-compose.yml` and switched services to GHCR images by `IMAGE_TAG`.
+- Deploy script now pulls by tag, runs migrations, restarts services, and records releases.
+- Deploy script now handles maintenance window; wrapper no longer toggles maintenance.
+- Added repo maintenance HTML and a VPS wrapper env template for easier configuration.
+- Added example wrapper script and renamed env template to `deploy.env.example`.
+- Staging deploy flow documented in `docs/ops/staging-deploy.md`.
+- Staging deployment validated on VPS (manual steps completed).

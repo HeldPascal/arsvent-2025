@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { AdminAuditEntry, AdminOverview, AdminUserSummary, ContentDiagnostics, Mode, User } from "../types";
+import type { AdminAuditEntry, AdminOverview, AdminUserSummary, AdminVersionResponse, ContentDiagnostics, Mode, User } from "../types";
 import {
   adminDeleteUser,
   adminRevokeSessions,
@@ -11,6 +11,7 @@ import {
   adminUpdateProgress,
   deleteAuditEntry,
   fetchAdminOverview,
+  fetchAdminVersion,
   fetchAdminUsers,
   fetchAudit,
   fetchAdminContentDiagnostics,
@@ -37,6 +38,8 @@ export default function AdminPage({ user }: Props) {
   const [auditLoading, setAuditLoading] = useState(false);
   const [contentDiagnostics, setContentDiagnostics] = useState<ContentDiagnostics | null>(null);
   const [contentDiagLoading, setContentDiagLoading] = useState(false);
+  const [versionInfo, setVersionInfo] = useState<AdminVersionResponse | null>(null);
+  const [versionLoading, setVersionLoading] = useState(false);
   const navigate = useNavigate();
   const contentLimit =
     overview?.diagnostics.maxContiguousContentDay ?? overview?.diagnostics.contentDayCount ?? 24;
@@ -98,11 +101,27 @@ export default function AdminPage({ user }: Props) {
     [],
   );
 
+  const loadVersion = useCallback(
+    async (showLoader = false) => {
+      if (showLoader) setVersionLoading(true);
+      try {
+        const version = await fetchAdminVersion();
+        setVersionInfo(version);
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        if (showLoader) setVersionLoading(false);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     loadData(true);
     loadAudit(auditLimit);
     loadContentDiagnostics(true);
-  }, [loadData, loadAudit, loadContentDiagnostics]);
+    loadVersion(true);
+  }, [loadData, loadAudit, loadContentDiagnostics, loadVersion]);
 
   useEffect(() => {
     if (overview) {
@@ -117,6 +136,7 @@ export default function AdminPage({ user }: Props) {
         loadData(false);
         loadAudit(auditLimit);
         loadContentDiagnostics(false);
+        loadVersion(false);
       }
     };
     const interval = window.setInterval(refresh, 10000);
@@ -129,7 +149,7 @@ export default function AdminPage({ user }: Props) {
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [auditLimit, loadAudit, loadContentDiagnostics, loadData]);
+  }, [auditLimit, loadAudit, loadContentDiagnostics, loadData, loadVersion]);
 
   const isSuperAdmin = user.isSuperAdmin;
 
@@ -261,6 +281,10 @@ export default function AdminPage({ user }: Props) {
     if (!actorId) return "unknown";
     return userLabel(actorId) ?? actorId;
   };
+
+  const formatValue = (value?: string | null) => value ?? "Unknown";
+  const formatDirty = (dirty?: boolean | null) => (dirty === null || dirty === undefined ? "Unknown" : dirty ? "Dirty" : "Clean");
+  const formatBuiltAt = (builtAt?: string | null) => (builtAt ? new Date(builtAt).toLocaleString() : "Unknown");
 
   return (
     <div className="stack">
@@ -400,6 +424,59 @@ export default function AdminPage({ user }: Props) {
                 ]}
               />
             </div>
+          </div>
+
+          <div className="panel">
+            <h3>Versions</h3>
+            {versionLoading && <div className="muted">Loading version info…</div>}
+            {!versionLoading && !versionInfo && <div className="muted">Version info unavailable.</div>}
+            {versionInfo && (
+              <>
+                <div className="muted small" style={{ marginBottom: 8 }}>
+                  Updated {new Date(versionInfo.updatedAt).toLocaleString()}
+                </div>
+                <div className="version-grid">
+                  <div className="panel subpanel version-card">
+                    <div className="muted uppercase">Backend</div>
+                    <div className="version-row">
+                      <span className="version-label">Image tag</span>
+                      <span className="version-value">{formatValue(versionInfo.backend.imageTag)}</span>
+                    </div>
+                    <div className="version-row">
+                      <span className="version-label">Commit</span>
+                      <span className="version-value">{formatValue(versionInfo.backend.commitSha)}</span>
+                    </div>
+                    <div className="version-row">
+                      <span className="version-label">Dirty</span>
+                      <span className="version-value">{formatDirty(versionInfo.backend.dirty)}</span>
+                    </div>
+                    <div className="version-row">
+                      <span className="version-label">Built at</span>
+                      <span className="version-value">{formatBuiltAt(versionInfo.backend.builtAt)}</span>
+                    </div>
+                  </div>
+                  <div className="panel subpanel version-card">
+                    <div className="muted uppercase">Frontend</div>
+                    <div className="version-row">
+                      <span className="version-label">Image tag</span>
+                      <span className="version-value">{formatValue(versionInfo.frontend.imageTag)}</span>
+                    </div>
+                    <div className="version-row">
+                      <span className="version-label">Commit</span>
+                      <span className="version-value">{formatValue(versionInfo.frontend.commitSha)}</span>
+                    </div>
+                    <div className="version-row">
+                      <span className="version-label">Dirty</span>
+                      <span className="version-value">{formatDirty(versionInfo.frontend.dirty)}</span>
+                    </div>
+                    <div className="version-row">
+                      <span className="version-label">Built at</span>
+                      <span className="version-value">{formatBuiltAt(versionInfo.frontend.builtAt)}</span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="panel">

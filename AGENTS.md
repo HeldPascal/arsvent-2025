@@ -52,3 +52,68 @@ Discord-authenticated Advent calendar web app for Ars Necandi. Users log in with
 - Always run `npm run lint` and `npm run build` in every app you touch (backend or frontend) before wrapping up.
 - Keep content paths/patterns intact for loaders.
 - Keep Dockerfiles aligned: they rely on `npm run build` in each app; lint runs in CI.
+
+## Ticket Workflow (File-Based Kanban)
+
+This repository uses a file-based ticket workflow.
+
+### Structure
+- `work/backlog/` — planned but not ready
+- `work/ready/` — fully specified, ready to implement
+- `work/in-progress/` — currently being worked on
+- `work/review/` — awaiting review or validation
+- `work/done/` — completed and archived
+
+### Rules
+- One ticket = one Markdown file.
+- Tickets move by being moved between folders.
+- Agents must:
+  - read the linked spec in `docs/specs/` before implementation,
+  - update the ticket file if assumptions or scope change,
+  - never skip acceptance criteria.
+
+### Specs vs Tickets
+- Specs in `docs/specs/` describe **what** and **why**.
+- Tickets in `work/` describe **how and when**.
+
+Agents should not implement features that are not covered by a spec or an explicit ticket.
+
+### Naming Conventions
+- Spec IDs use a lettered track + number (e.g., `A1`, `B2`) and section suffixes for sub-items (e.g., `A1.1`).
+- A “track” is a thematic bucket of related work (e.g., prizes, staging, deploys) that can be planned and reviewed independently.
+- Track overflow uses a spreadsheet-style sequence: `A`…`Z`, then `AA`, `AB`, etc.
+- Ticket filenames use `track+spec` + `-` + ticket number (2–3 digits) + `-` + short title (e.g., `A1-110-feedback-module.md`).
+- Ticket headers use the same `track+spec` + ticket number and a title with an em dash: `A1-110 — Feedback Module`.
+- Tickets must link to the relevant spec section (e.g., `docs/specs/A1-feedback-and-prizes.md (A1.1)`).
+- Ticket numbering uses the full 2–3 digit range within a given `track+spec` (e.g., `A1-001`…`A1-999`). If more are needed, advance the spec number (e.g., `A2-001`).
+
+## ADRs (Architecture Decision Records)
+
+Use ADRs to capture decisions that impact architecture, operations, data model, or security.
+
+### ADR Location
+- `docs/adr/` (numbered files)
+- Template: `docs/adr/0000-template.md`
+
+### ADR Naming
+- `NNNN-short-title.md` (e.g., `0001-session-storage.md`)
+- Use the next available number.
+
+### ADR Content
+- Keep it short: Context → Decision → Consequences → Alternatives → References.
+- Link to relevant specs/tickets in References.
+
+### ADR Lifecycle
+- Create an ADR when a decision is durable or costly to reverse (architecture, ops, data model, security), or when there are meaningful tradeoffs.
+- Update an ADR when the decision changes or is superseded; mark the old ADR as Deprecated and add a link to the new one.
+- Avoid ADRs for small, local, or short-lived experiments.
+
+## Roadmap Backlog
+
+The file `docs/roadmap/backlog.md` is an idea and theme inventory.
+
+Agents must not:
+- implement features directly from the backlog
+- derive tickets without an explicit spec
+
+Backlog items must first be promoted to a spec in `docs/specs/`.

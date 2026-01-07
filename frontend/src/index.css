@@ -2441,6 +2441,63 @@ a {
   padding: 10px 12px;
 }
 
+.version-label {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+  line-height: 24px;
+  flex: 0 0 110px;
+}
+
+.version-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.version-grid > .panel + .panel {
+  /* Override global .panel + .panel spacing inside grids to keep cards aligned. */
+  margin-top: 0;
+}
+
+@media (max-width: 720px) {
+  .version-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.version-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.version-card > div:first-child {
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+  line-height: 18px;
+}
+
+.version-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 24px;
+}
+
+.version-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  line-height: 24px;
+  flex: 1 1 auto;
+}
+
 .uppercase {
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -3551,6 +3608,8 @@ button.tag-chip {
   .topbar {
     flex-direction: column;
     align-items: flex-start;
+    position: static;
+    top: auto;
   }
 
   .topbar-actions {

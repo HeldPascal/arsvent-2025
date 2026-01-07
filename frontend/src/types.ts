@@ -112,6 +112,8 @@ export interface User {
   sessionVersion: number;
   stateVersion: number;
   lastSolvedDay: number;
+  appEnv?: "development" | "staging" | "production";
+  isProduction?: boolean;
 }
 
 export interface DaySummary {
@@ -252,6 +254,19 @@ export interface AdminOverview {
     mode: Mode;
   }>;
   recentAudit?: AdminAuditEntry[];
+}
+
+export interface VersionMetadata {
+  imageTag: string | null;
+  commitSha: string | null;
+  dirty: boolean | null;
+  builtAt: string | null;
+}
+
+export interface AdminVersionResponse {
+  backend: VersionMetadata;
+  frontend: VersionMetadata;
+  updatedAt: string;
 }
 
 export type IssueSeverity = "info" | "warning" | "error";

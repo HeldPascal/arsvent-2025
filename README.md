@@ -17,27 +17,14 @@ Discord-authenticated Advent calendar for the Ars Necandi community. Users log i
 ### Backend
 
 1) Install deps: `cd backend && npm install`
-2) Env: create `backend/.env` with:
-```
-DISCORD_CLIENT_ID=...
-DISCORD_CLIENT_SECRET=...
-DISCORD_CALLBACK_URL=http://localhost:4000/auth/discord/callback
-SESSION_SECRET=dev-secret
-SUPER_ADMIN_DISCORD_ID=123456789012345678
-DATABASE_URL=file:./dev.db
-FRONTEND_ORIGIN=http://localhost:5173
-PORT=4000
-```
+2) Env: create `backend/.env` (see `docs/ops/environment-variables.md` for required values and examples).
 3) Generate DB: `npx prisma migrate dev` (or `prisma generate` if DB already exists)
 4) Run dev server: `npm run dev`
 
 ### Frontend
 
 1) Install deps: `cd frontend && npm install`
-2) Env: create `frontend/.env` with:
-```
-VITE_BACKEND_URL=http://localhost:4000
-```
+2) Env: create `frontend/.env` (see `docs/ops/environment-variables.md` for required values and examples).
 3) Run dev server: `npm run dev`
 4) Open `http://localhost:5173`
 
@@ -52,7 +39,7 @@ VITE_BACKEND_URL=http://localhost:4000
 
 ## Admin tooling
 
-- Provide a Discord user id via `SUPER_ADMIN_DISCORD_ID` to bootstrap a super admin. They are always treated as admin on login.
+- Provide a Discord user id via `SUPER_ADMIN_DISCORD_ID` (see `docs/ops/environment-variables.md`) to bootstrap a super admin. They are always treated as admin on login.
 - Admin UI lives at `/admin` (no nav link). Accessible only to admins/super admins.
 - Features: diagnostics (uptime, runtime, unlocked day), usage stats, recent users/solves, user list with progress counters.
 - User actions: change mode, mark a day solved/unsolved, revoke sessions (bumps `sessionVersion` to force logout), delete users/data. Only the super admin can promote/demote admins; super admin account cannot be demoted or deleted.
