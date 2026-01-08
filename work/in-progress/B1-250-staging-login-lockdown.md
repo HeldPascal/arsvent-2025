@@ -1,7 +1,7 @@
 # B1-250 — Staging Login Lockdown & Configurable Seed Users
 
 ## Status
-Ready
+In Progress
 
 ## Related Spec
 - docs/specs/B1-test-and-staging-environment.md (B1)
