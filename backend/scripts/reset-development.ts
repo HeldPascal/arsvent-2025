@@ -1,6 +1,11 @@
 import { runReset } from "./reset-tools.js";
 
-runReset("development").catch((err) => {
+const seedFilePath = process.argv[2];
+if (!seedFilePath) {
+  throw new Error("Seed file path is required (first argument).");
+}
+
+runReset("development", seedFilePath).catch((err) => {
   console.error("[reset] Failed:", err);
   process.exitCode = 1;
 });

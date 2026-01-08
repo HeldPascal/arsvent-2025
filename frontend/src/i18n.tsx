@@ -59,6 +59,7 @@ type TranslationKey =
   | "assignAllOptions"
   | "enterAnswer"
   | "loginSuccess"
+  | "loginStagingDisabled"
   | "loginFailed"
   | "logoutSuccess"
   | "sessionEnded"
@@ -188,6 +189,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     assignAllOptions: "Please assign all options to a group.",
     enterAnswer: "Please enter an answer.",
     loginSuccess: "Logged in with Discord. Welcome!",
+    loginStagingDisabled: "Staging logins are restricted. Contact an admin to get access.",
     loginFailed: "Login failed. Please try again.",
     logoutSuccess: "You have been logged out.",
     sessionEnded: "Your session ended. Please log in again.",
@@ -315,6 +317,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     assignAllOptions: "Bitte ordne alle Optionen einer Gruppe zu.",
     enterAnswer: "Bitte gib eine Antwort ein.",
     loginSuccess: "Mit Discord eingeloggt. Willkommen!",
+    loginStagingDisabled: "Staging-Zugänge sind eingeschränkt. Bitte wende dich an einen Admin.",
     loginFailed: "Login fehlgeschlagen. Bitte versuche es erneut.",
     logoutSuccess: "Du wurdest abgemeldet.",
     sessionEnded: "Deine Sitzung ist beendet. Bitte erneut einloggen.",

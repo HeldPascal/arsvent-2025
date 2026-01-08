@@ -88,6 +88,9 @@ Defined in `ops/docker-compose.yml`:
   (proposed: `staging.arsvent25.arsnecandi.de`).
 - Separate env files, SQLite DB, and Redis data directory.
 - Auto-deploy staging on `main` push.
+- Seed/reset tooling expects a seed users JSON file passed as an argument.
+  - Example: `npm run seed:staging -- /path/to/seed-users.json`
+  - Example: `npm run reset:staging -- /path/to/seed-users.json`
 
 #### Staging Ports and Paths
 - Backend port: `4100` (container `4000`)

@@ -1,0 +1,38 @@
+[
+  {
+    "discordUserId": "100000000000000000",
+    "label": "staging-super-admin",
+    "username": "staging-super-admin",
+    "globalName": "Staging Super Admin",
+    "locale": "de",
+    "mode": "VETERAN",
+    "isAdmin": true,
+    "isSuperAdmin": true,
+    "introCompleted": true,
+    "lastSolvedDay": 24,
+    "lastSolvedAtDaysAgo": 1,
+    "lastLoginAtDaysAgo": 0
+  },
+  {
+    "discordUserId": "200000000000000000",
+    "label": "staging-admin",
+    "username": "staging-admin",
+    "globalName": "Staging Admin",
+    "locale": "de",
+    "mode": "VETERAN",
+    "isAdmin": true,
+    "introCompleted": true,
+    "lastSolvedDay": 12,
+    "lastSolvedAtDaysAgo": 2,
+    "lastLoginAtDaysAgo": 1
+  },
+  {
+    "discordUserId": "300000000000000000",
+    "label": "staging-qa-user",
+    "locale": "en",
+    "mode": "NORMAL",
+    "introCompleted": false,
+    "lastSolvedDay": 3,
+    "lastSolvedAtDaysAgo": 10
+  }
+]

@@ -37,13 +37,13 @@ const runMigrations = () => {
   execSync("npx prisma migrate deploy", { cwd: backendDir, stdio: "inherit" });
 };
 
-export const runReset = async (target: SeedEnvironment) => {
+export const runReset = async (target: SeedEnvironment, seedFilePath: string) => {
   ensureEnvironment(target);
 
   await resetDatabase(target);
   await resetRedis(target);
   runMigrations();
-  await runSeed(prisma, target);
+  await runSeed(prisma, target, seedFilePath);
 
   console.log("[reset] Done.");
   await prisma.$disconnect();

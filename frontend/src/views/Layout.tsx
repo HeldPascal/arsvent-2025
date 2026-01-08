@@ -109,6 +109,8 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
         handledAuthRef.current = auth;
         if (auth === "success") {
           addToast({ type: "success", key: "loginSuccess" });
+        } else if (auth === "staging_login_disabled") {
+          addToast({ type: "error", key: "loginStagingDisabled" });
         } else if (auth === "failed") {
           addToast({ type: "error", key: "loginFailed" });
         }

@@ -216,6 +216,16 @@ If `IMAGE_TAG` is not set in `deploy.env`, the helper falls back to
 
 ## 10) Optional: seed/reset staging data
 
+Create a seed user file (JSON) for staging (run these inside the compose
+environment shell so `$ENV_DIR` is available). Replace the dummy IDs with real
+Discord user IDs. Optional fields like `isAdmin`, `isSuperAdmin`, `locale`, and
+`mode` are supported:
+
+```
+cp /opt/arsvent-2025/staging/app/ops/seed-users.example.json "$ENV_DIR/seed-users.json"
+$EDITOR "$ENV_DIR/seed-users.json"
+```
+
 Run these from the compose environment shell. The backend image does not ship
 the seed scripts, so mount them from the repo:
 
@@ -225,7 +235,7 @@ docker compose -f "$COMPOSE_FILE" run --rm \
   -v "$APP_DIR/backend/scripts:/app/scripts:ro" \
   -v "$APP_DIR/backend/tsconfig.json:/app/tsconfig.json:ro" \
   --entrypoint /app/node_modules/.bin/tsx \
-  backend /app/scripts/seed-staging.ts
+  backend /app/scripts/seed-staging.ts "$ENV_DIR/seed-users.json"
 ```
 
 Reset (destructive):
@@ -234,7 +244,7 @@ docker compose -f "$COMPOSE_FILE" run --rm \
   -v "$APP_DIR/backend/scripts:/app/scripts:ro" \
   -v "$APP_DIR/backend/tsconfig.json:/app/tsconfig.json:ro" \
   --entrypoint /app/node_modules/.bin/tsx \
-  backend /app/scripts/reset-staging.ts
+  backend /app/scripts/reset-staging.ts "$ENV_DIR/seed-users.json"
 ```
 
 ## 11) Verify

@@ -500,6 +500,12 @@ passport.use(
       try {
         const isSuperAdmin = superAdminId === profile.id;
         const now = new Date();
+        if (appEnv === "staging") {
+          const existing = await prisma.user.findUnique({ where: { id: profile.id } });
+          if (!existing) {
+            return done(null, false, { message: "staging_login_disabled" });
+          }
+        }
         const user = await prisma.user.upsert({
           where: { id: profile.id },
           update: {
@@ -1355,12 +1361,25 @@ app.get("/auth/discord", passport.authenticate("discord"));
 
 app.get(
   "/auth/discord/callback",
-  passport.authenticate("discord", { failureRedirect: `${FRONTEND_ORIGIN}?auth=failed` }),
-  (req, res) => {
-    if (req.user) {
-      storeSessionVersion(req, req.user as PrismaUser);
-    }
-    res.redirect(`${FRONTEND_ORIGIN}/calendar?auth=success`);
+  (req, res, next) => {
+    passport.authenticate("discord", (err: unknown, user: PrismaUser | false, info?: { message?: string }) => {
+      if (err) {
+        return next(err);
+      }
+      if (!user) {
+        if (info?.message === "staging_login_disabled") {
+          return res.redirect(`${FRONTEND_ORIGIN}?auth=staging_login_disabled`);
+        }
+        return res.redirect(`${FRONTEND_ORIGIN}?auth=failed`);
+      }
+      return req.logIn(user, (loginErr) => {
+        if (loginErr) {
+          return next(loginErr);
+        }
+        storeSessionVersion(req, user);
+        return res.redirect(`${FRONTEND_ORIGIN}/calendar?auth=success`);
+      });
+    })(req, res, next);
   },
 );
 
