@@ -234,8 +234,9 @@ Seed:
 docker compose -f "$COMPOSE_FILE" run --rm \
   -v "$APP_DIR/backend/scripts:/app/scripts:ro" \
   -v "$APP_DIR/backend/tsconfig.json:/app/tsconfig.json:ro" \
+  -v "$ENV_DIR/seed-users.json:/app/seed-users.json:ro" \
   --entrypoint /app/node_modules/.bin/tsx \
-  backend /app/scripts/seed-staging.ts "$ENV_DIR/seed-users.json"
+  backend /app/scripts/seed-staging.ts /app/seed-users.json
 ```
 
 Reset (destructive):
@@ -243,8 +244,9 @@ Reset (destructive):
 docker compose -f "$COMPOSE_FILE" run --rm \
   -v "$APP_DIR/backend/scripts:/app/scripts:ro" \
   -v "$APP_DIR/backend/tsconfig.json:/app/tsconfig.json:ro" \
+  -v "$ENV_DIR/seed-users.json:/app/seed-users.json:ro" \
   --entrypoint /app/node_modules/.bin/tsx \
-  backend /app/scripts/reset-staging.ts "$ENV_DIR/seed-users.json"
+  backend /app/scripts/reset-staging.ts /app/seed-users.json
 ```
 
 ## 11) Verify
