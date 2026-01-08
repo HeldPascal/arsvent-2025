@@ -20,6 +20,7 @@ production behavior while remaining isolated.
 - Improve developer confidence and iteration speed.
 - Staging auto-deploys from `main` to reduce manual steps (no manual trigger).
 - Staging runs on the same VPS with separate ports and domain.
+- Staging access is restricted to known, seeded users.
 
 ## Non-Goals
 - Zero-downtime production deploys (handled separately).
@@ -97,6 +98,7 @@ Provide a script to populate staging with:
 - events
 - content
 - completion states (including Veteran completion)
+Seeded users must be configurable (not hardcoded in the script).
 
 ### Reset Script
 Provide a script to:
@@ -129,6 +131,7 @@ These tools must never be enabled in production.
   - assign real prizes
   - write to production DBs
 - Guardrails must exist to prevent misconfiguration.
+- Staging rejects new signups; only seeded users can log in.
  
 ## Repo & Ops
 - Ops scripts and compose configuration should be version controlled.
