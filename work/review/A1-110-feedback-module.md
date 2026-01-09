@@ -1,7 +1,7 @@
 # A1-110 — Anonymous Feedback Module
 
 ## Status
-In Progress
+Review
 
 ## Related Spec
 - docs/specs/A1-feedback-and-prizes.md (A1.1)
@@ -78,7 +78,9 @@ Allow users to submit anonymous, one-time feedback for an event.
 - View free-text feedback list (if enabled)
 - Per-entry timestamps are allowed
 - No per-entry metadata that allows attribution
-- Admin UI: add a Feedback panel on `/admin` (overview/diagnostics section)
+- Admin UI:
+  - Feedback panel on `/admin` (overview/diagnostics section)
+  - Feedback settings under `/admin/settings`
 
 ## Acceptance Criteria
 - [ ] User can submit feedback once
