@@ -1,7 +1,7 @@
 # A1-120 — Prize Pool Management
 
 ## Status
-Ready
+In Progress
 
 ## Related Spec
 - docs/specs/A1-feedback-and-prizes.md (A1.2)
