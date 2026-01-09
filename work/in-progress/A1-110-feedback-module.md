@@ -1,7 +1,7 @@
 # A1-110 — Anonymous Feedback Module
 
 ## Status
-Ready
+In Progress
 
 ## Related Spec
 - docs/specs/A1-feedback-and-prizes.md (A1.1)
