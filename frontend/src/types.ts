@@ -112,8 +112,29 @@ export interface User {
   sessionVersion: number;
   stateVersion: number;
   lastSolvedDay: number;
+  hasSubmittedFeedback?: boolean;
   appEnv?: "development" | "staging" | "production";
   isProduction?: boolean;
+  feedbackEnabled?: boolean;
+  feedbackEndsAt?: string | null;
+  feedbackFreeTextEnabled?: boolean;
+  feedbackEmojiScale?: number;
+  feedbackOpen?: boolean;
+  feedbackEnded?: boolean;
+  prizesAvailable?: boolean;
+}
+
+export interface AdminFeedbackSummary {
+  totals: Record<"1" | "2" | "3" | "4" | "5", number>;
+  count: number;
+  comments?: Array<{ text: string; createdAt: string }>;
+}
+
+export interface AdminFeedbackSettings {
+  enabled: boolean;
+  endsAt: string | null;
+  freeTextEnabled: boolean;
+  emojiScale: number;
 }
 
 export interface DaySummary {

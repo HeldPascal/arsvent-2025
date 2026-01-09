@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { AdminAuditEntry, AdminOverview, AdminUserSummary, AdminVersionResponse, ContentDiagnostics, Mode, User } from "../types";
+import type {
+  AdminAuditEntry,
+  AdminFeedbackSummary,
+  AdminOverview,
+  AdminUserSummary,
+  AdminVersionResponse,
+  ContentDiagnostics,
+  Mode,
+  User,
+} from "../types";
 import {
   adminDeleteUser,
   adminRevokeSessions,
@@ -10,12 +19,14 @@ import {
   adminUpdateMode,
   adminUpdateProgress,
   deleteAuditEntry,
+  fetchAdminFeedback,
   fetchAdminOverview,
   fetchAdminVersion,
   fetchAdminUsers,
   fetchAudit,
   fetchAdminContentDiagnostics,
 } from "../services/api";
+import { useI18n } from "../i18n";
 import StatBar from "./components/StatBar";
 import CollapsibleHistogram from "./components/CollapsibleHistogram";
 
@@ -40,10 +51,27 @@ export default function AdminPage({ user }: Props) {
   const [contentDiagLoading, setContentDiagLoading] = useState(false);
   const [versionInfo, setVersionInfo] = useState<AdminVersionResponse | null>(null);
   const [versionLoading, setVersionLoading] = useState(false);
+  const [feedbackSummary, setFeedbackSummary] = useState<AdminFeedbackSummary | null>(null);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const { t } = useI18n();
   const navigate = useNavigate();
   const contentLimit =
     overview?.diagnostics.maxContiguousContentDay ?? overview?.diagnostics.contentDayCount ?? 24;
   const nextDayHasContent = overview?.diagnostics.nextDayHasContent ?? false;
+  const feedbackEmojiByRating: Record<string, string> = {
+    "1": "😡",
+    "2": "😕",
+    "3": "😐",
+    "4": "🙂",
+    "5": "😍",
+  };
+  const feedbackLabelByRating = {
+    "1": "feedbackVeryDissatisfied",
+    "2": "feedbackDissatisfied",
+    "3": "feedbackNeutral",
+    "4": "feedbackSatisfied",
+    "5": "feedbackVerySatisfied",
+  } as const;
 
   const loadData = useCallback(
     async (showLoader = false) => {
@@ -116,12 +144,28 @@ export default function AdminPage({ user }: Props) {
     [],
   );
 
+  const loadFeedback = useCallback(
+    async (showLoader = false) => {
+      if (showLoader) setFeedbackLoading(true);
+      try {
+        const feedback = await fetchAdminFeedback();
+        setFeedbackSummary(feedback);
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        if (showLoader) setFeedbackLoading(false);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     loadData(true);
     loadAudit(auditLimit);
     loadContentDiagnostics(true);
     loadVersion(true);
-  }, [loadData, loadAudit, loadContentDiagnostics, loadVersion]);
+    loadFeedback(true);
+  }, [loadData, loadAudit, loadContentDiagnostics, loadVersion, loadFeedback]);
 
   useEffect(() => {
     if (overview) {
@@ -137,6 +181,7 @@ export default function AdminPage({ user }: Props) {
         loadAudit(auditLimit);
         loadContentDiagnostics(false);
         loadVersion(false);
+        loadFeedback(false);
       }
     };
     const interval = window.setInterval(refresh, 10000);
@@ -149,7 +194,7 @@ export default function AdminPage({ user }: Props) {
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [auditLimit, loadAudit, loadContentDiagnostics, loadData, loadVersion]);
+  }, [auditLimit, loadAudit, loadContentDiagnostics, loadData, loadVersion, loadFeedback]);
 
   const isSuperAdmin = user.isSuperAdmin;
 
@@ -475,6 +520,61 @@ export default function AdminPage({ user }: Props) {
                     </div>
                   </div>
                 </div>
+              </>
+            )}
+          </div>
+
+          <div className="panel">
+            <h3>Feedback</h3>
+            {feedbackLoading && <div className="muted">Loading feedback…</div>}
+            {!feedbackLoading && !feedbackSummary && <div className="muted">Feedback data unavailable.</div>}
+            {feedbackSummary && (
+              <>
+                <div className="muted small" style={{ marginBottom: 8 }}>
+                  Total submissions: {feedbackSummary.count}
+                </div>
+                <div className="feedback-chart">
+                  {(["5", "4", "3", "2", "1"] as const).map((rating) => {
+                    const value = feedbackSummary.totals[rating] ?? 0;
+                    const total = Math.max(feedbackSummary.count, 1);
+                    const percent = Math.round((value / total) * 100);
+                    return (
+                      <div key={rating} className="feedback-bar">
+                        <div className="feedback-bar-meta">
+                          <span>
+                            <span className="feedback-emoji" aria-hidden="true">
+                              {feedbackEmojiByRating[rating]}
+                            </span>{" "}
+                            {t(feedbackLabelByRating[rating as keyof typeof feedbackLabelByRating])} ({rating})
+                          </span>
+                          <span className="muted">
+                            {value} · {percent}%
+                          </span>
+                        </div>
+                        <div className="feedback-bar-track">
+                          <div className="feedback-bar-fill" style={{ width: `${percent}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {feedbackSummary.comments && feedbackSummary.comments.length > 0 && (
+                  <div style={{ marginTop: 12 }}>
+                    <div className="muted small" style={{ marginBottom: 6 }}>
+                      Latest comments
+                    </div>
+                    <ul className="plain-list">
+                      {feedbackSummary.comments.map((comment, index) => (
+                        <li key={`${comment.createdAt}-${index}`} className="list-row">
+                          <div className="list-title">
+                            {comment.text}
+                            <span className="muted"> · {new Date(comment.createdAt).toLocaleString()}</span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </>
             )}
           </div>

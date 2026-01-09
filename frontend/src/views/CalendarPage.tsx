@@ -36,6 +36,10 @@ export default function CalendarPage({ user, version }: Props) {
     unlockedRef.current = payload.unlockedDay;
   };
 
+  const feedbackOpen = Boolean(user.feedbackOpen ?? user.feedbackEnabled) && !user.hasSubmittedFeedback;
+  const prizesAvailable = Boolean(user.prizesAvailable);
+  const showPrizesBanner = feedbackOpen || prizesAvailable;
+
   useEffect(() => {
     fetchDays()
       .then((d) => applyDays(d, false))
@@ -80,6 +84,18 @@ export default function CalendarPage({ user, version }: Props) {
           </p>
         </div>
       </header>
+
+      {showPrizesBanner && (
+        <div className="panel notice-banner">
+          <div>
+            <strong>{prizesAvailable ? t("prizesBannerTitle") : t("feedbackBannerTitle")}</strong>
+            <div className="muted small">{prizesAvailable ? t("prizesSubtitle") : t("feedbackSubtitle")}</div>
+          </div>
+          <Link className="small-btn" to="/prizes">
+            {t("prizesBannerCta")}
+          </Link>
+        </div>
+      )}
 
       {loading && <p>{t("loading")}</p>}
       {error && <p className="error">{error}</p>}

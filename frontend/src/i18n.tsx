@@ -61,6 +61,35 @@ type TranslationKey =
   | "loginSuccess"
   | "loginStagingDisabled"
   | "loginFailed"
+  | "saving"
+  | "prizesTitle"
+  | "prizesSubtitle"
+  | "prizeSectionTitle"
+  | "prizeSectionBody"
+  | "prizeSectionBodyPending"
+  | "prizesBannerTitle"
+  | "prizesBannerCta"
+  | "feedbackBannerTitle"
+  | "feedbackTitle"
+  | "feedbackSubtitle"
+  | "feedbackVeryDissatisfied"
+  | "feedbackDissatisfied"
+  | "feedbackNeutral"
+  | "feedbackSatisfied"
+  | "feedbackVerySatisfied"
+  | "feedbackCommentLabel"
+  | "feedbackCommentPlaceholder"
+  | "feedbackCharsRemaining"
+  | "feedbackSkip"
+  | "feedbackSubmit"
+  | "feedbackSubmitted"
+  | "feedbackSkipped"
+  | "feedbackRatingRequired"
+  | "feedbackThanksTitle"
+  | "feedbackThanksBody"
+  | "feedbackClosedTitle"
+  | "feedbackClosedBody"
+  | "settingsSaved"
   | "logoutSuccess"
   | "sessionEnded"
   | "sessionRefreshRetry"
@@ -191,6 +220,35 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     loginSuccess: "Logged in with Discord. Welcome!",
     loginStagingDisabled: "Staging logins are restricted. Contact an admin to get access.",
     loginFailed: "Login failed. Please try again.",
+    saving: "Saving…",
+    prizesTitle: "Prizes",
+    prizesSubtitle: "Feedback and prize results live here once they are available.",
+    prizeSectionTitle: "Prize draws",
+    prizeSectionBody: "Draw results will appear here after the draw is published.",
+    prizeSectionBodyPending: "Prize results will appear here once a draw is published.",
+    prizesBannerTitle: "Prizes are available",
+    prizesBannerCta: "Open",
+    feedbackBannerTitle: "Feedback is open",
+    feedbackTitle: "Event feedback",
+    feedbackSubtitle: "Tell us how you felt about Arsvent 2025. One response per account.",
+    feedbackVeryDissatisfied: "Very dissatisfied",
+    feedbackDissatisfied: "Dissatisfied",
+    feedbackNeutral: "Neutral",
+    feedbackSatisfied: "Satisfied",
+    feedbackVerySatisfied: "Very satisfied",
+    feedbackCommentLabel: "Optional comment",
+    feedbackCommentPlaceholder: "Share what you liked or what we can improve.",
+    feedbackCharsRemaining: "{count} characters left",
+    feedbackSkip: "Skip",
+    feedbackSubmit: "Submit feedback",
+    feedbackSubmitted: "Feedback submitted.",
+    feedbackSkipped: "Feedback skipped.",
+    feedbackRatingRequired: "Please select a rating before submitting.",
+    feedbackThanksTitle: "Thanks for the feedback!",
+    feedbackThanksBody: "Your response has been recorded.",
+    feedbackClosedTitle: "Feedback is closed",
+    feedbackClosedBody: "Feedback submissions are no longer available.",
+    settingsSaved: "Settings saved.",
     logoutSuccess: "You have been logged out.",
     sessionEnded: "Your session ended. Please log in again.",
     introLabel: "Prologue",
@@ -319,6 +377,35 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     loginSuccess: "Mit Discord eingeloggt. Willkommen!",
     loginStagingDisabled: "Staging-Zugänge sind eingeschränkt. Bitte wende dich an einen Admin.",
     loginFailed: "Login fehlgeschlagen. Bitte versuche es erneut.",
+    saving: "Speichern…",
+    prizesTitle: "Preise",
+    prizesSubtitle: "Feedback und Gewinninformationen findest du hier, sobald sie verfügbar sind.",
+    prizeSectionTitle: "Preisziehungen",
+    prizeSectionBody: "Ziehungsergebnisse erscheinen hier, sobald die Ziehung veröffentlicht ist.",
+    prizeSectionBodyPending: "Preisergebnisse erscheinen hier, sobald die Ziehung veröffentlicht ist.",
+    prizesBannerTitle: "Preise sind verfügbar",
+    prizesBannerCta: "Öffnen",
+    feedbackBannerTitle: "Feedback ist offen",
+    feedbackTitle: "Event-Feedback",
+    feedbackSubtitle: "Sag uns, wie dir Arsvent 2025 gefallen hat. Eine Antwort pro Account.",
+    feedbackVeryDissatisfied: "Sehr unzufrieden",
+    feedbackDissatisfied: "Unzufrieden",
+    feedbackNeutral: "Neutral",
+    feedbackSatisfied: "Zufrieden",
+    feedbackVerySatisfied: "Sehr zufrieden",
+    feedbackCommentLabel: "Optionaler Kommentar",
+    feedbackCommentPlaceholder: "Teile, was dir gefallen hat oder was wir verbessern können.",
+    feedbackCharsRemaining: "Noch {count} Zeichen",
+    feedbackSkip: "Überspringen",
+    feedbackSubmit: "Feedback senden",
+    feedbackSubmitted: "Feedback gesendet.",
+    feedbackSkipped: "Feedback übersprungen.",
+    feedbackRatingRequired: "Bitte wähle eine Bewertung aus.",
+    feedbackThanksTitle: "Danke für dein Feedback!",
+    feedbackThanksBody: "Deine Antwort wurde gespeichert.",
+    feedbackClosedTitle: "Feedback geschlossen",
+    feedbackClosedBody: "Feedback ist derzeit nicht verfügbar.",
+    settingsSaved: "Einstellungen gespeichert.",
     logoutSuccess: "Du wurdest abgemeldet.",
     sessionEnded: "Deine Sitzung ist beendet. Bitte erneut einloggen.",
     introLabel: "Prolog",

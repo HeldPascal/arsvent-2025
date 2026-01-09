@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { User } from "../types";
 import {
   adminTestForceComplete,
+  adminTestResetFeedback,
   adminTestSetEligibility,
   adminTestUnlockAll,
   adminTestUnlockNext,
@@ -51,7 +52,7 @@ export default function AdminTestPage({ user }: Props) {
 
   return (
     <div className="page-grid">
-      <div className="panel">
+      <div className="panel test-panel">
         <header className="panel-header">
           <div>
             <div className="eyebrow">Test tools</div>
@@ -89,7 +90,7 @@ export default function AdminTestPage({ user }: Props) {
         </div>
       </div>
 
-      <div className="panel">
+      <div className="panel test-panel">
         <header className="panel-header">
           <div>
             <div className="eyebrow">Test tools</div>
@@ -124,7 +125,7 @@ export default function AdminTestPage({ user }: Props) {
         </div>
       </div>
 
-      <div className="panel">
+      <div className="panel test-panel">
         <header className="panel-header">
           <div>
             <div className="eyebrow">Test tools</div>
@@ -155,6 +156,25 @@ export default function AdminTestPage({ user }: Props) {
             }
           >
             Set eligibility
+          </button>
+        </div>
+      </div>
+
+      <div className="panel test-panel">
+        <header className="panel-header">
+          <div>
+            <div className="eyebrow">Test tools</div>
+            <h2>Feedback reset</h2>
+            <p className="muted">Clear all feedback entries and reset feedback flags.</p>
+          </div>
+        </header>
+
+        <div className="admin-actions">
+          <button
+            disabled={busy}
+            onClick={() => handleAction(() => adminTestResetFeedback(), "Feedback data cleared.")}
+          >
+            Wipe feedback data
           </button>
         </div>
       </div>

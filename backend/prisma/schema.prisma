@@ -20,6 +20,7 @@ model User {
   creatureSwap   Boolean       @default(false)
   isAdmin        Boolean       @default(false)
   isSuperAdmin   Boolean       @default(false)
+  hasSubmittedFeedback Boolean @default(false)
   sessionVersion Int           @default(1)
   stateVersion   Int           @default(1)
   lastSolvedDay  Int           @default(0)
@@ -35,8 +36,18 @@ model User {
 model AppState {
   id          Int      @id
   unlockedDay Int      @default(0)
+  feedbackEnabled Boolean @default(true)
+  feedbackEndsAt DateTime?
+  feedbackFreeTextEnabled Boolean @default(true)
   updatedAt   DateTime @updatedAt
   updatedBy   String?
+}
+
+model Feedback {
+  id        Int      @id @default(autoincrement())
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
 }
 
 model AuditLog {

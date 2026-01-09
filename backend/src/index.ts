@@ -620,6 +620,46 @@ const ensureAppState = async () =>
     create: { id: 1, unlockedDay: 0 },
   });
 
+const getFeedbackConfig = async () => {
+  const state = await ensureAppState();
+  const endsAt = state.feedbackEndsAt;
+  const now = new Date();
+  const isOpen = state.feedbackEnabled && (!endsAt || now <= endsAt);
+  return {
+    enabled: state.feedbackEnabled,
+    endsAt,
+    freeTextEnabled: state.feedbackFreeTextEnabled,
+    emojiScale: 5,
+    isOpen,
+  };
+};
+
+const updateFeedbackConfig = async (payload: {
+  enabled?: boolean;
+  endsAt?: Date | null;
+  freeTextEnabled?: boolean;
+}) => {
+  const data: {
+    feedbackEnabled?: boolean;
+    feedbackEndsAt?: Date | null;
+    feedbackFreeTextEnabled?: boolean;
+  } = {};
+  if (payload.enabled !== undefined) {
+    data.feedbackEnabled = payload.enabled;
+  }
+  if (payload.endsAt !== undefined) {
+    data.feedbackEndsAt = payload.endsAt;
+  }
+  if (payload.freeTextEnabled !== undefined) {
+    data.feedbackFreeTextEnabled = payload.freeTextEnabled;
+  }
+  await prisma.appState.update({
+    where: { id: 1 },
+    data,
+  });
+  return getFeedbackConfig();
+};
+
 type ProgressScope = "default" | "preview";
 const progressStoreKey = (scope: ProgressScope) => (scope === "preview" ? "previewPuzzleProgress" : "puzzleProgress");
 const buildProgressKey = (day: number, scope: ProgressScope, locale?: Locale, mode?: Mode) =>
@@ -1397,12 +1437,162 @@ app.post("/auth/logout", (req, res, next) => {
 
 app.get("/api/auth/me", requireAuth, (req, res) => {
   const user = req.user as PrismaUser;
-  return res.json({
-    ...user,
-    mode: normalizeModeValue(user.mode),
-    appEnv,
-    isProduction: isProd,
-  });
+  getFeedbackConfig()
+    .then((feedback) =>
+      res.json({
+        ...user,
+        mode: normalizeModeValue(user.mode),
+        appEnv,
+        isProduction: isProd,
+        feedbackEnabled: feedback.enabled,
+        feedbackEndsAt: feedback.endsAt,
+        feedbackFreeTextEnabled: feedback.freeTextEnabled,
+        feedbackEmojiScale: feedback.emojiScale,
+        feedbackOpen: feedback.isOpen,
+        feedbackEnded: feedback.enabled && feedback.endsAt ? new Date() > feedback.endsAt : false,
+        prizesAvailable: false,
+      }),
+    )
+    .catch(() =>
+      res.json({
+        ...user,
+        mode: normalizeModeValue(user.mode),
+        appEnv,
+        isProduction: isProd,
+        prizesAvailable: false,
+      }),
+    );
+});
+
+app.post("/api/feedback", requireAuth, requireIntroComplete, async (req, res, next) => {
+  try {
+    const user = req.user as PrismaUser;
+    const feedbackConfig = await getFeedbackConfig();
+    if (!feedbackConfig.enabled) {
+      return res.status(403).json({ error: "feedback_closed" });
+    }
+    if (feedbackConfig.endsAt && new Date() > feedbackConfig.endsAt) {
+      return res.status(403).json({ error: "feedback_closed" });
+    }
+
+    const body = req.body as { rating?: unknown; comment?: unknown; skipped?: unknown };
+    const skipped = body?.skipped === true;
+    if (!skipped) {
+      const rating = body?.rating;
+      if (typeof rating !== "number" || !Number.isInteger(rating) || rating < 1 || rating > 5) {
+        return res.status(400).json({ error: "invalid_rating" });
+      }
+      let comment: string | null = null;
+      if (feedbackConfig.freeTextEnabled && typeof body?.comment === "string") {
+        const trimmed = body.comment.trim();
+        if (trimmed.length > 1000) {
+          return res.status(400).json({ error: "comment_too_long" });
+        }
+        comment = trimmed.length === 0 ? null : trimmed;
+      }
+      await prisma.$transaction(async (tx) => {
+        const updated = await tx.user.updateMany({
+          where: { id: user.id, hasSubmittedFeedback: false },
+          data: { hasSubmittedFeedback: true },
+        });
+        if (updated.count === 0) {
+          throw new Error("feedback_already_submitted");
+        }
+        await tx.feedback.create({
+          data: { rating, comment },
+        });
+      });
+      return res.status(201).json({ ok: true });
+    }
+
+    const updated = await prisma.user.updateMany({
+      where: { id: user.id, hasSubmittedFeedback: false },
+      data: { hasSubmittedFeedback: true },
+    });
+    if (updated.count === 0) {
+      return res.status(403).json({ error: "feedback_already_submitted" });
+    }
+    return res.status(201).json({ ok: true, skipped: true });
+  } catch (err) {
+    if ((err as Error).message === "feedback_already_submitted") {
+      return res.status(403).json({ error: "feedback_already_submitted" });
+    }
+    return next(err);
+  }
+});
+
+app.get("/api/admin/feedback", requireAuth, requireAdmin, async (_req, res, next) => {
+  try {
+    const feedbackConfig = await getFeedbackConfig();
+    const totals = { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0 };
+    const grouped = await prisma.feedback.groupBy({
+      by: ["rating"],
+      _count: { rating: true },
+    });
+    for (const row of grouped) {
+      const key = String(row.rating) as keyof typeof totals;
+      if (key in totals) {
+        totals[key] = row._count.rating;
+      }
+    }
+    const count = await prisma.feedback.count();
+    if (!feedbackConfig.freeTextEnabled) {
+      return res.json({ totals, count });
+    }
+    const comments = await prisma.feedback.findMany({
+      where: { comment: { not: null } },
+      select: { comment: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+    });
+    return res.json({
+      totals,
+      count,
+      comments: comments.map((entry: { comment: string | null; createdAt: Date }) => ({
+        text: entry.comment as string,
+        createdAt: entry.createdAt,
+      })),
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.get("/api/admin/feedback/settings", requireAuth, requireAdmin, async (_req, res, next) => {
+  try {
+    const config = await getFeedbackConfig();
+    return res.json(config);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.put("/api/admin/feedback/settings", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const body = req.body as { enabled?: unknown; endsAt?: unknown; freeTextEnabled?: unknown };
+    const enabled = typeof body.enabled === "boolean" ? body.enabled : undefined;
+    const freeTextEnabled = typeof body.freeTextEnabled === "boolean" ? body.freeTextEnabled : undefined;
+    let endsAt: Date | null | undefined;
+    if (body.endsAt === null) {
+      endsAt = null;
+    } else if (typeof body.endsAt === "string") {
+      const parsed = new Date(body.endsAt);
+      if (Number.isNaN(parsed.getTime())) {
+        return res.status(400).json({ error: "invalid_feedback_ends_at" });
+      }
+      endsAt = parsed;
+    } else if (body.endsAt !== undefined) {
+      return res.status(400).json({ error: "invalid_feedback_ends_at" });
+    }
+
+    const updatePayload: { enabled?: boolean; endsAt?: Date | null; freeTextEnabled?: boolean } = {};
+    if (enabled !== undefined) updatePayload.enabled = enabled;
+    if (endsAt !== undefined) updatePayload.endsAt = endsAt;
+    if (freeTextEnabled !== undefined) updatePayload.freeTextEnabled = freeTextEnabled;
+    const config = await updateFeedbackConfig(updatePayload);
+    return res.json(config);
+  } catch (err) {
+    return next(err);
+  }
 });
 
 app.post("/api/user/locale", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
@@ -2628,6 +2818,17 @@ app.post("/api/admin/test/users/:id/eligibility", requireAuth, requireAdmin, req
       lastSolvedDay: updated.lastSolvedDay,
       lastSolvedAt: updated.lastSolvedAt,
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/admin/test/feedback/reset", requireAuth, requireAdmin, requireTestEnv, async (req, res, next) => {
+  try {
+    await prisma.feedback.deleteMany();
+    await prisma.user.updateMany({ data: { hasSubmittedFeedback: false } });
+    await logAdminAction("admin:test:feedback-reset", req.user?.id);
+    res.json({ ok: true });
   } catch (error) {
     next(error);
   }

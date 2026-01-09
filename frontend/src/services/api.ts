@@ -2,6 +2,8 @@ import type {
   AdminOverview,
   AdminVersionResponse,
   AdminContentDayDetail,
+  AdminFeedbackSummary,
+  AdminFeedbackSettings,
   ContentDiagnostics,
   AdminUserSummary,
   DayDetail,
@@ -179,6 +181,17 @@ export const updateCreatureSwap = (creatureSwap: boolean) =>
 
 export const fetchAdminOverview = () => apiFetch<AdminOverview>("/api/admin/overview");
 export const fetchAdminVersion = () => apiFetch<AdminVersionResponse>("/api/admin/version");
+export const fetchAdminFeedback = () => apiFetch<AdminFeedbackSummary>("/api/admin/feedback");
+export const fetchAdminFeedbackSettings = () => apiFetch<AdminFeedbackSettings>("/api/admin/feedback/settings");
+export const updateAdminFeedbackSettings = (payload: {
+  enabled?: boolean;
+  endsAt?: string | null;
+  freeTextEnabled?: boolean;
+}) =>
+  apiFetch<AdminFeedbackSettings>("/api/admin/feedback/settings", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
 
 export const fetchAdminUsers = () => apiFetch<AdminUserSummary[]>("/api/admin/users");
 
@@ -244,6 +257,8 @@ export const adminTestSetEligibility = (userId: string, eligible: boolean) =>
     },
   );
 
+export const adminTestResetFeedback = () => apiFetch<{ ok: true }>("/api/admin/test/feedback/reset", { method: "POST" });
+
 export const fetchAdminContentDiagnostics = () => apiFetch<ContentDiagnostics>("/api/admin/content/diagnostics");
 
 export const fetchAdminContentDay = (day: number, locale: Locale, mode: Mode) =>
@@ -258,6 +273,12 @@ export const fetchAudit = (limit?: number) =>
 
 export const deleteAuditEntry = (id: number) =>
   apiFetch<{ success: boolean }>(`/api/admin/audit/${id}`, { method: "DELETE" });
+
+export const submitFeedback = (payload: { rating?: number; comment?: string; skipped?: boolean }) =>
+  apiFetch<{ ok: true; skipped?: boolean }>("/api/feedback", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 
 export const fetchIntro = (locale?: "en" | "de") => {
   const params = new URLSearchParams();
