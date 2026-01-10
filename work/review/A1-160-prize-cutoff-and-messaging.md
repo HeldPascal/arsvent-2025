@@ -1,7 +1,7 @@
 # A1-160 — Prize Cutoff & User Messaging
 
 ## Status
-In Progress
+Review
 
 ## Related Spec
 - docs/specs/A1-feedback-and-prizes.md (A1.6)
@@ -53,3 +53,6 @@ Clearly communicate prize availability and eligibility to users.
 
 ## Notes
 Critical for trust and user satisfaction.
+
+### Progress Notes
+- Banner and prizes messaging currently rely on cutoffs + completion only; `/api/draws` integration will follow with A1-140.
