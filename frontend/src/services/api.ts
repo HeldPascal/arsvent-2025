@@ -7,10 +7,14 @@ import type {
   AdminContentDayDetail,
   AdminFeedbackSummary,
   AdminFeedbackSettings,
+  AdminEligibilityConfig,
+  AdminEligibilityResponse,
+  AdminEligibilityRole,
   ContentDiagnostics,
   AdminUserSummary,
   DayDetail,
   DaysResponse,
+  EligibilityStatus,
   IntroPayload,
   EpiloguePayload,
   InventoryResponse,
@@ -238,6 +242,23 @@ export const updateAdminFeedbackSettings = (payload: {
     method: "PUT",
     body: JSON.stringify(payload),
   });
+
+export const fetchAdminEligibility = () =>
+  apiFetch<AdminEligibilityResponse>("/api/admin/eligibility");
+
+export const updateAdminEligibility = (payload: AdminEligibilityConfig) =>
+  apiFetch<AdminEligibilityConfig>("/api/admin/eligibility", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+
+export const fetchAdminEligibilityRoles = () =>
+  apiFetch<{ roles: AdminEligibilityRole[] }>("/api/admin/eligibility/roles");
+
+export const refreshAdminEligibility = () =>
+  apiFetch<{ ok: true }>("/api/admin/eligibility/refresh", { method: "POST" });
+
+export const fetchEligibility = () => apiFetch<EligibilityStatus>("/api/eligibility");
 
 export const fetchAdminUsers = () => apiFetch<AdminUserSummary[]>("/api/admin/users");
 

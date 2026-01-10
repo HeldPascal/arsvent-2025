@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ModeSelector from "./components/ModeSelector";
-import type { Mode, User } from "../types";
+import type { EligibilityStatus, Mode, User } from "../types";
 import { useI18n } from "../i18n";
-import { updateCreatureSwap } from "../services/api";
+import { fetchEligibility, updateCreatureSwap } from "../services/api";
 
 interface Props {
   user: User;
@@ -12,13 +12,56 @@ interface Props {
 }
 
 export default function SettingsPage({ user, onModeChange, onFunChange }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [creatureSwap, setCreatureSwap] = useState(Boolean(user.creatureSwap));
   const [savingFun, setSavingFun] = useState(false);
+  const [eligibility, setEligibility] = useState<EligibilityStatus | null>(null);
+  const [eligibilityError, setEligibilityError] = useState<string | null>(null);
 
   useEffect(() => {
     setCreatureSwap(Boolean(user.creatureSwap));
   }, [user.creatureSwap]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setEligibilityError(null);
+    fetchEligibility()
+      .then((payload) => {
+        if (cancelled) return;
+        setEligibility(payload);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setEligibilityError((err as Error).message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const eligibilityMessage = useMemo(() => {
+    if (!eligibility) return null;
+    if (eligibility.eligible) return t("eligibilityEligible");
+    switch (eligibility.reason) {
+      case "admin_ineligible":
+        return t("eligibilityAdminIneligible");
+      case "not_linked":
+        return t("eligibilityNotLinked");
+      case "not_in_server":
+        return t("eligibilityNotInServer");
+      case "missing_role":
+        return t("eligibilityMissingRole");
+      default:
+        return t("eligibilityUnknown");
+    }
+  }, [eligibility, t]);
+
+  const eligibilityCheckedAt = useMemo(() => {
+    if (!eligibility?.checkedAt) return t("eligibilityCheckedAtMissing");
+    const date = new Date(eligibility.checkedAt);
+    if (Number.isNaN(date.getTime())) return t("eligibilityCheckedAtMissing");
+    return t("eligibilityCheckedAt", { date: date.toLocaleString(locale) });
+  }, [eligibility?.checkedAt, locale, t]);
 
   const toggleFun = async () => {
     const nextValue = !creatureSwap;
@@ -66,6 +109,21 @@ export default function SettingsPage({ user, onModeChange, onFunChange }: Props)
             {t("funSettingToggle")}
           </button>
         </div>
+      </div>
+      <div className="panel" style={{ marginTop: 16 }}>
+        <div className="panel-header" style={{ alignItems: "center" }}>
+          <div>
+            <div className="eyebrow">{t("eligibilityTitle")}</div>
+            <p className="muted">{t("eligibilitySubtitle")}</p>
+          </div>
+        </div>
+        {eligibilityError && <p className="error">{eligibilityError}</p>}
+        {eligibilityMessage && (
+          <div className="panel subpanel" style={{ marginTop: 12 }}>
+            <p>{eligibilityMessage}</p>
+            <p className="muted small">{eligibilityCheckedAt}</p>
+          </div>
+        )}
       </div>
     </div>
   );

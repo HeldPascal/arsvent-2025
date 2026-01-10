@@ -124,6 +124,49 @@ export interface User {
   prizesAvailable?: boolean;
 }
 
+export type EligibilityReason =
+  | "eligible"
+  | "admin_ineligible"
+  | "not_linked"
+  | "not_in_server"
+  | "missing_role"
+  | "unknown";
+
+export interface EligibilityStatus {
+  eligible: boolean;
+  reason: EligibilityReason;
+  checkedAt: string | null;
+}
+
+export interface AdminEligibilityConfig {
+  discordServerId: string | null;
+  eligibleRoleIds: string[];
+  userRolesRefreshIntervalMinutes: number;
+}
+
+export interface AdminEligibilityGuild {
+  id: string;
+  name: string;
+  icon?: string | null;
+  owner: boolean;
+  permissions: string;
+  botInstalled: boolean;
+  active: boolean;
+  noAccess?: boolean;
+}
+
+export interface AdminEligibilityResponse {
+  config: AdminEligibilityConfig;
+  guilds: AdminEligibilityGuild[];
+  connected: boolean;
+  botTokenConfigured: boolean;
+}
+
+export interface AdminEligibilityRole {
+  id: string;
+  name: string;
+}
+
 export interface AdminFeedbackSummary {
   totals: Record<"1" | "2" | "3" | "4" | "5", number>;
   count: number;

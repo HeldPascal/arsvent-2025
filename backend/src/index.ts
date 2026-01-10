@@ -19,6 +19,7 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import sharp from "sharp";
 import multer from "multer";
+import crypto from "crypto";
 import { PrismaClient } from "@prisma/client";
 import type { User as PrismaUser } from "@prisma/client";
 import {
@@ -73,6 +74,9 @@ const {
   SUPER_ADMIN_DISCORD_ID = "",
   APP_ENV,
   IS_PRODUCTION,
+  DISCORD_BOT_TOKEN = "",
+  DISCORD_APP_ID = "",
+  DISCORD_BOT_PERMISSIONS = "",
 } = process.env;
 
 if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET || !DISCORD_CALLBACK_URL) {
@@ -341,6 +345,12 @@ type SessionWithVersion = ExpressSession &
     stateVersion?: number;
     puzzleProgress?: Record<string, string[]>;
     previewPuzzleProgress?: Record<string, string[]>;
+    adminDiscordState?: string;
+    adminDiscordUserId?: string;
+    adminDiscordReturnTo?: string;
+    botInviteState?: string;
+    botInviteGuildId?: string;
+    botInviteReturnTo?: string;
   };
 
 const isSuperAdminUser = (user?: PrismaUser | null) => Boolean(user?.isSuperAdmin);
@@ -363,6 +373,16 @@ const normalizeModeValue = (input?: string | null): Mode => {
   const val = String(input ?? "").toUpperCase();
   if (val === "VETERAN" || val === "VET") return "VETERAN";
   return "NORMAL";
+};
+
+const discordApiBase = "https://discord.com/api/v10";
+const appId = DISCORD_APP_ID || DISCORD_CLIENT_ID;
+const buildDiscordCallbackUrl = (pathname: string) => {
+  const base = new URL(DISCORD_CALLBACK_URL);
+  base.pathname = pathname;
+  base.search = "";
+  base.hash = "";
+  return base.toString();
 };
 
 const discordOptions: StrategyOptions = {
@@ -644,6 +664,58 @@ const ensureAppState = async () =>
     create: { id: 1, unlockedDay: 0 },
   });
 
+const ensureEventConfig = async () =>
+  prisma.eventConfig.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1, eligibleRoleIds: "[]" },
+  });
+
+const parseEligibleRoleIds = (value: string | null | undefined): string[] => {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (Array.isArray(parsed)) {
+      return parsed.map((entry) => String(entry)).filter(Boolean);
+    }
+  } catch {
+    // fall through
+  }
+  return [];
+};
+
+const getEligibilityConfig = async () => {
+  const config = await ensureEventConfig();
+  return {
+    discordServerId: config.discordServerId ?? null,
+    eligibleRoleIds: parseEligibleRoleIds(config.eligibleRoleIds),
+    userRolesRefreshIntervalMinutes: config.userRolesRefreshIntervalMinutes,
+  };
+};
+
+const updateEligibilityConfig = async (payload: {
+  discordServerId?: string | null;
+  eligibleRoleIds?: string[];
+  userRolesRefreshIntervalMinutes?: number;
+}) => {
+  const data: {
+    discordServerId?: string | null;
+    eligibleRoleIds?: string;
+    userRolesRefreshIntervalMinutes?: number;
+  } = {};
+  if (payload.discordServerId !== undefined) {
+    data.discordServerId = payload.discordServerId;
+  }
+  if (payload.eligibleRoleIds !== undefined) {
+    data.eligibleRoleIds = JSON.stringify(payload.eligibleRoleIds);
+  }
+  if (payload.userRolesRefreshIntervalMinutes !== undefined) {
+    data.userRolesRefreshIntervalMinutes = payload.userRolesRefreshIntervalMinutes;
+  }
+  await prisma.eventConfig.update({ where: { id: 1 }, data });
+  return getEligibilityConfig();
+};
+
 const getFeedbackConfig = async () => {
   const state = await ensureAppState();
   const endsAt = state.feedbackEndsAt;
@@ -709,6 +781,203 @@ const normalizeOptionalInt = (value: unknown): number | null => {
   const parsed = Number(value);
   if (!Number.isInteger(parsed)) return null;
   return parsed;
+};
+
+const createStateToken = () => crypto.randomBytes(16).toString("hex");
+
+const discordFetch = async (pathSuffix: string, token: string, isBot = false, attempts = 0) => {
+  const res = await fetch(`${discordApiBase}${pathSuffix}`, {
+    headers: {
+      Authorization: `${isBot ? "Bot" : "Bearer"} ${token}`,
+    },
+  });
+  if (res.status === 429 && attempts < 2) {
+    const body = (await res.json().catch(() => null)) as { retry_after?: number } | null;
+    const retryAfter = typeof body?.retry_after === "number" ? body.retry_after : 0.5;
+    const waitMs = Math.min(2000, Math.max(100, retryAfter * 1000));
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
+    return discordFetch(pathSuffix, token, isBot, attempts + 1);
+  }
+  return res;
+};
+
+const exchangeDiscordCode = async (code: string, redirectUri: string) => {
+  const body = new URLSearchParams({
+    client_id: DISCORD_CLIENT_ID ?? "",
+    client_secret: DISCORD_CLIENT_SECRET ?? "",
+    grant_type: "authorization_code",
+    code,
+    redirect_uri: redirectUri,
+  });
+  const res = await fetch(`${discordApiBase}/oauth2/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  if (!res.ok) {
+    throw new Error("discord_token_exchange_failed");
+  }
+  return (await res.json()) as {
+    access_token: string;
+    refresh_token?: string;
+    expires_in: number;
+  };
+};
+
+const refreshDiscordToken = async (refreshToken: string) => {
+  const body = new URLSearchParams({
+    client_id: DISCORD_CLIENT_ID ?? "",
+    client_secret: DISCORD_CLIENT_SECRET ?? "",
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+  });
+  const res = await fetch(`${discordApiBase}/oauth2/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  if (!res.ok) {
+    throw new Error("discord_token_refresh_failed");
+  }
+  return (await res.json()) as {
+    access_token: string;
+    refresh_token?: string;
+    expires_in: number;
+  };
+};
+
+const getAdminDiscordToken = async (userId: string) => {
+  const token = await prisma.adminDiscordToken.findUnique({ where: { userId } });
+  if (!token) return null;
+  const now = Date.now();
+  if (token.expiresAt.getTime() > now + 60_000) {
+    return token;
+  }
+  if (!token.refreshToken) return token;
+  const refreshed = await refreshDiscordToken(token.refreshToken);
+  const expiresAt = new Date(Date.now() + refreshed.expires_in * 1000);
+  return prisma.adminDiscordToken.update({
+    where: { userId },
+    data: {
+      accessToken: refreshed.access_token,
+      refreshToken: refreshed.refresh_token ?? token.refreshToken,
+      expiresAt,
+    },
+  });
+};
+
+const getAdminGuilds = async (token: string) => {
+  const res = await discordFetch("/users/@me/guilds", token);
+  if (!res.ok) {
+    const details = await res.text().catch(() => "");
+    console.warn("[eligibility] discord guilds fetch failed", {
+      status: res.status,
+      body: details.slice(0, 500),
+    });
+    throw new Error("discord_guilds_fetch_failed");
+  }
+  const data = (await res.json()) as Array<{
+    id: string;
+    name: string;
+    icon?: string | null;
+    owner: boolean;
+    permissions: string;
+  }>;
+  const adminPerms = 0x8n | 0x20n;
+  return data.filter((guild) => {
+    if (guild.owner) return true;
+    try {
+      const perms = BigInt(guild.permissions);
+      return (perms & adminPerms) !== 0n;
+    } catch {
+      return false;
+    }
+  });
+};
+
+const hasBotAccess = async (guildId: string) => {
+  if (!DISCORD_BOT_TOKEN) return false;
+  const res = await discordFetch(`/guilds/${guildId}`, DISCORD_BOT_TOKEN, true);
+  return res.ok;
+};
+
+const fetchGuildInfo = async (guildId: string) => {
+  if (!DISCORD_BOT_TOKEN) return null;
+  const res = await discordFetch(`/guilds/${guildId}`, DISCORD_BOT_TOKEN, true);
+  if (!res.ok) return null;
+  const data = (await res.json()) as { id: string; name: string; icon?: string | null };
+  return data;
+};
+
+const fetchGuildRoles = async (guildId: string) => {
+  if (!DISCORD_BOT_TOKEN) {
+    const err = new Error("bot_missing_or_inactive_server");
+    throw err;
+  }
+  const res = await discordFetch(`/guilds/${guildId}/roles`, DISCORD_BOT_TOKEN, true);
+  if (!res.ok) {
+    const details = await res.text().catch(() => "");
+    console.warn("[eligibility] discord roles fetch failed", {
+      guildId,
+      status: res.status,
+      body: details.slice(0, 500),
+    });
+    throw new Error("bot_missing_or_inactive_server");
+  }
+  const data = (await res.json()) as Array<{ id: string; name: string }>;
+  return data;
+};
+
+const refreshUserRolesForGuild = async (guildId: string) => {
+  if (!DISCORD_BOT_TOKEN) {
+    throw new Error("bot_missing_or_inactive_server");
+  }
+  const users = await prisma.user.findMany({ select: { id: true } });
+  const now = new Date();
+  for (const user of users) {
+    try {
+      const res = await discordFetch(`/guilds/${guildId}/members/${user.id}`, DISCORD_BOT_TOKEN, true);
+      if (res.status === 404) {
+        await prisma.$transaction([
+          prisma.userDiscordRole.deleteMany({ where: { userId: user.id, guildId } }),
+          prisma.user.update({ where: { id: user.id }, data: { discordRolesUpdatedAt: now } }),
+        ]);
+        continue;
+      }
+      if (!res.ok) {
+        continue;
+      }
+      const member = (await res.json()) as { roles?: string[] };
+      const roles = Array.isArray(member.roles) ? member.roles : [];
+      await prisma.$transaction([
+        prisma.userDiscordRole.deleteMany({ where: { userId: user.id, guildId } }),
+        prisma.userDiscordRole.createMany({
+          data: roles.map((roleId) => ({ userId: user.id, guildId, roleId })),
+        }),
+        prisma.user.update({ where: { id: user.id }, data: { discordRolesUpdatedAt: now } }),
+      ]);
+    } catch (err) {
+      console.warn("[eligibility] Failed to refresh roles for user", user.id, err);
+    }
+  }
+};
+
+let eligibilityRefreshTimer: NodeJS.Timeout | null = null;
+const scheduleEligibilityRefresh = async () => {
+  if (eligibilityRefreshTimer) {
+    clearInterval(eligibilityRefreshTimer);
+    eligibilityRefreshTimer = null;
+  }
+  const config = await getEligibilityConfig();
+  if (!config.discordServerId || !DISCORD_BOT_TOKEN) {
+    return;
+  }
+  const intervalMs = Math.max(5, config.userRolesRefreshIntervalMinutes) * 60_000;
+  eligibilityRefreshTimer = setInterval(() => {
+    refreshUserRolesForGuild(config.discordServerId as string).catch((err) => {
+      console.warn("[eligibility] scheduled refresh failed", err);
+    });
+  }, intervalMs);
 };
 
 const findPrizeReferences = (prizeId: string, prizes: PrizeRecord[]) =>
@@ -1695,6 +1964,270 @@ app.put("/api/admin/feedback/settings", requireAuth, requireAdmin, async (req, r
     if (freeTextEnabled !== undefined) updatePayload.freeTextEnabled = freeTextEnabled;
     const config = await updateFeedbackConfig(updatePayload);
     return res.json(config);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.get("/auth/discord/admin", requireAuth, requireAdmin, (req, res) => {
+  const sess = req.session as SessionWithVersion | undefined;
+  if (!sess) return res.status(400).send("Session required");
+  const state = createStateToken();
+  const returnTo =
+    typeof req.query.returnTo === "string" ? req.query.returnTo : `${FRONTEND_ORIGIN}/admin/settings`;
+  sess.adminDiscordState = state;
+  sess.adminDiscordUserId = req.user!.id;
+  sess.adminDiscordReturnTo = returnTo;
+  const redirectUri = buildDiscordCallbackUrl("/auth/discord/admin/callback");
+  const params = new URLSearchParams({
+    client_id: DISCORD_CLIENT_ID ?? "",
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: "identify guilds",
+    state,
+  });
+  res.redirect(`https://discord.com/oauth2/authorize?${params.toString()}`);
+});
+
+app.get("/auth/discord/admin/callback", async (req, res, next) => {
+  try {
+    const code = typeof req.query.code === "string" ? req.query.code : "";
+    const state = typeof req.query.state === "string" ? req.query.state : "";
+    const sess = req.session as SessionWithVersion | undefined;
+    if (!code || !state || !sess || state !== sess.adminDiscordState) {
+      return res.status(400).send("Invalid state");
+    }
+    const userId = sess.adminDiscordUserId;
+    const returnTo = sess.adminDiscordReturnTo ?? `${FRONTEND_ORIGIN}/admin/settings`;
+    delete sess.adminDiscordState;
+    delete sess.adminDiscordUserId;
+    delete sess.adminDiscordReturnTo;
+    if (!userId) {
+      return res.status(400).send("Missing user");
+    }
+    const redirectUri = buildDiscordCallbackUrl("/auth/discord/admin/callback");
+    const tokens = await exchangeDiscordCode(code, redirectUri);
+    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+    const updateData: { accessToken: string; expiresAt: Date; refreshToken?: string } = {
+      accessToken: tokens.access_token,
+      expiresAt,
+    };
+    if (tokens.refresh_token) {
+      updateData.refreshToken = tokens.refresh_token;
+    }
+    await prisma.adminDiscordToken.upsert({
+      where: { userId },
+      update: updateData,
+      create: {
+        userId,
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token ?? null,
+        expiresAt,
+      },
+    });
+    return res.redirect(returnTo);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.get("/auth/discord/bot", requireAuth, requireAdmin, (req, res) => {
+  const guildId = typeof req.query.guildId === "string" ? req.query.guildId : "";
+  if (!guildId) return res.status(400).send("Missing guildId");
+  const sess = req.session as SessionWithVersion | undefined;
+  if (!sess) return res.status(400).send("Session required");
+  const state = createStateToken();
+  const returnTo =
+    typeof req.query.returnTo === "string" ? req.query.returnTo : `${FRONTEND_ORIGIN}/admin/settings`;
+  sess.botInviteState = state;
+  sess.botInviteGuildId = guildId;
+  sess.botInviteReturnTo = returnTo;
+  const redirectUri = buildDiscordCallbackUrl("/auth/discord/bot/callback");
+  const params = new URLSearchParams({
+    client_id: appId ?? "",
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: "bot applications.commands",
+    permissions: DISCORD_BOT_PERMISSIONS || "0",
+    guild_id: guildId,
+    disable_guild_select: "true",
+    state,
+  });
+  res.redirect(`https://discord.com/oauth2/authorize?${params.toString()}`);
+});
+
+app.get("/auth/discord/bot/callback", (req, res) => {
+  const state = typeof req.query.state === "string" ? req.query.state : "";
+  const sess = req.session as SessionWithVersion | undefined;
+  if (!sess || !state || state !== sess.botInviteState) {
+    return res.status(400).send("Invalid state");
+  }
+  const returnTo = sess.botInviteReturnTo ?? `${FRONTEND_ORIGIN}/admin/settings`;
+  delete sess.botInviteState;
+  delete sess.botInviteGuildId;
+  delete sess.botInviteReturnTo;
+  return res.redirect(returnTo);
+});
+
+app.get("/api/admin/eligibility", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const config = await getEligibilityConfig();
+    const token = await getAdminDiscordToken(req.user!.id);
+    let guilds: Array<{
+      id: string;
+      name: string;
+      icon?: string | null;
+      owner: boolean;
+      permissions: string;
+      botInstalled: boolean;
+      active: boolean;
+      noAccess?: boolean;
+    }> = [];
+    if (token) {
+      const adminGuilds = await getAdminGuilds(token.accessToken);
+      const botStatuses = await Promise.all(
+        adminGuilds.map(async (guild) => ({
+          id: guild.id,
+          botInstalled: await hasBotAccess(guild.id),
+        })),
+      );
+      guilds = adminGuilds.map((guild) => ({
+        ...guild,
+        botInstalled: botStatuses.find((entry) => entry.id === guild.id)?.botInstalled ?? false,
+        active: config.discordServerId === guild.id,
+      }));
+    }
+    if (config.discordServerId && !guilds.some((guild) => guild.id === config.discordServerId)) {
+      const info = await fetchGuildInfo(config.discordServerId);
+      guilds = [
+        ...guilds,
+        {
+          id: config.discordServerId,
+          name: info?.name ?? "Unknown server",
+          icon: info?.icon ?? null,
+          owner: false,
+          permissions: "0",
+          botInstalled: await hasBotAccess(config.discordServerId),
+          active: true,
+          noAccess: true,
+        },
+      ];
+    }
+    return res.json({
+      config,
+      guilds,
+      connected: Boolean(token),
+      botTokenConfigured: Boolean(DISCORD_BOT_TOKEN),
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.put("/api/admin/eligibility", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const body = req.body as {
+      discordServerId?: unknown;
+      eligibleRoleIds?: unknown;
+      userRolesRefreshIntervalMinutes?: unknown;
+    };
+    const discordServerId =
+      body.discordServerId === null || body.discordServerId === undefined
+        ? null
+        : String(body.discordServerId).trim();
+    const eligibleRoleIds = Array.isArray(body.eligibleRoleIds)
+      ? body.eligibleRoleIds.map((entry) => String(entry)).filter(Boolean)
+      : undefined;
+    let userRolesRefreshIntervalMinutes: number | undefined;
+    if (body.userRolesRefreshIntervalMinutes !== undefined) {
+      const parsed = Number(body.userRolesRefreshIntervalMinutes);
+      if (!Number.isFinite(parsed)) {
+        return res.status(400).json({ error: "invalid_refresh_interval" });
+      }
+      userRolesRefreshIntervalMinutes = Math.max(5, parsed);
+    }
+    const updatePayload: {
+      discordServerId?: string | null;
+      eligibleRoleIds?: string[];
+      userRolesRefreshIntervalMinutes?: number;
+    } = { discordServerId };
+    if (eligibleRoleIds !== undefined) {
+      updatePayload.eligibleRoleIds = eligibleRoleIds;
+    }
+    if (userRolesRefreshIntervalMinutes !== undefined) {
+      updatePayload.userRolesRefreshIntervalMinutes = userRolesRefreshIntervalMinutes;
+    }
+    const updated = await updateEligibilityConfig(updatePayload);
+    await scheduleEligibilityRefresh();
+    return res.json(updated);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.get("/api/admin/eligibility/roles", requireAuth, requireAdmin, async (_req, res, next) => {
+  try {
+    const config = await getEligibilityConfig();
+    if (!config.discordServerId) {
+      return res.status(400).json({ error: "bot_missing_or_inactive_server" });
+    }
+    const roles = await fetchGuildRoles(config.discordServerId);
+    return res.json({ roles: roles.map((role) => ({ id: role.id, name: role.name })) });
+  } catch (err) {
+    if ((err as Error).message === "bot_missing_or_inactive_server") {
+      return res.status(400).json({ error: "bot_missing_or_inactive_server" });
+    }
+    return next(err);
+  }
+});
+
+app.post("/api/admin/eligibility/refresh", requireAuth, requireAdmin, async (_req, res, next) => {
+  try {
+    const config = await getEligibilityConfig();
+    if (!config.discordServerId) {
+      return res.status(400).json({ error: "bot_missing_or_inactive_server" });
+    }
+    await refreshUserRolesForGuild(config.discordServerId);
+    return res.json({ ok: true });
+  } catch (err) {
+    if ((err as Error).message === "bot_missing_or_inactive_server") {
+      return res.status(400).json({ error: "bot_missing_or_inactive_server" });
+    }
+    return next(err);
+  }
+});
+
+app.get("/api/eligibility", requireAuth, async (req, res, next) => {
+  try {
+    const config = await getEligibilityConfig();
+    const checkedAt = req.user?.discordRolesUpdatedAt
+      ? req.user.discordRolesUpdatedAt.toISOString()
+      : null;
+    if (req.user?.isAdmin || req.user?.isSuperAdmin) {
+      return res.json({ eligible: false, reason: "admin_ineligible", checkedAt });
+    }
+    if (!config.discordServerId) {
+      return res.json({ eligible: false, reason: "unknown", checkedAt });
+    }
+    const roles = await prisma.userDiscordRole.findMany({
+      where: { userId: req.user!.id, guildId: config.discordServerId },
+      select: { roleId: true },
+    });
+    if (!checkedAt) {
+      return res.json({ eligible: false, reason: "unknown", checkedAt });
+    }
+    if (roles.length === 0) {
+      return res.json({ eligible: false, reason: "not_in_server", checkedAt });
+    }
+    if (config.eligibleRoleIds.length === 0) {
+      return res.json({ eligible: false, reason: "missing_role", checkedAt });
+    }
+    const roleIds = new Set(roles.map((role) => role.roleId));
+    const eligible = config.eligibleRoleIds.some((roleId) => roleIds.has(roleId));
+    if (!eligible) {
+      return res.json({ eligible: false, reason: "missing_role", checkedAt });
+    }
+    return res.json({ eligible: true, reason: "eligible", checkedAt });
   } catch (err) {
     return next(err);
   }
@@ -3422,18 +3955,19 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: "Internal server error" });
 });
 
-const bootstrapPrizeData = async () => {
+const bootstrapAppData = async () => {
   await ensurePrizeStoreFile();
   await ensureAssetManifest();
+  await scheduleEligibilityRefresh();
 };
 
-bootstrapPrizeData()
+bootstrapAppData()
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Backend listening on http://localhost:${PORT}`);
     });
   })
   .catch((err) => {
-    console.error("[bootstrap] Failed to initialize prize data:", err);
+    console.error("[bootstrap] Failed to initialize app data:", err);
     process.exit(1);
   });

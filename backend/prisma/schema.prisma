@@ -11,36 +11,74 @@ generator client {
 }
 
 model User {
-  id             String        @id @map("discord_id")
-  username       String
-  globalName     String?
-  avatar         String?
-  locale         String        @default("en")
-  mode           String        @default("NORMAL") // "NORMAL" | "VETERAN"
-  creatureSwap   Boolean       @default(false)
-  isAdmin        Boolean       @default(false)
-  isSuperAdmin   Boolean       @default(false)
-  hasSubmittedFeedback Boolean @default(false)
-  sessionVersion Int           @default(1)
-  stateVersion   Int           @default(1)
-  lastSolvedDay  Int           @default(0)
-  lastSolvedAt   DateTime?
-  lastDowngradedAt DateTime?
-  lastDowngradedFromDay Int    @default(0)
-  introCompleted Boolean       @default(false)
-  lastLoginAt    DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                    String             @id @map("discord_id")
+  username              String
+  globalName            String?
+  avatar                String?
+  locale                String             @default("en")
+  mode                  String             @default("NORMAL") // "NORMAL" | "VETERAN"
+  creatureSwap          Boolean            @default(false)
+  isAdmin               Boolean            @default(false)
+  isSuperAdmin          Boolean            @default(false)
+  hasSubmittedFeedback  Boolean            @default(false)
+  sessionVersion        Int                @default(1)
+  stateVersion          Int                @default(1)
+  lastSolvedDay         Int                @default(0)
+  lastSolvedAt          DateTime?
+  lastDowngradedAt      DateTime?
+  lastDowngradedFromDay Int                @default(0)
+  introCompleted        Boolean            @default(false)
+  lastLoginAt           DateTime?
+  discordRolesUpdatedAt DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  discordRoles          UserDiscordRole[]
+  adminDiscordToken     AdminDiscordToken?
 }
 
 model AppState {
-  id          Int      @id
-  unlockedDay Int      @default(0)
-  feedbackEnabled Boolean @default(true)
-  feedbackEndsAt DateTime?
-  feedbackFreeTextEnabled Boolean @default(true)
-  updatedAt   DateTime @updatedAt
-  updatedBy   String?
+  id                      Int       @id
+  unlockedDay             Int       @default(0)
+  feedbackEnabled         Boolean   @default(true)
+  feedbackEndsAt          DateTime?
+  feedbackFreeTextEnabled Boolean   @default(true)
+  updatedAt               DateTime  @updatedAt
+  updatedBy               String?
+}
+
+model EventConfig {
+  id                              Int      @id
+  discordServerId                 String?
+  eligibleRoleIds                 String
+  userRolesRefreshIntervalMinutes Int      @default(60)
+  createdAt                       DateTime @default(now())
+  updatedAt                       DateTime @updatedAt
+}
+
+model UserDiscordRole {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  guildId   String
+  roleId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, guildId, roleId])
+  @@index([userId])
+  @@index([guildId])
+  @@index([roleId])
+}
+
+model AdminDiscordToken {
+  userId       String   @id
+  accessToken  String
+  expiresAt    DateTime
+  refreshToken String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Feedback {

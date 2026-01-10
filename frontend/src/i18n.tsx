@@ -74,6 +74,16 @@ type TranslationKey =
   | "prizesBannerCta"
   | "prizeStatusEnded"
   | "prizeStatusPending"
+  | "eligibilityTitle"
+  | "eligibilitySubtitle"
+  | "eligibilityEligible"
+  | "eligibilityAdminIneligible"
+  | "eligibilityNotLinked"
+  | "eligibilityNotInServer"
+  | "eligibilityMissingRole"
+  | "eligibilityUnknown"
+  | "eligibilityCheckedAt"
+  | "eligibilityCheckedAtMissing"
   | "feedbackBannerTitle"
   | "feedbackTitle"
   | "feedbackSubtitle"
@@ -240,6 +250,16 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     prizesBannerCta: "Open",
     prizeStatusEnded: "Prizes ended for this pool because you completed after the cutoff.",
     prizeStatusPending: "Prize draw not published yet.",
+    eligibilityTitle: "Prize eligibility",
+    eligibilitySubtitle: "Status based on your Discord roles.",
+    eligibilityEligible: "You are eligible for prizes.",
+    eligibilityAdminIneligible: "Admins are not eligible for prizes.",
+    eligibilityNotLinked: "Your Discord account is not linked.",
+    eligibilityNotInServer: "You are not in the eligible Discord server.",
+    eligibilityMissingRole: "You do not have any eligible roles yet.",
+    eligibilityUnknown: "Eligibility could not be determined yet.",
+    eligibilityCheckedAt: "Last checked: {date}",
+    eligibilityCheckedAtMissing: "Last checked: unavailable",
     feedbackBannerTitle: "Feedback is open",
     feedbackTitle: "Event feedback",
     feedbackSubtitle: "Tell us how you felt about Arsvent 2025. One response per account.",
@@ -404,6 +424,16 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     prizesBannerCta: "Öffnen",
     prizeStatusEnded: "Preise sind für diesen Pool beendet, weil du nach dem Stichtag abgeschlossen hast.",
     prizeStatusPending: "Die Ziehung ist noch nicht veröffentlicht.",
+    eligibilityTitle: "Preisberechtigung",
+    eligibilitySubtitle: "Status basierend auf deinen Discord-Rollen.",
+    eligibilityEligible: "Du bist für Preise berechtigt.",
+    eligibilityAdminIneligible: "Admins sind nicht für Preise berechtigt.",
+    eligibilityNotLinked: "Dein Discord-Konto ist nicht verknüpft.",
+    eligibilityNotInServer: "Du bist nicht auf dem berechtigten Discord-Server.",
+    eligibilityMissingRole: "Du hast noch keine berechtigte Rolle.",
+    eligibilityUnknown: "Die Berechtigung konnte noch nicht ermittelt werden.",
+    eligibilityCheckedAt: "Zuletzt geprüft: {date}",
+    eligibilityCheckedAtMissing: "Zuletzt geprüft: nicht verfügbar",
     feedbackBannerTitle: "Feedback ist offen",
     feedbackTitle: "Event-Feedback",
     feedbackSubtitle: "Sag uns, wie dir Arsvent 2025 gefallen hat. Eine Antwort pro Account.",

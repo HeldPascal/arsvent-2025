@@ -42,8 +42,9 @@ export default function CalendarPage({ user, version }: Props) {
   const prizesAvailable = Boolean(user.prizesAvailable);
   const mainCutoff = poolMeta?.MAIN?.cutoffAt ?? null;
   const veteranCutoff = poolMeta?.VETERAN?.cutoffAt ?? null;
-  const mainEnded = Boolean(mainCutoff && Date.now() > new Date(mainCutoff).getTime());
-  const veteranEnded = Boolean(veteranCutoff && Date.now() > new Date(veteranCutoff).getTime());
+  const now = new Date().getTime();
+  const mainEnded = Boolean(mainCutoff && now > new Date(mainCutoff).getTime());
+  const veteranEnded = Boolean(veteranCutoff && now > new Date(veteranCutoff).getTime());
   const prizesEnded = user.mode === "VETERAN" ? mainEnded && veteranEnded : mainEnded;
   const showPrizesBanner = calendarCompleted && (feedbackOpen || prizesAvailable || prizesEnded);
   const showFeedbackBanner = feedbackOpen;
@@ -78,6 +79,7 @@ export default function CalendarPage({ user, version }: Props) {
       cancelled = true;
     };
   }, []);
+
 
   useEffect(() => {
     let cancelled = false;

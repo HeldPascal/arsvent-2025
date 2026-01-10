@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { User } from "../types";
-import { fetchPublicPrizes, submitFeedback } from "../services/api";
+import { fetchEligibility, fetchPublicPrizes, submitFeedback } from "../services/api";
 import { useI18n } from "../i18n";
-import type { PrizePool, PrizePoolMeta } from "../types";
+import type { EligibilityStatus, PrizePool, PrizePoolMeta } from "../types";
 
 interface Props {
   user: User;
@@ -18,13 +18,15 @@ const feedbackOptions = [
 ] as const;
 
 export default function PrizesPage({ user, onFeedbackSubmitted }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [rating, setRating] = useState<number | null>(null);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [poolMeta, setPoolMeta] = useState<Record<PrizePool, PrizePoolMeta> | null>(null);
   const [prizeLoadError, setPrizeLoadError] = useState<string | null>(null);
+  const [eligibility, setEligibility] = useState<EligibilityStatus | null>(null);
+  const [eligibilityError, setEligibilityError] = useState<string | null>(null);
 
   const feedbackEndsAt = useMemo(
     () => (user.feedbackEndsAt ? new Date(user.feedbackEndsAt) : null),
@@ -57,6 +59,30 @@ export default function PrizesPage({ user, onFeedbackSubmitted }: Props) {
     return t("prizeStatusPending");
   };
 
+  const eligibilityMessage = useMemo(() => {
+    if (!eligibility) return null;
+    if (eligibility.eligible) return t("eligibilityEligible");
+    switch (eligibility.reason) {
+      case "admin_ineligible":
+        return t("eligibilityAdminIneligible");
+      case "not_linked":
+        return t("eligibilityNotLinked");
+      case "not_in_server":
+        return t("eligibilityNotInServer");
+      case "missing_role":
+        return t("eligibilityMissingRole");
+      default:
+        return t("eligibilityUnknown");
+    }
+  }, [eligibility, t]);
+
+  const eligibilityCheckedAt = useMemo(() => {
+    if (!eligibility?.checkedAt) return t("eligibilityCheckedAtMissing");
+    const date = new Date(eligibility.checkedAt);
+    if (Number.isNaN(date.getTime())) return t("eligibilityCheckedAtMissing");
+    return t("eligibilityCheckedAt", { date: date.toLocaleString(locale) });
+  }, [eligibility?.checkedAt, locale, t]);
+
   useEffect(() => {
     let cancelled = false;
     fetchPublicPrizes()
@@ -73,6 +99,27 @@ export default function PrizesPage({ user, onFeedbackSubmitted }: Props) {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!calendarCompleted) {
+      setEligibility(null);
+      return;
+    }
+    let cancelled = false;
+    setEligibilityError(null);
+    fetchEligibility()
+      .then((payload) => {
+        if (cancelled) return;
+        setEligibility(payload);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setEligibilityError((err as Error).message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [calendarCompleted]);
 
   const sendToast = (key: string) => {
     window.dispatchEvent(new CustomEvent("app:toast", { detail: { type: "success", key } }));
@@ -106,7 +153,6 @@ export default function PrizesPage({ user, onFeedbackSubmitted }: Props) {
       <div className="panel">
         <header className="panel-header">
           <div>
-            <div className="eyebrow">{t("feedbackTitle")}</div>
             <h2>{t("feedbackTitle")}</h2>
             <p className="muted">{t("feedbackSubtitle")}</p>
           </div>
@@ -172,12 +218,20 @@ export default function PrizesPage({ user, onFeedbackSubmitted }: Props) {
       </div>
 
       <div className="panel">
-        <h3>{t("prizeSectionTitle")}</h3>
+        <h2>{t("prizeSectionTitle")}</h2>
         {!calendarCompleted ? (
           <p className="muted">{t("prizeSectionBodyLocked")}</p>
         ) : (
           <>
             {prizeLoadError && <p className="error">{prizeLoadError}</p>}
+            {eligibilityError && <p className="error">{eligibilityError}</p>}
+            {eligibilityMessage && (
+              <div className="panel subpanel prize-eligibility">
+                <div className="eyebrow">{t("eligibilityTitle")}</div>
+                <p>{eligibilityMessage}</p>
+                <p className="muted small">{eligibilityCheckedAt}</p>
+              </div>
+            )}
             <div className="prize-status-grid">
               {poolOrder.map((pool) => (
                 <div key={pool} className="panel subpanel">
