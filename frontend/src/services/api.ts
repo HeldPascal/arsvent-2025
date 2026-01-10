@@ -1,4 +1,7 @@
 import type {
+  AdminAsset,
+  AdminPrize,
+  AdminPrizeStore,
   AdminOverview,
   AdminVersionResponse,
   AdminContentDayDetail,
@@ -13,22 +16,65 @@ import type {
   InventoryResponse,
   Locale,
   Mode,
+  PrizePoolMeta,
+  PublicPrize,
   RiddleAnswerPayload,
   User,
 } from "../types";
 
 const BASE = import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") ?? "";
 
-type ApiError = Error & { status?: number };
+type ApiError = Error & { status?: number; payload?: unknown };
+
+const isFormData = (body: unknown): body is FormData => typeof FormData !== "undefined" && body instanceof FormData;
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  let res: Response;
+  try {
+    const headers = isFormData(options?.body)
+      ? { ...(options?.headers ?? {}) }
+      : {
+          "Content-Type": "application/json",
+          ...(options?.headers ?? {}),
+        };
+    res = await fetch(`${BASE}${path}`, {
+      ...options,
+      credentials: "include",
+      headers,
+    });
+  } catch (err) {
+    const error = new Error("Network request failed") as ApiError;
+    error.cause = err;
+    throw error;
+  }
+
+  if (!res.ok) {
+    let message = `Request failed: ${res.status}`;
+    let payload: unknown;
+    try {
+      const data = await res.json();
+      if (typeof data?.error === "string") {
+        message = data.error;
+      }
+      payload = data;
+    } catch {
+      // ignore parse errors
+    }
+    const error = new Error(message) as ApiError;
+    error.status = res.status;
+    error.payload = payload;
+    throw error;
+  }
+  return res.json() as Promise<T>;
+}
+
+async function apiFetchRaw(path: string, options?: RequestInit): Promise<Blob> {
   let res: Response;
   try {
     res = await fetch(`${BASE}${path}`, {
       ...options,
       credentials: "include",
       headers: {
-        "Content-Type": "application/json",
         ...(options?.headers ?? {}),
       },
     });
@@ -52,7 +98,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     error.status = res.status;
     throw error;
   }
-  return res.json() as Promise<T>;
+  return res.blob();
 }
 
 export const fetchMe = () => apiFetch<User>("/api/auth/me");
@@ -265,6 +311,79 @@ export const fetchAdminContentDay = (day: number, locale: Locale, mode: Mode) =>
   apiFetch<AdminContentDayDetail>(
     `/api/admin/content/day?day=${day}&locale=${locale}&mode=${mode}`,
   );
+
+export const fetchAdminPrizes = () => apiFetch<AdminPrizeStore>("/api/admin/prizes");
+
+export const createAdminPrize = (payload: AdminPrize) =>
+  apiFetch<AdminPrize>("/api/admin/prizes", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+export const updateAdminPrize = (id: string, payload: Partial<AdminPrize>) =>
+  apiFetch<AdminPrize>(`/api/admin/prizes/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+
+export const deleteAdminPrize = (id: string) =>
+  apiFetch<{ ok: true }>(`/api/admin/prizes/${id}`, { method: "DELETE" });
+
+export const updatePrizePools = (payload: Record<string, PrizePoolMeta>) =>
+  apiFetch<Record<string, PrizePoolMeta>>("/api/admin/prizes/pools", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+
+export const importPrizesYaml = (file: File) => {
+  const body = new FormData();
+  body.append("file", file);
+  return apiFetch<AdminPrizeStore>("/api/admin/prizes/import", {
+    method: "POST",
+    body,
+  });
+};
+
+export const exportPrizesYaml = () => apiFetchRaw("/api/admin/prizes/export");
+
+export const fetchAdminAssets = () => apiFetch<{ assets: AdminAsset[] }>("/api/admin/assets");
+
+export const uploadAdminAsset = (
+  file: File,
+  fields?: { id?: string; name?: string; confirmDuplicate?: boolean },
+) => {
+  const body = new FormData();
+  body.append("file", file);
+  if (fields?.id) body.append("id", fields.id);
+  if (fields?.name) body.append("name", fields.name);
+  if (fields?.confirmDuplicate) body.append("confirmDuplicate", "true");
+  return apiFetch<{ asset: AdminAsset; url: string }>("/api/admin/assets", {
+    method: "POST",
+    body,
+  });
+};
+
+export const uploadAdminAssetsBulk = (files: File[], confirmDuplicate = false) => {
+  const body = new FormData();
+  files.forEach((file) => body.append("files", file));
+  if (confirmDuplicate) body.append("confirmDuplicate", "true");
+  return apiFetch<{ assets: AdminAsset[] }>("/api/admin/assets/bulk", {
+    method: "POST",
+    body,
+  });
+};
+
+export const updateAdminAsset = (id: string, payload: { id?: string; name?: string }) =>
+  apiFetch<{ asset: AdminAsset; updatedReferences?: string[] }>(`/api/admin/assets/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+
+export const deleteAdminAsset = (id: string) =>
+  apiFetch<{ ok: true }>(`/api/admin/assets/${id}`, { method: "DELETE" });
+
+export const fetchPublicPrizes = () =>
+  apiFetch<{ pools: Record<string, PrizePoolMeta>; prizes: PublicPrize[] }>("/api/prizes");
 
 export const fetchAudit = (limit?: number) =>
   apiFetch<AdminOverview["recentAudit"] extends Array<infer T> ? T[] : never>(

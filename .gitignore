@@ -28,6 +28,7 @@ backend/*.sqlite-journal
 backend/prisma/*.db
 backend/prisma/*.db-journal
 backend/content/.webp-cache/
+backend/data/
 
 # Frontend
 frontend/dist/

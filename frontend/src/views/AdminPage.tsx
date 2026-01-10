@@ -21,6 +21,7 @@ import {
   deleteAuditEntry,
   fetchAdminFeedback,
   fetchAdminOverview,
+  fetchAdminPrizes,
   fetchAdminVersion,
   fetchAdminUsers,
   fetchAudit,
@@ -53,6 +54,13 @@ export default function AdminPage({ user }: Props) {
   const [versionLoading, setVersionLoading] = useState(false);
   const [feedbackSummary, setFeedbackSummary] = useState<AdminFeedbackSummary | null>(null);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [prizeSummary, setPrizeSummary] = useState<{
+    total: number;
+    active: number;
+    main: number;
+    veteran: number;
+  } | null>(null);
+  const [prizeLoading, setPrizeLoading] = useState(false);
   const { t } = useI18n();
   const navigate = useNavigate();
   const contentLimit =
@@ -159,13 +167,35 @@ export default function AdminPage({ user }: Props) {
     [],
   );
 
+  const loadPrizeSummary = useCallback(
+    async (showLoader = false) => {
+      if (showLoader) setPrizeLoading(true);
+      try {
+        const store = await fetchAdminPrizes();
+        const active = store.prizes.filter((prize) => prize.isActive);
+        setPrizeSummary({
+          total: store.prizes.length,
+          active: active.length,
+          main: active.filter((prize) => prize.pool === "MAIN").length,
+          veteran: active.filter((prize) => prize.pool === "VETERAN").length,
+        });
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        if (showLoader) setPrizeLoading(false);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     loadData(true);
     loadAudit(auditLimit);
     loadContentDiagnostics(true);
     loadVersion(true);
     loadFeedback(true);
-  }, [loadData, loadAudit, loadContentDiagnostics, loadVersion, loadFeedback]);
+    loadPrizeSummary(true);
+  }, [loadData, loadAudit, loadContentDiagnostics, loadVersion, loadFeedback, loadPrizeSummary, auditLimit]);
 
   useEffect(() => {
     if (overview) {
@@ -182,6 +212,7 @@ export default function AdminPage({ user }: Props) {
         loadContentDiagnostics(false);
         loadVersion(false);
         loadFeedback(false);
+        loadPrizeSummary(false);
       }
     };
     const interval = window.setInterval(refresh, 10000);
@@ -194,7 +225,7 @@ export default function AdminPage({ user }: Props) {
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [auditLimit, loadAudit, loadContentDiagnostics, loadData, loadVersion, loadFeedback]);
+  }, [auditLimit, loadAudit, loadContentDiagnostics, loadData, loadVersion, loadFeedback, loadPrizeSummary]);
 
   const isSuperAdmin = user.isSuperAdmin;
 
@@ -577,6 +608,25 @@ export default function AdminPage({ user }: Props) {
                 )}
               </>
             )}
+          </div>
+
+          <div className="panel">
+            <h3>Prizes</h3>
+            {prizeLoading && <div className="muted">Loading prize pools…</div>}
+            {!prizeLoading && !prizeSummary && <div className="muted">Prize data unavailable.</div>}
+            {prizeSummary && (
+              <>
+                <div className="muted small" style={{ marginBottom: 8 }}>
+                  Active prizes: {prizeSummary.active} · MAIN {prizeSummary.main} · VETERAN {prizeSummary.veteran}
+                </div>
+                <div className="muted small">Total prizes: {prizeSummary.total}</div>
+              </>
+            )}
+            <div className="panel-actions" style={{ marginTop: 10 }}>
+              <button className="ghost" type="button" onClick={() => navigate("/admin/prizes")}>
+                Manage prizes
+              </button>
+            </div>
           </div>
 
           <div className="panel">

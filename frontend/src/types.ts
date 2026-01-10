@@ -137,6 +137,55 @@ export interface AdminFeedbackSettings {
   emojiScale: number;
 }
 
+export type PrizePool = "MAIN" | "VETERAN";
+
+export interface PrizePoolMeta {
+  cutoffAt: string | null;
+}
+
+export interface AdminPrize {
+  id: string;
+  name: string;
+  description: string;
+  image?: string | null;
+  pool: PrizePool;
+  quantity?: number | null;
+  priority: number;
+  isFiller: boolean;
+  isActive: boolean;
+  backupPrizes?: string[];
+  adminNotes?: string | null;
+}
+
+export interface AdminPrizeStore {
+  pools: Record<PrizePool, PrizePoolMeta>;
+  prizes: AdminPrize[];
+}
+
+export interface PublicPrize {
+  id: string;
+  name: string;
+  description: string;
+  image: string | null;
+  pool: PrizePool;
+  quantity: number | null;
+  isFiller: boolean;
+}
+
+export interface AdminAsset {
+  id: string;
+  name: string;
+  originalName: string;
+  checksum: string;
+  token: string;
+  createdAt: string;
+  variants: Array<{ ext: string; mime: string; size: number }>;
+  baseVariantIndex: number;
+  references: string[];
+  url: string;
+  variantUrls: string[];
+}
+
 export interface DaySummary {
   day: number;
   isAvailable: boolean;

@@ -12,6 +12,8 @@ work stays consistent and repeatable.
 - Data: configurable
 - Maintenance assets: configurable
 - Backups: configurable
+  - Prize data: `backend/data/prizes/prizes.yaml`
+  - Prize assets: `backend/data/assets/` (manifest) + `backend/data/assets/public/` (files)
 
 ### Services and Ports (Docker Compose)
 Defined in `ops/docker-compose.yml`:
@@ -38,6 +40,7 @@ Defined in `ops/docker-compose.yml`:
   - `/` -> `127.0.0.1:4173` (frontend)
   - `/api/` and `/auth/` -> `127.0.0.1:4000` (backend)
   - `/content-asset/` -> backend with cache enabled
+  - `/asset/` -> backend (public prize assets; falls back to backend static handler if no proxy is set)
 - Maintenance mode:
   - Checks `MAINTENANCE_FLAG`
   - Returns 503 and serves `maintenance.html` when enabled (from `MAINTENANCE_DIR`)

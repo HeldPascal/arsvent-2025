@@ -18,6 +18,7 @@ import { fileURLToPath } from "url";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import sharp from "sharp";
+import multer from "multer";
 import { PrismaClient } from "@prisma/client";
 import type { User as PrismaUser } from "@prisma/client";
 import {
@@ -38,6 +39,26 @@ import { maskHtmlAssets, getAssetToken } from "./content/tokens.js";
 import { loadInventory } from "./content/inventory.js";
 import { loadInventoryTags } from "./content/inventory-tags.js";
 import { loadDayInventorySnapshot } from "./content/day-inventory.js";
+import type { PrizePool, PrizeRecord } from "./prizes/store.js";
+import {
+  ensurePrizeStoreFile,
+  loadPrizeStore,
+  savePrizeStore,
+  parsePrizeYaml,
+  serializePrizeStore,
+} from "./prizes/store.js";
+import {
+  buildAssetUrl,
+  deleteAsset,
+  ensureAssetManifest,
+  getAssetsRoot,
+  listAssetsWithReferences,
+  resolveAssetById,
+  resolveAssetUrlById,
+  updateAsset,
+  uploadAsset,
+  uploadAssetsBulk,
+} from "./prizes/assets.js";
 
 dotenv.config();
 
@@ -102,6 +123,8 @@ const superAdminId = SUPER_ADMIN_DISCORD_ID?.trim() || null;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const execFileAsync = promisify(execFile);
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+const assetsRoot = getAssetsRoot();
 
 type VersionPayload = {
   imageTag: string | null;
@@ -367,6 +390,7 @@ if (enableStaticAssets) {
   app.use("/content-assets", express.static(assetsPath));
   app.use("/assets", express.static(assetsPath)); // alias for legacy references
 }
+app.use("/asset", express.static(assetsRoot));
 app.get("/content-asset/:token", async (req, res) => {
   const token = req.params.token;
   if (!token) return res.status(400).end();
@@ -658,6 +682,87 @@ const updateFeedbackConfig = async (payload: {
     data,
   });
   return getFeedbackConfig();
+};
+
+const normalizePrizePool = (value: unknown): PrizePool | null => {
+  const pool = String(value ?? "").trim().toUpperCase();
+  if (pool === "MAIN" || pool === "VETERAN") return pool;
+  return null;
+};
+
+const normalizePrizeId = (value: unknown) => String(value ?? "").trim();
+
+const normalizeStringArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  const normalized = value.map((entry) => normalizePrizeId(entry)).filter(Boolean);
+  return Array.from(new Set(normalized));
+};
+
+const normalizeOptionalString = (value: unknown): string | null => {
+  if (value === null || value === undefined) return null;
+  const trimmed = String(value).trim();
+  return trimmed.length ? trimmed : null;
+};
+
+const normalizeOptionalInt = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed)) return null;
+  return parsed;
+};
+
+const findPrizeReferences = (prizeId: string, prizes: PrizeRecord[]) =>
+  prizes.filter((prize) => prize.backupPrizes?.includes(prizeId)).map((prize) => prize.id);
+
+const validateBackupPrizeIds = (prize: PrizeRecord, prizes: PrizeRecord[]) => {
+  const backupIds = prize.backupPrizes ?? [];
+  const errors: string[] = [];
+  const seen = new Set<string>();
+  for (const id of backupIds) {
+    if (seen.has(id)) {
+      errors.push(`Duplicate backup prize id: ${id}`);
+      continue;
+    }
+    seen.add(id);
+    if (id === prize.id) {
+      errors.push(`Backup prize cannot reference itself (${id}).`);
+      continue;
+    }
+    const target = prizes.find((entry) => entry.id === id);
+    if (!target) {
+      errors.push(`Backup prize not found: ${id}`);
+      continue;
+    }
+    if (target.pool !== prize.pool) {
+      errors.push(`Backup prize ${id} must be in pool ${prize.pool}.`);
+      continue;
+    }
+    if (!target.isActive) {
+      errors.push(`Backup prize ${id} must be active.`);
+    }
+  }
+  return errors;
+};
+
+const validatePrizeStore = async (store: { prizes: PrizeRecord[] }) => {
+  const errors: string[] = [];
+  const ids = new Set<string>();
+  for (const prize of store.prizes) {
+    if (ids.has(prize.id)) {
+      errors.push(`Duplicate prize id: ${prize.id}`);
+    } else {
+      ids.add(prize.id);
+    }
+  }
+  for (const prize of store.prizes) {
+    const backupErrors = validateBackupPrizeIds(prize, store.prizes);
+    errors.push(...backupErrors);
+    if (prize.image) {
+      const asset = await resolveAssetById(prize.image);
+      if (!asset) errors.push(`Image asset not found for prize ${prize.id}: ${prize.image}`);
+    }
+  }
+  return errors;
 };
 
 type ProgressScope = "default" | "preview";
@@ -1590,6 +1695,393 @@ app.put("/api/admin/feedback/settings", requireAuth, requireAdmin, async (req, r
     if (freeTextEnabled !== undefined) updatePayload.freeTextEnabled = freeTextEnabled;
     const config = await updateFeedbackConfig(updatePayload);
     return res.json(config);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.get("/api/admin/prizes", requireAuth, requireAdmin, async (_req, res, next) => {
+  try {
+    const store = await loadPrizeStore();
+    return res.json(store);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.post("/api/admin/prizes", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const body = req.body as Record<string, unknown>;
+    const id = normalizePrizeId(body.id);
+    if (!id) return res.status(400).json({ error: "invalid_prize_id" });
+
+    const pool = normalizePrizePool(body.pool);
+    if (!pool) return res.status(400).json({ error: "invalid_prize_pool" });
+
+    const store = await loadPrizeStore();
+    if (store.prizes.some((prize) => prize.id === id)) {
+      return res.status(400).json({ error: "prize_id_exists" });
+    }
+
+    const name = normalizePrizeId(body.name) || id;
+    const description = normalizePrizeId(body.description);
+    const image = normalizeOptionalString(body.image);
+    const quantity = normalizeOptionalInt(body.quantity);
+    if (quantity !== null && quantity < 1) {
+      return res.status(400).json({ error: "invalid_prize_quantity" });
+    }
+    const priority = normalizeOptionalInt(body.priority);
+    if (priority === null) {
+      return res.status(400).json({ error: "invalid_prize_priority" });
+    }
+    const isFiller = typeof body.isFiller === "boolean" ? body.isFiller : false;
+    const isActive = typeof body.isActive === "boolean" ? body.isActive : true;
+    const backupPrizes = normalizeStringArray(body.backupPrizes);
+    const adminNotes = normalizeOptionalString(body.adminNotes);
+
+    if (image) {
+      const asset = await resolveAssetById(image);
+      if (!asset) return res.status(400).json({ error: "invalid_prize_image" });
+    }
+
+    const prize: PrizeRecord = {
+      id,
+      name,
+      description,
+      image,
+      pool,
+      quantity,
+      priority,
+      isFiller,
+      isActive,
+      backupPrizes,
+      adminNotes,
+    };
+
+    const backupErrors = validateBackupPrizeIds(prize, store.prizes);
+    if (backupErrors.length) {
+      return res.status(400).json({ error: "invalid_backup_prize", details: backupErrors });
+    }
+
+    store.prizes.push(prize);
+    await savePrizeStore(store);
+    return res.status(201).json(prize);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.patch("/api/admin/prizes/pools", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const body = req.body as {
+      MAIN?: { cutoffAt?: unknown };
+      VETERAN?: { cutoffAt?: unknown };
+    };
+    const store = await loadPrizeStore();
+    const parseCutoff = (value: unknown): { ok: boolean; value: string | null } => {
+      if (value === null || value === undefined || value === "") return { ok: true, value: null };
+      const parsed = new Date(String(value));
+      if (Number.isNaN(parsed.getTime())) return { ok: false, value: null };
+      return { ok: true, value: parsed.toISOString() };
+    };
+    if (body.MAIN && "cutoffAt" in body.MAIN) {
+      const parsed = parseCutoff(body.MAIN.cutoffAt);
+      if (!parsed.ok) return res.status(400).json({ error: "invalid_cutoff_at" });
+      store.pools.MAIN.cutoffAt = parsed.value;
+    }
+    if (body.VETERAN && "cutoffAt" in body.VETERAN) {
+      const parsed = parseCutoff(body.VETERAN.cutoffAt);
+      if (!parsed.ok) return res.status(400).json({ error: "invalid_cutoff_at" });
+      store.pools.VETERAN.cutoffAt = parsed.value;
+    }
+    await savePrizeStore(store);
+    return res.json(store.pools);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.patch("/api/admin/prizes/:id", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const prizeId = req.params.id;
+    const body = req.body as Record<string, unknown>;
+    const store = await loadPrizeStore();
+    const index = store.prizes.findIndex((prize) => prize.id === prizeId);
+    if (index < 0) return res.status(404).json({ error: "prize_not_found" });
+    const current = store.prizes[index];
+    if (!current) return res.status(404).json({ error: "prize_not_found" });
+
+    const pool = body.pool !== undefined ? normalizePrizePool(body.pool) : current.pool;
+    if (!pool) return res.status(400).json({ error: "invalid_prize_pool" });
+    const name = body.name !== undefined ? normalizePrizeId(body.name) : current.name;
+    const description = body.description !== undefined ? normalizePrizeId(body.description) : current.description;
+    const image =
+      body.image !== undefined ? normalizeOptionalString(body.image) : current.image ?? null;
+    const quantity =
+      body.quantity !== undefined ? normalizeOptionalInt(body.quantity) : current.quantity ?? null;
+    if (quantity !== null && quantity < 1) {
+      return res.status(400).json({ error: "invalid_prize_quantity" });
+    }
+    const priority =
+      body.priority !== undefined ? normalizeOptionalInt(body.priority) : current.priority;
+    if (priority === null) {
+      return res.status(400).json({ error: "invalid_prize_priority" });
+    }
+    const isFiller = typeof body.isFiller === "boolean" ? body.isFiller : current.isFiller;
+    const isActive = typeof body.isActive === "boolean" ? body.isActive : current.isActive;
+    const backupPrizes =
+      body.backupPrizes !== undefined ? normalizeStringArray(body.backupPrizes) : current.backupPrizes ?? [];
+    const adminNotes =
+      body.adminNotes !== undefined ? normalizeOptionalString(body.adminNotes) : current.adminNotes ?? null;
+
+    if (image) {
+      const asset = await resolveAssetById(image);
+      if (!asset) return res.status(400).json({ error: "invalid_prize_image" });
+    }
+
+    const nextPrize: PrizeRecord = {
+      ...current,
+      pool,
+      name,
+      description,
+      image,
+      quantity,
+      priority,
+      isFiller,
+      isActive,
+      backupPrizes,
+      adminNotes,
+    };
+
+    const backupErrors = validateBackupPrizeIds(nextPrize, store.prizes);
+    if (backupErrors.length) {
+      return res.status(400).json({ error: "invalid_backup_prize", details: backupErrors });
+    }
+
+    if (!nextPrize.isActive) {
+      const refs = findPrizeReferences(nextPrize.id, store.prizes);
+      if (refs.length) {
+        return res.status(400).json({ error: "prize_referenced", references: refs });
+      }
+    }
+
+    store.prizes[index] = nextPrize;
+    await savePrizeStore(store);
+    return res.json(nextPrize);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.delete("/api/admin/prizes/:id", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const prizeId = req.params.id;
+    const store = await loadPrizeStore();
+    const index = store.prizes.findIndex((prize) => prize.id === prizeId);
+    if (index < 0) return res.status(404).json({ error: "prize_not_found" });
+    const prize = store.prizes[index];
+    if (!prize) return res.status(404).json({ error: "prize_not_found" });
+    if (prize.isActive) {
+      return res.status(400).json({ error: "prize_must_be_inactive" });
+    }
+    const refs = findPrizeReferences(prize.id, store.prizes);
+    if (refs.length) {
+      return res.status(400).json({ error: "prize_referenced", references: refs });
+    }
+    store.prizes.splice(index, 1);
+    await savePrizeStore(store);
+    return res.json({ ok: true });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.get("/api/admin/prizes/export", requireAuth, requireAdmin, async (_req, res, next) => {
+  try {
+    const store = await loadPrizeStore();
+    const payload = serializePrizeStore(store);
+    res.setHeader("Content-Type", "text/yaml; charset=utf-8");
+    res.setHeader("Content-Disposition", "attachment; filename=prizes.yaml");
+    return res.send(payload);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.post(
+  "/api/admin/prizes/import",
+  requireAuth,
+  requireAdmin,
+  upload.single("file"),
+  async (req, res, next) => {
+    try {
+      const file = req.file;
+      if (!file) return res.status(400).json({ error: "missing_file" });
+      const raw = file.buffer.toString("utf8");
+      let store;
+      try {
+        store = parsePrizeYaml(raw);
+      } catch (err) {
+        if ((err as Error).message === "invalid_prize_yaml") {
+          return res.status(400).json({ error: "invalid_prize_yaml" });
+        }
+        throw err;
+      }
+      const validationErrors = await validatePrizeStore(store);
+      if (validationErrors.length) {
+        return res.status(400).json({ error: "invalid_prize_yaml", details: validationErrors });
+      }
+      await savePrizeStore(store);
+      return res.json(store);
+    } catch (err) {
+      return next(err);
+    }
+  },
+);
+
+app.get("/api/admin/assets", requireAuth, requireAdmin, async (_req, res, next) => {
+  try {
+    const assets = await listAssetsWithReferences();
+    return res.json({ assets });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.post(
+  "/api/admin/assets",
+  requireAuth,
+  requireAdmin,
+  upload.single("file"),
+  async (req, res, next) => {
+    try {
+      const file = req.file;
+      if (!file) return res.status(400).json({ error: "missing_file" });
+      const confirmDuplicate = req.body?.confirmDuplicate === "true";
+      const { asset, warning } = await uploadAsset({
+        buffer: file.buffer,
+        originalName: file.originalname,
+        mime: file.mimetype,
+        name: req.body?.name,
+        id: req.body?.id,
+        confirmDuplicate,
+      });
+      if (warning) {
+        return res.status(409).json({ error: "asset_checksum_match", warning });
+      }
+      return res.status(201).json({ asset, url: buildAssetUrl(asset) });
+    } catch (err) {
+      if ((err as Error).message === "asset_exists") {
+        return res.status(409).json({ error: "asset_exists" });
+      }
+      if ((err as Error).message === "file_too_large") {
+        return res.status(400).json({ error: "asset_too_large" });
+      }
+      if ((err as Error).message === "unsupported_type") {
+        return res.status(400).json({ error: "unsupported_type" });
+      }
+      if ((err as Error).message === "asset_id_exists") {
+        return res.status(400).json({ error: "asset_id_exists" });
+      }
+      return next(err);
+    }
+  },
+);
+
+app.post(
+  "/api/admin/assets/bulk",
+  requireAuth,
+  requireAdmin,
+  upload.array("files"),
+  async (req, res, next) => {
+    try {
+      const files = req.files as Express.Multer.File[] | undefined;
+      if (!files?.length) return res.status(400).json({ error: "missing_files" });
+      const confirmDuplicate = req.body?.confirmDuplicate === "true";
+      const inputs = files.map((file) => ({
+        buffer: file.buffer,
+        originalName: file.originalname,
+        mime: file.mimetype,
+        name: file.originalname,
+      }));
+      const { assets, warning } = await uploadAssetsBulk(inputs, confirmDuplicate);
+      if (warning) {
+        return res.status(409).json({ error: "asset_checksum_match", warning });
+      }
+      return res.status(201).json({ assets });
+    } catch (err) {
+      if ((err as Error).message === "asset_exists") {
+        return res.status(409).json({ error: "asset_exists" });
+      }
+      if ((err as Error).message === "unsupported_type") {
+        return res.status(400).json({ error: "unsupported_type" });
+      }
+      return next(err);
+    }
+  },
+);
+
+app.patch("/api/admin/assets/:id", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const assetId = req.params.id;
+    if (!assetId) return res.status(400).json({ error: "asset_id_required" });
+    const body = req.body as { id?: unknown; name?: unknown };
+    const id = body.id !== undefined ? normalizePrizeId(body.id) : undefined;
+    const name = body.name !== undefined ? normalizeOptionalString(body.name) : undefined;
+    const updatePayload: { id?: string; name?: string } = {};
+    if (id !== undefined) updatePayload.id = id;
+    if (name !== undefined) updatePayload.name = name ?? "";
+    const result = await updateAsset(assetId, updatePayload);
+    if (!result) return res.status(404).json({ error: "asset_not_found" });
+    return res.json(result);
+  } catch (err) {
+    if ((err as Error).message === "asset_id_exists") {
+      return res.status(400).json({ error: "asset_id_exists" });
+    }
+    if ((err as Error).message === "invalid_asset_id") {
+      return res.status(400).json({ error: "invalid_asset_id" });
+    }
+    return next(err);
+  }
+});
+
+app.delete("/api/admin/assets/:id", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const assetId = req.params.id;
+    if (!assetId) return res.status(400).json({ error: "asset_id_required" });
+    const deleted = await deleteAsset(assetId);
+    if (!deleted) return res.status(404).json({ error: "asset_not_found" });
+    return res.json({ ok: true });
+  } catch (err) {
+    if ((err as Error).message === "asset_in_use") {
+      const refs = (err as Error & { references?: string[] }).references ?? [];
+      return res.status(409).json({ error: "asset_in_use", references: refs });
+    }
+    return next(err);
+  }
+});
+
+app.get("/api/prizes", async (_req, res, next) => {
+  try {
+    const store = await loadPrizeStore();
+    const active = store.prizes.filter((prize) => prize.isActive);
+    const publicPrizes = await Promise.all(
+      active
+        .sort((a, b) => a.priority - b.priority)
+        .map(async (prize) => ({
+          id: prize.id,
+          name: prize.name,
+          description: prize.description,
+          image: prize.image ? await resolveAssetUrlById(prize.image) : null,
+          pool: prize.pool,
+          quantity: prize.quantity ?? null,
+          isFiller: prize.isFiller,
+        })),
+    );
+    return res.json({
+      pools: store.pools,
+      prizes: publicPrizes,
+    });
   } catch (err) {
     return next(err);
   }
@@ -2930,6 +3422,18 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: "Internal server error" });
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend listening on http://localhost:${PORT}`);
-});
+const bootstrapPrizeData = async () => {
+  await ensurePrizeStoreFile();
+  await ensureAssetManifest();
+};
+
+bootstrapPrizeData()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Backend listening on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("[bootstrap] Failed to initialize prize data:", err);
+    process.exit(1);
+  });

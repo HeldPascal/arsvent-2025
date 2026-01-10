@@ -13,6 +13,8 @@ import AdminAssetsBrowser from "./views/AdminAssetsBrowser";
 import AdminInventoryBrowser from "./views/AdminInventoryBrowser";
 import AdminTestPage from "./views/AdminTestPage";
 import AdminSettingsPage from "./views/AdminSettingsPage";
+import AdminPrizesPage from "./views/AdminPrizesPage";
+import AdminAssetsPage from "./views/AdminAssetsPage";
 import { fetchMe, updateLocale as apiUpdateLocale } from "./services/api";
 import type { Locale, User } from "./types";
 import Layout from "./views/Layout";
@@ -348,6 +350,38 @@ export default function AppRouter() {
               user ? (
                 user.isAdmin || user.isSuperAdmin ? (
                   <AdminSettingsPage />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              ) : loading ? (
+                <div className="panel">Loading…</div>
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/admin/prizes"
+            element={
+              user ? (
+                user.isAdmin || user.isSuperAdmin ? (
+                  <AdminPrizesPage />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              ) : loading ? (
+                <div className="panel">Loading…</div>
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/admin/assets"
+            element={
+              user ? (
+                user.isAdmin || user.isSuperAdmin ? (
+                  <AdminAssetsPage />
                 ) : (
                   <Navigate to="/" replace />
                 )

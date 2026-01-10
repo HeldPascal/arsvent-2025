@@ -1,3 +1,5 @@
+import Modal from "./Modal";
+
 interface Props {
   message: string;
   confirmLabel?: string;
@@ -7,19 +9,20 @@ interface Props {
 }
 
 export default function ConfirmDialog({ message, confirmLabel = "Confirm", cancelLabel = "Cancel", onConfirm, onCancel }: Props) {
+  const messageId = "confirm-dialog-message";
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true">
-      <div className="modal">
-        <p className="modal-message">{message}</p>
-        <div className="modal-actions">
-          <button className="ghost" type="button" onClick={onCancel}>
-            {cancelLabel}
-          </button>
-          <button className="primary" type="button" onClick={onConfirm}>
-            {confirmLabel}
-          </button>
-        </div>
+    <Modal onDismiss={onCancel} ariaLabel="Confirmation" ariaDescribedBy={messageId}>
+      <p className="modal-message" id={messageId}>
+        {message}
+      </p>
+      <div className="modal-actions">
+        <button className="ghost" type="button" onClick={onCancel}>
+          {cancelLabel}
+        </button>
+        <button className="primary" type="button" onClick={onConfirm}>
+          {confirmLabel}
+        </button>
       </div>
-    </div>
+    </Modal>
   );
 }
