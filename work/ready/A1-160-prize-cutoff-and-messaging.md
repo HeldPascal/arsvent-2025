@@ -15,7 +15,7 @@ Clearly communicate prize availability and eligibility to users.
 
 ## Functional Requirements
 - Pool config:
-  - `cutoff_at` per pool (nullable; stored in `data/prizes/prizes.yaml`)
+  - `cutoff_at` per pool (nullable; stored in `backend/data/prizes/prizes.yaml`)
     - `pools.MAIN.cutoff_at` and `pools.VETERAN.cutoff_at` (ISO timestamp)
 - After cutoff:
   - users completing after the pool cutoff are not eligible for that pool

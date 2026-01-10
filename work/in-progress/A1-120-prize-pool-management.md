@@ -21,9 +21,9 @@ Allow admins to define, organize, and maintain prize pools.
   - Source of truth is a YAML file (same pattern as item inventory).
   - Admin UI edits write back to YAML.
   - Admin can import/export the YAML to edit locally.
-  - File path: `data/prizes/prizes.yaml` (relative to app root).
-  - Uploaded prize images are stored under `data/assets/`.
-  - Docker deployments mount `/app/data` so `data/*` persists across restarts and is included in backups.
+  - File path: `backend/data/prizes/prizes.yaml` (relative to repo root).
+  - Uploaded prize images are stored under `backend/data/assets/`.
+  - Docker deployments mount `/app/data` so `backend/data/*` persists across restarts and is included in backups.
   - YAML structure includes pool metadata:
     - `pools.MAIN.cutoff_at` and `pools.VETERAN.cutoff_at` (ISO timestamp, nullable).
 - Asset management:
@@ -33,12 +33,12 @@ Allow admins to define, organize, and maintain prize pools.
     - `POST /api/admin/assets/bulk` (bulk upload)
     - `DELETE /api/admin/assets/:id`
   - Defaults: allow PNG/JPG/WebP, max 5 MB per file.
-  - Assets are stored under `data/assets/` and referenced by relative path.
+  - Assets are stored under `backend/data/assets/public/` and referenced by relative path.
   - Asset metadata:
-    - Each asset has `id`, `name`, `originalName`, `checksum`, `token`, `mime`, `size`, `createdAt`.
+    - Each asset has `id`, `name`, `originalName`, `checksum`, `token`, `createdAt`, `variants`, `baseVariantIndex`.
     - `name` is a display label; `originalName` is the immutable filename used for tokenization.
     - `name` is editable in the UI; `originalName` is not.
-    - If source is PNG/JPG, auto-generate WebP variant; store `variants` list with file paths.
+    - If source is PNG/JPG, auto-generate WebP variant; store `variants` list with `ext`, `mime`, and `size`.
     - Renaming updates `name` only; file paths remain unchanged.
     - `references` list shows where the asset is used (e.g., prize IDs).
     - Asset `id` can be changed; when it is, update all references and warn with a list of affected items.
@@ -46,14 +46,15 @@ Allow admins to define, organize, and maintain prize pools.
   - Upload defaults:
     - Accept file-only uploads; default `name = originalName` and generate `id`.
     - Prompt the admin to adjust `id` and `name` after upload.
+    - Bulk upload warnings are reviewed one file at a time before proceeding.
   - Protection rules:
     - Delete only when `references` is empty.
   - Tokenization:
     - Tokens are derived from original name + checksum.
   - Variants:
-    - One token per variant, derived from the original file.
-    - Store only tokenized filenames for original + variants.
-    - Use `originalName` from the manifest when providing downloads.
+    - Single token per asset, derived from the original file.
+    - Variants store `ext`, `mime`, and `size` (paths are built as `<token>.<ext>`).
+    - `baseVariantIndex` points at the primary variant for `img` fallbacks.
   - Dedupe:
     - Changing original name or content yields a new token.
     - Original name is immutable.
@@ -62,7 +63,7 @@ Allow admins to define, organize, and maintain prize pools.
       - Comparison includes: name, size, mime, token, uploadedAt.
       - User must confirm to continue or cancel.
   - Manifest:
-    - Store under `data/assets/` (e.g., `data/assets/manifest.json`).
+    - Store under `backend/data/assets/` (e.g., `backend/data/assets/manifest.json`).
     - Format is JSON (simple and fast to parse/write).
     - References are computed on demand from all sources (currently prizes).
   - SVG uploads are not allowed.
@@ -71,7 +72,7 @@ Allow admins to define, organize, and maintain prize pools.
     - If `<ext>` is an image type and not WebP, also generate `<token>.webp`.
   - Asset serving:
     - Use `/asset/<token>.<ext>` for public asset URLs.
-    - Proxy serves `data/assets/` directly when available.
+    - Proxy serves `backend/data/assets/public/` directly when available.
     - If proxy is not configured, backend serves `/asset/*` as a fallback.
     - Update ops docs for proxy configuration and the fallback route.
     - Assets are publicly accessible (no auth).
@@ -116,6 +117,7 @@ Allow admins to define, organize, and maintain prize pools.
 - Asset manager UI with upload, bulk upload, and delete
 - Admin routes:
   - `/admin/prizes` for full management
+  - `/admin/assets` for asset management
   - Admin overview includes a prize stats section linking to `/admin/prizes`
 - Pool metadata editing:
   - Admin can edit `cutoff_at` for MAIN and VETERAN pools.
@@ -138,3 +140,9 @@ Allow admins to define, organize, and maintain prize pools.
 ## Notes
 Assume prize count >= eligible users for MAIN pool due to fillers.
 Assignments are created by A1-140 and referenced here for delete constraints.
+
+### Progress Notes
+- Added prize YAML + asset manifest loaders under `backend/src/prizes/`.
+- Created default `backend/data/prizes/prizes.yaml` and `backend/data/assets/manifest.json`.
+- Added `/asset/` fallback route and admin UI for prize/asset management.
+- Added `multer` for multipart asset uploads.
