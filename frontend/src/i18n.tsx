@@ -67,8 +67,13 @@ type TranslationKey =
   | "prizeSectionTitle"
   | "prizeSectionBody"
   | "prizeSectionBodyPending"
+  | "prizeSectionBodyLocked"
   | "prizesBannerTitle"
+  | "prizesBannerEndedTitle"
+  | "prizesBannerEndedSubtitle"
   | "prizesBannerCta"
+  | "prizeStatusEnded"
+  | "prizeStatusPending"
   | "feedbackBannerTitle"
   | "feedbackTitle"
   | "feedbackSubtitle"
@@ -80,6 +85,8 @@ type TranslationKey =
   | "feedbackCommentLabel"
   | "feedbackCommentPlaceholder"
   | "feedbackCharsRemaining"
+  | "feedbackLockedTitle"
+  | "feedbackLockedBody"
   | "feedbackSkip"
   | "feedbackSubmit"
   | "feedbackSubmitted"
@@ -226,8 +233,13 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     prizeSectionTitle: "Prize draws",
     prizeSectionBody: "Draw results will appear here after the draw is published.",
     prizeSectionBodyPending: "Prize results will appear here once a draw is published.",
+    prizeSectionBodyLocked: "Complete the calendar to unlock prize information and eligibility status.",
     prizesBannerTitle: "Prizes are available",
+    prizesBannerEndedTitle: "Prizes have ended",
+    prizesBannerEndedSubtitle: "You can still play, but new prize eligibility has closed.",
     prizesBannerCta: "Open",
+    prizeStatusEnded: "Prizes ended for this pool because you completed after the cutoff.",
+    prizeStatusPending: "Prize draw not published yet.",
     feedbackBannerTitle: "Feedback is open",
     feedbackTitle: "Event feedback",
     feedbackSubtitle: "Tell us how you felt about Arsvent 2025. One response per account.",
@@ -239,6 +251,8 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     feedbackCommentLabel: "Optional comment",
     feedbackCommentPlaceholder: "Share what you liked or what we can improve.",
     feedbackCharsRemaining: "{count} characters left",
+    feedbackLockedTitle: "Feedback opens after completion",
+    feedbackLockedBody: "Finish the full calendar to unlock the feedback form.",
     feedbackSkip: "Skip",
     feedbackSubmit: "Submit feedback",
     feedbackSubmitted: "Feedback submitted.",
@@ -383,8 +397,13 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     prizeSectionTitle: "Preisziehungen",
     prizeSectionBody: "Ziehungsergebnisse erscheinen hier, sobald die Ziehung veröffentlicht ist.",
     prizeSectionBodyPending: "Preisergebnisse erscheinen hier, sobald die Ziehung veröffentlicht ist.",
+    prizeSectionBodyLocked: "Schließe den Kalender ab, um Preisinfos und deine Berechtigung zu sehen.",
     prizesBannerTitle: "Preise sind verfügbar",
+    prizesBannerEndedTitle: "Preise sind beendet",
+    prizesBannerEndedSubtitle: "Du kannst weiter spielen, aber neue Preisberechtigung ist beendet.",
     prizesBannerCta: "Öffnen",
+    prizeStatusEnded: "Preise sind für diesen Pool beendet, weil du nach dem Stichtag abgeschlossen hast.",
+    prizeStatusPending: "Die Ziehung ist noch nicht veröffentlicht.",
     feedbackBannerTitle: "Feedback ist offen",
     feedbackTitle: "Event-Feedback",
     feedbackSubtitle: "Sag uns, wie dir Arsvent 2025 gefallen hat. Eine Antwort pro Account.",
@@ -396,6 +415,8 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     feedbackCommentLabel: "Optionaler Kommentar",
     feedbackCommentPlaceholder: "Teile, was dir gefallen hat oder was wir verbessern können.",
     feedbackCharsRemaining: "Noch {count} Zeichen",
+    feedbackLockedTitle: "Feedback nach Abschluss",
+    feedbackLockedBody: "Schließe den Kalender ab, um das Feedback freizuschalten.",
     feedbackSkip: "Überspringen",
     feedbackSubmit: "Feedback senden",
     feedbackSubmitted: "Feedback gesendet.",

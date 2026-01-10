@@ -4098,6 +4098,12 @@ button.tag-chip {
   margin-top: 18px;
 }
 
+.prize-status-grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
 .asset-actions {
   display: flex;
   flex-wrap: wrap;

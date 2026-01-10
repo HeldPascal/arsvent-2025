@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { fetchDays } from "../services/api";
-import type { DaySummary, Mode, User } from "../types";
+import { fetchDays, fetchPublicPrizes } from "../services/api";
+import type { DaySummary, Mode, PrizePool, PrizePoolMeta, User } from "../types";
 import { useI18n } from "../i18n";
 
 interface Props {
@@ -14,8 +14,10 @@ export default function CalendarPage({ user, version }: Props) {
   const [days, setDays] = useState<DaySummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [poolMeta, setPoolMeta] = useState<Record<PrizePool, PrizePoolMeta> | null>(null);
   const { t } = useI18n();
   const epilogueUnlocked = user.lastSolvedDay >= 24 || user.isAdmin || user.isSuperAdmin;
+  const calendarCompleted = user.lastSolvedDay >= 24;
   const availableRef = useRef<number | null>(null);
   const unlockedRef = useRef<number | null>(null);
 
@@ -38,7 +40,23 @@ export default function CalendarPage({ user, version }: Props) {
 
   const feedbackOpen = Boolean(user.feedbackOpen ?? user.feedbackEnabled) && !user.hasSubmittedFeedback;
   const prizesAvailable = Boolean(user.prizesAvailable);
-  const showPrizesBanner = feedbackOpen || prizesAvailable;
+  const mainCutoff = poolMeta?.MAIN?.cutoffAt ?? null;
+  const veteranCutoff = poolMeta?.VETERAN?.cutoffAt ?? null;
+  const mainEnded = Boolean(mainCutoff && Date.now() > new Date(mainCutoff).getTime());
+  const veteranEnded = Boolean(veteranCutoff && Date.now() > new Date(veteranCutoff).getTime());
+  const prizesEnded = user.mode === "VETERAN" ? mainEnded && veteranEnded : mainEnded;
+  const showPrizesBanner = calendarCompleted && (feedbackOpen || prizesAvailable || prizesEnded);
+  const showFeedbackBanner = feedbackOpen;
+  const bannerTitle = showFeedbackBanner
+    ? t("feedbackBannerTitle")
+    : prizesEnded
+      ? t("prizesBannerEndedTitle")
+      : t("prizesBannerTitle");
+  const bannerSubtitle = showFeedbackBanner
+    ? t("feedbackSubtitle")
+    : prizesEnded
+      ? t("prizesBannerEndedSubtitle")
+      : t("prizesSubtitle");
 
   useEffect(() => {
     fetchDays()
@@ -46,6 +64,20 @@ export default function CalendarPage({ user, version }: Props) {
       .catch(() => setError(t("dayLoadFailed")))
       .finally(() => setLoading(false));
   }, [t, version]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchPublicPrizes()
+      .then((payload) => {
+        if (!cancelled) setPoolMeta(payload.pools as Record<PrizePool, PrizePoolMeta>);
+      })
+      .catch(() => {
+        // ignore banner errors; prizes messaging handled on prizes page
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,8 +120,11 @@ export default function CalendarPage({ user, version }: Props) {
       {showPrizesBanner && (
         <div className="panel notice-banner">
           <div>
-            <strong>{prizesAvailable ? t("prizesBannerTitle") : t("feedbackBannerTitle")}</strong>
-            <div className="muted small">{prizesAvailable ? t("prizesSubtitle") : t("feedbackSubtitle")}</div>
+            <strong>{bannerTitle}</strong>
+            <div className="muted small">{bannerSubtitle}</div>
+            {showFeedbackBanner && prizesEnded && (
+              <div className="muted small">{t("prizesBannerEndedSubtitle")}</div>
+            )}
           </div>
           <Link className="small-btn" to="/prizes">
             {t("prizesBannerCta")}

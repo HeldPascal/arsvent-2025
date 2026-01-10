@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { User } from "../types";
-import { submitFeedback } from "../services/api";
+import { fetchPublicPrizes, submitFeedback } from "../services/api";
 import { useI18n } from "../i18n";
+import type { PrizePool, PrizePoolMeta } from "../types";
 
 interface Props {
   user: User;
@@ -22,6 +23,8 @@ export default function PrizesPage({ user, onFeedbackSubmitted }: Props) {
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [poolMeta, setPoolMeta] = useState<Record<PrizePool, PrizePoolMeta> | null>(null);
+  const [prizeLoadError, setPrizeLoadError] = useState<string | null>(null);
 
   const feedbackEndsAt = useMemo(
     () => (user.feedbackEndsAt ? new Date(user.feedbackEndsAt) : null),
@@ -31,11 +34,45 @@ export default function PrizesPage({ user, onFeedbackSubmitted }: Props) {
     (user.feedbackOpen ?? null) ??
     (Boolean(user.feedbackEnabled) && (!feedbackEndsAt || Date.now() <= feedbackEndsAt.getTime()));
   const freeTextEnabled = user.feedbackFreeTextEnabled ?? true;
-  const needsFeedback = !user.hasSubmittedFeedback && feedbackOpen;
   const commentLimit = 1000;
   const commentRemaining = commentLimit - comment.length;
   const showCommentRemaining = commentRemaining <= 200;
   const prizesAvailable = Boolean(user.prizesAvailable);
+  const lastSolvedAt = useMemo(
+    () => (user.lastSolvedAt ? new Date(user.lastSolvedAt) : null),
+    [user.lastSolvedAt],
+  );
+  const calendarCompleted = user.lastSolvedDay >= 24;
+  const needsFeedback = calendarCompleted && !user.hasSubmittedFeedback && feedbackOpen;
+  const poolOrder: PrizePool[] = ["MAIN", "VETERAN"];
+
+  const parseCutoff = (value: string | null) => (value ? new Date(value) : null);
+  const isCutoffPassed = (cutoff: Date | null, solvedAt: Date | null) =>
+    Boolean(cutoff && solvedAt && solvedAt.getTime() > cutoff.getTime());
+
+  const prizeStatusMessage = (pool: PrizePool) => {
+    const cutoff = poolMeta ? parseCutoff(poolMeta[pool]?.cutoffAt ?? null) : null;
+    const ended = isCutoffPassed(cutoff, lastSolvedAt);
+    if (ended) return t("prizeStatusEnded");
+    return t("prizeStatusPending");
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchPublicPrizes()
+      .then((payload) => {
+        if (cancelled) return;
+        setPoolMeta(payload.pools as Record<PrizePool, PrizePoolMeta>);
+        setPrizeLoadError(null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setPrizeLoadError((err as Error).message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const sendToast = (key: string) => {
     window.dispatchEvent(new CustomEvent("app:toast", { detail: { type: "success", key } }));
@@ -75,7 +112,12 @@ export default function PrizesPage({ user, onFeedbackSubmitted }: Props) {
           </div>
         </header>
 
-        {needsFeedback ? (
+        {!calendarCompleted ? (
+          <div className="feedback-module">
+            <h3>{t("feedbackLockedTitle")}</h3>
+            <p className="muted">{t("feedbackLockedBody")}</p>
+          </div>
+        ) : needsFeedback ? (
           <div className="feedback-module">
             <div className="feedback-scale" role="radiogroup" aria-label={t("feedbackTitle")}>
               {feedbackOptions.map((option) => (
@@ -131,9 +173,23 @@ export default function PrizesPage({ user, onFeedbackSubmitted }: Props) {
 
       <div className="panel">
         <h3>{t("prizeSectionTitle")}</h3>
-        <p className="muted">
-          {prizesAvailable ? t("prizeSectionBody") : t("prizeSectionBodyPending")}
-        </p>
+        {!calendarCompleted ? (
+          <p className="muted">{t("prizeSectionBodyLocked")}</p>
+        ) : (
+          <>
+            {prizeLoadError && <p className="error">{prizeLoadError}</p>}
+            <div className="prize-status-grid">
+              {poolOrder.map((pool) => (
+                <div key={pool} className="panel subpanel">
+                  <div className="eyebrow">{pool}</div>
+                  <h4>{t("prizeSectionTitle")}</h4>
+                  <p className="muted">{prizeStatusMessage(pool)}</p>
+                  {prizesAvailable && <p className="muted small">{t("prizeSectionBody")}</p>}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
