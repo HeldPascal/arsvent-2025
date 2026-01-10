@@ -10,6 +10,9 @@ Defaults come from the codebase; values marked "required" must be set explicitly
 | `DISCORD_CLIENT_ID` | Discord OAuth client id. | Required | From the Discord application. |
 | `DISCORD_CLIENT_SECRET` | Discord OAuth client secret. | Required | From the Discord application. |
 | `DISCORD_CALLBACK_URL` | OAuth callback URL for Discord. | Required | Must match the Discord app; e.g. `http://localhost:4000/auth/discord/callback`. In staging/production, must use https and share origin with `FRONTEND_ORIGIN`. |
+| `DISCORD_APP_ID` | Discord application id override for invite URLs. | Optional | Defaults to `DISCORD_CLIENT_ID` when unset. |
+| `DISCORD_BOT_TOKEN` | Discord bot token used for eligibility role checks. | Required when enabled | Required once Discord eligibility is configured (server + roles). |
+| `DISCORD_BOT_PERMISSIONS` | Bot invite permissions integer. | Optional | Defaults to `0` (no permissions). |
 | `SESSION_SECRET` | Session cookie signing secret (also used as fallback for content tokens). | `dev-secret` | Set a strong random value in production. |
 | `SESSION_MAX_AGE_MS` | Session cookie max age in milliseconds. | 14 days | Numeric milliseconds; empty or invalid falls back to 14 days. |
 | `FRONTEND_ORIGIN` | CORS origin + login redirect base. | `http://localhost:5173` | Must match the frontend origin (scheme + host + port). In staging/production, must share origin with `DISCORD_CALLBACK_URL`. |

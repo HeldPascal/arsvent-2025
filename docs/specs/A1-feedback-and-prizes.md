@@ -130,6 +130,7 @@ As an admin, I want to define which Discord roles are eligible for prize draws.
   - their account is linked to Discord, AND
   - they are a member of the configured server, AND
   - they have at least one eligible role.
+  - they are not an admin or super admin.
 
 Users not on the server or without the roles are **not eligible**.
 
