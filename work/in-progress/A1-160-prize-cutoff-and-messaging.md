@@ -1,7 +1,7 @@
 # A1-160 — Prize Cutoff & User Messaging
 
 ## Status
-Ready
+In Progress
 
 ## Related Spec
 - docs/specs/A1-feedback-and-prizes.md (A1.6)
