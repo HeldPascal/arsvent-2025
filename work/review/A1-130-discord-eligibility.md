@@ -1,7 +1,7 @@
 # A1-130 — Discord-Based Eligibility
 
 ## Status
-In Progress
+Review
 
 ## Related Spec
 - docs/specs/A1-feedback-and-prizes.md (A1.3)
@@ -18,10 +18,10 @@ Determine prize eligibility using Discord roles.
 - Event config:
   - discord_server_id
   - eligible_role_ids[]
-  - refresh_interval_minutes (int)
+  - userRolesRefreshIntervalMinutes (int)
   - API endpoints:
     - `GET /api/admin/eligibility`
-    - `PUT /api/admin/eligibility` body `{ discordServerId, eligibleRoleIds, refreshIntervalMinutes }`
+  - `PUT /api/admin/eligibility` body `{ discordServerId, eligibleRoleIds, userRolesRefreshIntervalMinutes }`
     - `GET /api/admin/eligibility/roles` response `{ roles: [{ id, name }] }`
       - `400` `{ error: "bot_missing_or_inactive_server" }` when no active server or bot missing
     - `POST /api/admin/eligibility/refresh` (force refresh)
@@ -34,13 +34,14 @@ Determine prize eligibility using Discord roles.
   - Discord account linked
   - Member of server
   - Has at least one eligible role
+  - Not an admin or super admin
 - Eligibility evaluation:
   - Compute eligibility snapshot at draw time and store with the draw record.
   - Cache user roles via periodic bot fetch; use cached roles for eligibility.
   - Provide an admin-only "Force refresh roles" action.
   - If role data is unavailable, show "unknown".
   - Empty `eligible_role_ids` is allowed and results in all users being ineligible.
-  - Backend runs a scheduled refresh job using `refreshIntervalMinutes`.
+  - Backend runs a scheduled refresh job using `userRolesRefreshIntervalMinutes`.
 - Discord role source:
   - Use a Discord bot in the configured server.
   - Fetch member roles via the Guild Member endpoint (`/guilds/{guild.id}/members/{user.id}`) using the bot token.
@@ -69,7 +70,7 @@ Determine prize eligibility using Discord roles.
   - `EventConfig` table (single row) stores:
     - `discordServerId` (string, nullable)
     - `eligibleRoleIds` (string[], default empty)
-    - `refreshIntervalMinutes` (int, default 60)
+  - `userRolesRefreshIntervalMinutes` (int, default 60)
   - User role snapshots stored in `UserDiscordRole` table:
     - `userId` (FK)
     - `guildId` (Discord server ID)
@@ -88,7 +89,7 @@ Determine prize eligibility using Discord roles.
 - User-facing eligibility status:
   - eligible / not eligible
   - reason if not eligible
-  - reason codes: `not_linked`, `not_in_server`, `missing_role`, `unknown`
+  - reason codes: `admin_ineligible`, `not_linked`, `not_in_server`, `missing_role`, `unknown`
 - Display eligibility on the Prizes page and in Settings
   - Show `checkedAt` timestamp to indicate last eligibility update
 
@@ -114,6 +115,7 @@ Determine prize eligibility using Discord roles.
     - Disabled if bot not installed; show hint "Invite bot first".
   - Load roles from `/api/admin/eligibility/roles`, select eligible roles, save.
   - Force refresh triggers a role refresh job and updates `discordRolesUpdatedAt`.
+  - Reset eligibility clears the active server and eligible roles (test helper).
   - Multi-admin rules:
     - Each admin sees only their own Discord guild list.
     - The currently active server is visible to all admins (even if not in their list).
@@ -132,3 +134,5 @@ Determine prize eligibility using Discord roles.
 
 ## Notes
 Backend also hosts the bot, so bot presence can be assumed.
+`@everyone` appears in the Discord roles list; selecting it would make every server member eligible.
+Consider filtering it out in UI or backend to prevent accidental use.

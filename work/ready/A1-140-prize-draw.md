@@ -37,6 +37,7 @@ Allow admins to safely run and publish prize draws.
   - Each override appends a `DrawOverride` record.
 - Draw algorithm:
   - Build eligible user list from eligibility snapshot.
+    - Admins and super admins are always excluded from eligibility.
   - Shuffle users deterministically (use `seed` if provided).
   - Build prize list:
     - include only `is_active=true` prizes in the selected pool
