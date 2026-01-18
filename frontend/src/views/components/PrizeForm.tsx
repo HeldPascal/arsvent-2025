@@ -1,4 +1,5 @@
-import type { AdminPrize, PrizePool } from "../../types";
+import { useState } from "react";
+import type { AdminPrize, Locale, PrizePool } from "../../types";
 import AssetPicker from "./AssetPicker";
 
 type AssetOption = {
@@ -16,6 +17,7 @@ type PrizeFormProps = {
   assetOptions: AssetOption[];
   backupOptions: AdminPrize[];
   saving?: boolean;
+  validationMessages?: string[];
   onFieldChange: (field: keyof AdminPrize, value: unknown) => void;
   onSave?: () => void;
   onDelete?: () => void;
@@ -28,12 +30,16 @@ export default function PrizeForm({
   assetOptions,
   backupOptions,
   saving = false,
+  validationMessages = [],
   onFieldChange,
   onSave,
   onDelete,
   submitLabel,
 }: PrizeFormProps) {
   const isCreate = mode === "create";
+  const [locale, setLocale] = useState<Locale>("en");
+  const resolveName = (value: AdminPrize["name"], id: string) =>
+    value[locale] || value.en || value.de || id;
   const selectedBackupIds = prize.backupPrizes ?? [];
   const selectedBackups = selectedBackupIds
     .map((id) => backupOptions.find((option) => option.id === id))
@@ -54,8 +60,35 @@ export default function PrizeForm({
   const handleRemoveBackup = (id: string) => {
     updateBackupPrizes(selectedBackupIds.filter((entry) => entry !== id));
   };
+  const updateLocalizedField = (field: "name" | "description", next: string) => {
+    onFieldChange(field, {
+      ...prize[field],
+      [locale]: next,
+    });
+  };
   return (
     <div className="prize-card">
+      <div className="prize-locale-switch" role="group" aria-label="Prize language">
+        {(["en", "de"] as const).map((next) => (
+          <button
+            key={next}
+            type="button"
+            className={locale === next ? "active" : undefined}
+            onClick={() => setLocale(next)}
+          >
+            {next.toUpperCase()}
+          </button>
+        ))}
+      </div>
+      {validationMessages.length > 0 && (
+        <div className="warning-stack prize-validation">
+          {validationMessages.map((message) => (
+            <div key={message} className="warning-card">
+              {message}
+            </div>
+          ))}
+        </div>
+      )}
       <div className="field-grid field-grid-4">
         <label className="field span-2">
           <span className="muted small">ID</span>
@@ -72,11 +105,11 @@ export default function PrizeForm({
         </label>
         <div className="field spacer col-3-span-2" aria-hidden="true" />
         <label className="field span-2">
-          <span className="muted small">Name</span>
+          <span className="muted small">Name ({locale.toUpperCase()})</span>
           <input
             type="text"
-            value={prize.name}
-            onChange={(event) => onFieldChange("name", event.target.value)}
+            value={prize.name[locale] ?? ""}
+            onChange={(event) => updateLocalizedField("name", event.target.value)}
           />
         </label>
         <label className="field col-3">
@@ -154,7 +187,7 @@ export default function PrizeForm({
                       className="backup-pill"
                       onClick={() => handleRemoveBackup(option.id)}
                     >
-                      {option.name} ({option.id}) ✕
+                      {resolveName(option.name, option.id)} ({option.id}) ✕
                     </button>
                   ))}
                 </div>
@@ -173,7 +206,7 @@ export default function PrizeForm({
                       className="backup-option"
                       onClick={() => handleAddBackup(option.id)}
                     >
-                      {option.name} ({option.id}) +
+                      {resolveName(option.name, option.id)} ({option.id}) +
                     </button>
                   ))}
                 </div>
@@ -182,11 +215,11 @@ export default function PrizeForm({
           </div>
         </div>
         <label className="field span-2 col-3-span-2">
-          <span className="muted small">Description</span>
+          <span className="muted small">Description ({locale.toUpperCase()})</span>
           <textarea
             rows={3}
-            value={prize.description}
-            onChange={(event) => onFieldChange("description", event.target.value)}
+            value={prize.description[locale] ?? ""}
+            onChange={(event) => updateLocalizedField("description", event.target.value)}
           />
         </label>
         <label className="field span-2 col-3-span-2">

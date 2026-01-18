@@ -33,6 +33,8 @@ type SeedUserInput = {
   mode?: string;
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
+  guildId?: string;
+  roleIds?: string[];
   introCompleted?: boolean;
   lastSolvedDay?: number;
   lastSolvedAtDaysAgo?: number;
@@ -78,6 +80,10 @@ const loadSeedUsers = async (seedFilePath: string) => {
       mode: typeof typed.mode === "string" ? typed.mode : undefined,
       isAdmin: typeof typed.isAdmin === "boolean" ? typed.isAdmin : undefined,
       isSuperAdmin: typeof typed.isSuperAdmin === "boolean" ? typed.isSuperAdmin : undefined,
+      guildId: typeof typed.guildId === "string" ? typed.guildId : undefined,
+      roleIds: Array.isArray(typed.roleIds)
+        ? typed.roleIds.map((entry) => String(entry)).filter(Boolean)
+        : undefined,
       introCompleted: typeof typed.introCompleted === "boolean" ? typed.introCompleted : undefined,
       lastSolvedDay: typeof typed.lastSolvedDay === "number" ? typed.lastSolvedDay : undefined,
       lastSolvedAtDaysAgo:
@@ -151,6 +157,29 @@ export const runSeed = async (prisma: PrismaClient, target: SeedEnvironment, see
         stateVersion: 1,
       },
     });
+
+    if (input.guildId) {
+      await prisma.$transaction([
+        prisma.userDiscordRole.deleteMany({
+          where: { userId: input.discordUserId, guildId: input.guildId },
+        }),
+        ...(input.roleIds && input.roleIds.length > 0
+          ? [
+              prisma.userDiscordRole.createMany({
+                data: input.roleIds.map((roleId) => ({
+                  userId: input.discordUserId,
+                  guildId: input.guildId as string,
+                  roleId,
+                })),
+              }),
+            ]
+          : []),
+        prisma.user.update({
+          where: { id: input.discordUserId },
+          data: { discordRolesUpdatedAt: now },
+        }),
+      ]);
+    }
   }
   await prisma.auditLog.createMany({ data: seedAuditLogs });
 

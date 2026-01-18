@@ -9,10 +9,15 @@ export interface PrizePoolMeta {
   cutoffAt: string | null;
 }
 
+export type LocalizedText = {
+  en: string;
+  de: string;
+};
+
 export interface PrizeRecord {
   id: string;
-  name: string;
-  description: string;
+  name: LocalizedText;
+  description: LocalizedText;
   image?: string | null;
   pool: PrizePool;
   quantity?: number | null;
@@ -79,11 +84,21 @@ const normalizePrize = (entry: Record<string, unknown>): PrizeRecord | null => {
   if (!id) return null;
   const pool = normalizePool(entry.pool);
   if (!pool) return null;
+  const normalizeLocalizedText = (value: unknown, fallback: string): LocalizedText => {
+    if (value && typeof value === "object") {
+      const raw = value as { en?: unknown; de?: unknown };
+      const en = normalizeString(raw.en ?? fallback) || fallback;
+      const de = normalizeString(raw.de ?? en) || en;
+      return { en, de };
+    }
+    const normalized = normalizeString(value) || fallback;
+    return { en: normalized, de: normalized };
+  };
   return {
     id,
     pool,
-    name: normalizeString(entry.name) || id,
-    description: normalizeString(entry.description),
+    name: normalizeLocalizedText(entry.name, id),
+    description: normalizeLocalizedText(entry.description, ""),
     image: entry.image ? normalizeString(entry.image) : null,
     quantity: normalizeNumber(entry.quantity, null),
     priority: normalizeNumber(entry.priority, 0) ?? 0,

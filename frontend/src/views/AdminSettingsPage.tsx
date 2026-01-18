@@ -410,15 +410,21 @@ export default function AdminSettingsPage() {
               <span className="muted">Refresh interval (minutes)</span>
               <input
                 type="number"
-                min={5}
+                min={0}
                 value={eligibilityForm.userRolesRefreshIntervalMinutes}
                 onChange={(event) =>
                   setEligibilityForm({
                     ...eligibilityForm,
-                    userRolesRefreshIntervalMinutes: Math.max(5, Number(event.target.value) || 5),
+                    userRolesRefreshIntervalMinutes: Math.max(0, Number(event.target.value) || 0),
                   })
                 }
               />
+              <div className="inline-pill-row">
+                <span className="muted small">Set to 0 to disable automatic refresh.</span>
+                {eligibilityForm.userRolesRefreshIntervalMinutes === 0 && (
+                  <span className="pill warning">Auto refresh disabled</span>
+                )}
+              </div>
             </label>
 
             <div className="field">

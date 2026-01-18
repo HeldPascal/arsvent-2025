@@ -205,6 +205,11 @@ export default function Layout({ user, loadingUser, onLogout, children, onLocale
                     </button>
                   ) : null}
                   {user.isAdmin || user.isSuperAdmin ? (
+                    <button className="ghost nav-link" onClick={() => closeMenuAnd(() => navigate("/admin/draws"))}>
+                      Prize draws
+                    </button>
+                  ) : null}
+                  {user.isAdmin || user.isSuperAdmin ? (
                     <button className="ghost nav-link" onClick={() => closeMenuAnd(() => navigate("/admin/assets"))}>
                       Assets
                     </button>

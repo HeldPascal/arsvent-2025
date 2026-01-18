@@ -18,8 +18,8 @@ const poolOrder: PrizePool[] = ["MAIN", "VETERAN"];
 
 const emptyPrize = (): PrizeDraft => ({
   id: "",
-  name: "",
-  description: "",
+  name: { en: "", de: "" },
+  description: { en: "", de: "" },
   image: null,
   pool: "MAIN",
   quantity: null,
@@ -43,6 +43,11 @@ export default function AdminPrizesPage() {
     VETERAN: "",
   });
   const [deleteTarget, setDeleteTarget] = useState<AdminPrize | null>(null);
+
+  const resolvePrizeLabel = useCallback(
+    (prize: AdminPrize) => prize.name.en || prize.name.de || prize.id,
+    [],
+  );
 
   const toLocalInputValue = (value: string | null) => {
     if (!value) return "";
@@ -83,6 +88,21 @@ export default function AdminPrizesPage() {
   }, [loadData]);
 
   const poolCutoffs = useMemo(() => store?.pools ?? null, [store]);
+  const validationErrors = useMemo(() => store?.validationErrors ?? [], [store?.validationErrors]);
+  const validationByPrize = useMemo(() => {
+    const global: string[] = [];
+    const byPrize = new Map<string, string[]>();
+    for (const entry of validationErrors) {
+      if (!entry.prizeId) {
+        global.push(entry.message);
+        continue;
+      }
+      const list = byPrize.get(entry.prizeId) ?? [];
+      list.push(entry.message);
+      byPrize.set(entry.prizeId, list);
+    }
+    return { global, byPrize };
+  }, [validationErrors]);
 
   const prizesByPool = useMemo(() => {
     const grouped = new Map<PrizePool, PrizeDraft[]>();
@@ -276,6 +296,21 @@ export default function AdminPrizesPage() {
         </header>
 
         {error && <p className="error">{error}</p>}
+        {validationByPrize.global.length > 0 && (
+          <div className="panel warning-panel">
+            <div className="warning-title">Prize configuration issues</div>
+            <div className="muted small">
+              Fix these before running prize draws.
+            </div>
+            <div className="warning-stack">
+              {validationByPrize.global.map((message) => (
+                <div key={message} className="warning-card">
+                  {message}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {importing && <p className="muted">Importing…</p>}
 
         {poolCutoffs && (
@@ -325,6 +360,7 @@ export default function AdminPrizesPage() {
                     assetOptions={assetOptions}
                     backupOptions={backupOptions(prize.pool, prize.id)}
                     saving={savingId === prize.id}
+                    validationMessages={validationByPrize.byPrize.get(prize.id) ?? []}
                     onFieldChange={(field, value) => handlePrizeField(prize.id, field, value)}
                     onSave={() => handleSavePrize(prize)}
                     onDelete={() => setDeleteTarget(prize)}
@@ -351,6 +387,7 @@ export default function AdminPrizesPage() {
             assetOptions={assetOptions}
             backupOptions={backupOptions(draftNew.pool)}
             saving={savingId === "new"}
+            validationMessages={[]}
             onFieldChange={(field, value) => {
               if (field === "pool") {
                 setDraftNew({ ...draftNew, pool: value as PrizePool, backupPrizes: [] });
@@ -366,7 +403,7 @@ export default function AdminPrizesPage() {
 
       {deleteTarget && (
         <ConfirmDialog
-          message={`Delete ${deleteTarget.name}? This cannot be undone.`}
+          message={`Delete ${resolvePrizeLabel(deleteTarget)}? This cannot be undone.`}
           confirmLabel="Delete"
           cancelLabel="Cancel"
           onConfirm={confirmDelete}
