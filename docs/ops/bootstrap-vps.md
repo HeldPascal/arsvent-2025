@@ -26,6 +26,11 @@ Log out/in if you just added the docker group.
 mkdir -p /opt/arsvent-2025/{staging,production}/{app,env,data,maintenance,releases,backups}
 ```
 
+Backend data subdirs (DB + prize data + assets):
+```
+mkdir -p /opt/arsvent-2025/{staging,production}/data/backend/{assets/public,prizes}
+```
+
 ## 2) Clone the repo (once per environment)
 
 Staging:
@@ -180,6 +185,13 @@ server {
     proxy_set_header X-Forwarded-Proto $scheme;
   }
 
+  # Prize assets (backend fallback route)
+  location /asset/ {
+    proxy_pass http://127.0.0.1:4100;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+
   error_page 503 @maintenance;
   location @maintenance {
     root /opt/arsvent-2025/staging/maintenance;
@@ -192,10 +204,19 @@ Production should mirror this with:
 - domain `arsvent25.arsnecandi.de`
 - ports `4173` (frontend) and `4000` (backend)
 - maintenance path `/opt/arsvent-2025/production/maintenance/MAINTENANCE_ON`
+- add `/asset/` proxy to the backend for prize assets
 
 TLS (Certbot, example):
 ```
 sudo certbot --nginx -d arsvent25.arsnecandi.de -d staging.arsvent25.arsnecandi.de
+```
+
+Note: If you prefer serving assets directly from the VPS filesystem, replace the `proxy_pass` block with an `alias`:
+```
+  location /asset/ {
+    alias /opt/arsvent-2025/<env>/data/backend/assets/public/;
+    autoindex off;
+  }
 ```
 
 ## 7) Authenticate to GHCR (once per VPS user)

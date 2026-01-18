@@ -63,7 +63,7 @@ Defaults come from the codebase; values marked "required" must be set explicitly
 | --- | --- | --- | --- |
 | `BACKEND_ENV_FILE` | Backend env file path. | Optional | Defaults to `env/backend.env`. |
 | `FRONTEND_ENV_FILE` | Frontend env file path. | Optional | Defaults to `env/frontend.env`. |
-| `BACKEND_DATA_DIR` | Backend data directory. | Optional | Defaults to `data/backend`. |
+| `BACKEND_DATA_DIR` | Backend data directory (DB + prizes + assets). | Optional | Defaults to `data/backend`. |
 | `REDIS_DATA_DIR` | Redis data directory. | Optional | Defaults to `data/redis`. |
 | `BACKEND_PORT` | Host port bound to backend container. | `4000` | Staging: `4100`. |
 | `FRONTEND_PORT` | Host port bound to frontend container. | `4173` | Staging: `4273`. |

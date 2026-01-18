@@ -14,6 +14,7 @@ work stays consistent and repeatable.
 - Backups: configurable
   - Prize data: `backend/data/prizes/prizes.yaml`
   - Prize assets: `backend/data/assets/` (manifest) + `backend/data/assets/public/` (files)
+  - All of the above live under `BACKEND_DATA_DIR` on the VPS (mounted to `/app/data`).
 
 ### Services and Ports (Docker Compose)
 Defined in `ops/docker-compose.yml`:
@@ -69,6 +70,7 @@ Defined in `ops/docker-compose.yml`:
 ### Backups
 - SQLite backups created during deploy
 - Stored under `DB_BACKUP_DIR`
+- Prize data + assets live under `BACKEND_DATA_DIR` and should be backed up as part of your VPS backup strategy.
 
 ### Version Metadata
 - Backend reads `./version.json` from its working directory.
