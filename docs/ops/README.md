@@ -70,7 +70,8 @@ Defined in `ops/docker-compose.yml`:
 ### Backups
 - SQLite backups created during deploy
 - Stored under `DB_BACKUP_DIR`
-- Prize data + assets live under `BACKEND_DATA_DIR` and should be backed up as part of your VPS backup strategy.
+- Backend data backups (prize YAML + assets) created during deploy
+- Stored under `DATA_BACKUP_DIR`
 
 ### Version Metadata
 - Backend reads `./version.json` from its working directory.

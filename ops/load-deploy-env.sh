@@ -37,8 +37,9 @@
 # Optional: backups paths (absolute or relative to DEPLOY_DIR)
 # - BACKUPS_DIR: backups dir (default: backups)
 # - DB_BACKUP_DIR: db backup dir (default: backups/backend-db)
+# - DATA_BACKUP_DIR: prize/assets backup dir (default: backups/backend-data)
 # Optional: backups behavior
-# - BACKUPS_TO_KEEP: number of DB backups to keep (default: 7)
+# - BACKUPS_TO_KEEP: number of DB/data backups to keep (default: 7)
 #
 # Optional: maintenance paths (absolute or relative to DEPLOY_DIR)
 # - MAINTENANCE_DIR: maintenance dir (default: maintenance)
@@ -131,4 +132,5 @@ load_deploy_env() {
   resolve_export_path REDIS_DATA_DIR "${DATA_DIR}/redis"
   resolve_export_path DB_PATH "${DATA_DIR}/backend/prod.db"
   resolve_export_path DB_BACKUP_DIR "${BACKUPS_DIR}/backend-db"
+  resolve_export_path DATA_BACKUP_DIR "${BACKUPS_DIR}/backend-data"
 }

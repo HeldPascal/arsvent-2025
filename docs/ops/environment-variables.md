@@ -42,9 +42,10 @@ Defaults come from the codebase; values marked "required" must be set explicitly
 | `DATA_DIR` | Data dir (absolute or relative to `DEPLOY_DIR`). | Optional | Defaults to `data`. |
 | `BACKUPS_DIR` | Backups dir (absolute or relative to `DEPLOY_DIR`). | Optional | Defaults to `backups`. |
 | `DB_BACKUP_DIR` | DB backups dir (absolute or relative to `DEPLOY_DIR`). | Optional | Defaults to `backups/backend-db`. |
+| `DATA_BACKUP_DIR` | Backend data backups dir (absolute or relative to `DEPLOY_DIR`). | Optional | Defaults to `backups/backend-data`. |
 | `DB_PATH` | DB path (absolute or relative to `DEPLOY_DIR`). | Optional | Defaults to `data/backend/prod.db`. |
 | `BRANCH` | Git branch to deploy. | `main` | Optional override for deployment. |
-| `BACKUPS_TO_KEEP` | How many DB backups to retain. | `7` | Integer count. |
+| `BACKUPS_TO_KEEP` | How many DB/data backups to retain. | `7` | Integer count. |
 | `NGINX_RELOAD_CMD` | Command used to reload nginx. | `sudo systemctl reload nginx` | Override if sudo is not available. |
 | `COMPOSE_PROJECT_NAME` | Docker Compose project name override. | `arsvent-${DEPLOY_ENV}` | Set to keep envs isolated (e.g., `arsvent-staging`). |
 | `READY_URL` | Readiness URL to poll after deploy. | `http://127.0.0.1:${BACKEND_PORT}/readyz` | Override if backend is exposed elsewhere. |

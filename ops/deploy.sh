@@ -51,6 +51,37 @@ backup_db() {
   popd >/dev/null
 }
 
+backup_backend_data() {
+  local sources=()
+  if [ -d "$BACKEND_DATA_DIR/prizes" ]; then
+    sources+=("prizes")
+  fi
+  if [ -d "$BACKEND_DATA_DIR/assets" ]; then
+    sources+=("assets")
+  fi
+  if [ "${#sources[@]}" -eq 0 ]; then
+    echo "[deploy] No backend data dirs found under $BACKEND_DATA_DIR, skipping data backup."
+    return
+  fi
+
+  mkdir -p "$DATA_BACKUP_DIR"
+  local TS
+  local TARGET
+  TS="$(date +%Y%m%d-%H%M%S)"
+  TARGET="$DATA_BACKUP_DIR/backend-data-${TS}.tar.gz"
+
+  echo "[deploy] Creating backend data backup at $TARGET"
+  tar -C "$BACKEND_DATA_DIR" -czf "$TARGET" "${sources[@]}"
+
+  echo "[deploy] Rotating old data backups (keeping $BACKUPS_TO_KEEP)..."
+  pushd "$DATA_BACKUP_DIR" >/dev/null
+  mapfile -t backups < <(ls -1t backend-data-*.tar.gz 2>/dev/null || true)
+  if [ "${#backups[@]}" -gt "$BACKUPS_TO_KEEP" ]; then
+    printf '%s\n' "${backups[@]}" | tail -n +$((BACKUPS_TO_KEEP+1)) | xargs -r rm --
+  fi
+  popd >/dev/null
+}
+
 sync_maintenance_assets() {
   if [ -f "$APP_DIR/ops/maintenance.html" ]; then
     mkdir -p "$MAINTENANCE_DIR"
@@ -161,6 +192,9 @@ docker compose -f "$COMPOSE_FILE" down
 
 echo "[deploy] Backing up database..."
 backup_db
+
+echo "[deploy] Backing up backend data..."
+backup_backend_data
 
 echo "[deploy] Running Prisma migrations..."
 docker compose -f "$COMPOSE_FILE" run --rm backend npx prisma migrate deploy
