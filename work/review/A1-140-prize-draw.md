@@ -1,7 +1,7 @@
 # A1-140 — Prize Draw Lifecycle
 
 ## Status
-In Progress
+Review
 
 ## Related Spec
 - docs/specs/A1-feedback-and-prizes.md (A1.4)
@@ -42,7 +42,9 @@ Allow admins to safely run and publish prize draws.
   - Build prize list:
     - include only `is_active=true` prizes in the selected pool
     - expand by `quantity` (null = unlimited; use only as needed)
-    - sort by `priority` ascending (fillers at same priority use round-robin)
+    - sort by `priority` ascending for non-fillers
+    - fillers always run last and are round-robin among themselves
+    - fillers must use `quantity=null` (unlimited); non-fillers must define `quantity`
   - Assign prizes in order to shuffled users.
   - If prizes run out: remaining users get "no prize".
   - If prizes remain: keep unassigned.
@@ -85,6 +87,8 @@ Allow admins to safely run and publish prize draws.
   - published_at
   - status
   - eligibility snapshot counts (eligible/assigned) per A1-130
+  - eligibility snapshot stored in DB (eligible users + role config at draw time)
+    - normalized into `EligibilitySnapshot` + `EligibilitySnapshotUser` (avoid JSON blobs)
 - Assignment history (append-only)
 - Assignments are immutable; overrides are tracked only in `DrawOverride`.
   - Delivery status updates are allowed on assignments for fulfillment tracking.
@@ -122,3 +126,8 @@ Allow admins to safely run and publish prize draws.
 
 ## Notes
 Deterministic behavior preferred; optional RNG seed.
+- Prisma enums are not supported in SQLite; draw pool/status fields are stored as strings.
+- New draw tables require a Prisma migration before running.
+- Eligibility snapshot users are stored in `EligibilitySnapshotUser` (normalized), not a JSON array.
+- Prize `name` and `description` are localized objects (`{ en, de }`) and edited via a language switcher.
+- Delivery method is an enum (`INGAME_MAIL`, `CROWN_STORE_GIFT`, `PHYSICAL`, `CODE`, `OTHER`) with an optional note (required for `OTHER`).

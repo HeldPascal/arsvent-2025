@@ -1,7 +1,7 @@
 # A1-150 — Veteran Prize Draw
 
 ## Status
-In Progress
+Review
 
 ## Related Spec
 - docs/specs/A1-feedback-and-prizes.md (A1.5)
@@ -13,6 +13,8 @@ Run a separate prize draw for Veteran-complete users.
 - Separate pool (VETERAN)
 - Separate eligibility rules
 - Independent draw lifecycle
+  - Filler prizes always run last and are round-robin among themselves.
+  - Fillers must use `quantity=null`; non-fillers must define `quantity`.
 
 ## Functional Requirements
 - Eligibility:

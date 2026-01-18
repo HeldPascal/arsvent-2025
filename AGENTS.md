@@ -30,6 +30,7 @@ Discord-authenticated Advent calendar web app for Ars Necandi. Users log in with
   - Run `npx prisma format` after schema edits.
   - Check for structural diffs non-interactively: `cd backend && npx prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --exit-code`.
   - If diff exists, prompt the user to run `npx prisma migrate dev --name <name>` (don’t run interactively yourself). Prod uses `prisma migrate deploy`.
+  - Before running local migrations, remind the user to back up the local DB if they might want to collapse migrations later (restore backup, delete new migration, regenerate a combined migration).
   - For convention/data-only changes Prisma won’t detect (e.g., value renames), add a custom migration SQL under `prisma/migrations/<timestamp>_<name>/` and ask the user to run `npx prisma migrate dev` or `npx prisma db execute --file ... --schema prisma/schema.prisma`.
 
 ## Frontend behavior (current)
