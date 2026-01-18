@@ -11,29 +11,31 @@ generator client {
 }
 
 model User {
-  id                    String             @id @map("discord_id")
-  username              String
-  globalName            String?
-  avatar                String?
-  locale                String             @default("en")
-  mode                  String             @default("NORMAL") // "NORMAL" | "VETERAN"
-  creatureSwap          Boolean            @default(false)
-  isAdmin               Boolean            @default(false)
-  isSuperAdmin          Boolean            @default(false)
-  hasSubmittedFeedback  Boolean            @default(false)
-  sessionVersion        Int                @default(1)
-  stateVersion          Int                @default(1)
-  lastSolvedDay         Int                @default(0)
-  lastSolvedAt          DateTime?
-  lastDowngradedAt      DateTime?
-  lastDowngradedFromDay Int                @default(0)
-  introCompleted        Boolean            @default(false)
-  lastLoginAt           DateTime?
-  discordRolesUpdatedAt DateTime?
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  discordRoles          UserDiscordRole[]
-  adminDiscordToken     AdminDiscordToken?
+  id                      String                    @id @map("discord_id")
+  username                String
+  globalName              String?
+  avatar                  String?
+  locale                  String                    @default("en")
+  mode                    String                    @default("NORMAL") // "NORMAL" | "VETERAN"
+  creatureSwap            Boolean                   @default(false)
+  isAdmin                 Boolean                   @default(false)
+  isSuperAdmin            Boolean                   @default(false)
+  hasSubmittedFeedback    Boolean                   @default(false)
+  sessionVersion          Int                       @default(1)
+  stateVersion            Int                       @default(1)
+  lastSolvedDay           Int                       @default(0)
+  lastSolvedAt            DateTime?
+  lastDowngradedAt        DateTime?
+  lastDowngradedFromDay   Int                       @default(0)
+  introCompleted          Boolean                   @default(false)
+  lastLoginAt             DateTime?
+  discordRolesUpdatedAt   DateTime?
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  discordRoles            UserDiscordRole[]
+  adminDiscordToken       AdminDiscordToken?
+  drawAssignments         DrawAssignment[]
+  EligibilitySnapshotUser EligibilitySnapshotUser[]
 }
 
 model AppState {
@@ -79,6 +81,92 @@ model AdminDiscordToken {
   updatedAt    DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Draw {
+  id                    String    @id @default(cuid())
+  pool                  String
+  status                String    @default("DRAFT")
+  seed                  String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  createdBy             String
+  publishedAt           DateTime?
+  publishedBy           String?
+  eligibleCount         Int       @default(0)
+  assignedCount         Int       @default(0)
+  eligibilitySnapshotId String?
+
+  assignments         DrawAssignment[]
+  eligibilitySnapshot EligibilitySnapshot? @relation(fields: [eligibilitySnapshotId], references: [id])
+
+  @@index([pool])
+  @@index([status])
+}
+
+model DrawAssignment {
+  id             String    @id @default(cuid())
+  drawId         String
+  userId         String
+  prizeId        String?
+  status         String    @default("ASSIGNED")
+  createdAt      DateTime  @default(now())
+  deliveryStatus String?
+  deliveredAt    DateTime?
+  deliveryMethod String?
+  deliveryMethodNote String?
+
+  draw      Draw           @relation(fields: [drawId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  overrides DrawOverride[]
+
+  @@unique([drawId, userId])
+  @@index([drawId])
+  @@index([userId])
+}
+
+model DrawOverride {
+  id               String   @id @default(cuid())
+  drawAssignmentId String
+  oldPrizeId       String?
+  newPrizeId       String?
+  reason           String
+  createdAt        DateTime @default(now())
+  createdBy        String
+
+  assignment DrawAssignment @relation(fields: [drawAssignmentId], references: [id], onDelete: Cascade)
+
+  @@index([drawAssignmentId])
+}
+
+model EligibilitySnapshot {
+  id              String    @id @default(cuid())
+  pool            String
+  discordServerId String?
+  eligibleRoleIds String
+  eligibleCount   Int
+  cutoffAt        DateTime?
+  createdAt       DateTime  @default(now())
+
+  draws Draw[]
+  users EligibilitySnapshotUser[]
+
+  @@index([pool])
+  @@index([createdAt])
+}
+
+model EligibilitySnapshotUser {
+  id         String   @id @default(cuid())
+  snapshotId String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  snapshot EligibilitySnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([snapshotId, userId])
+  @@index([snapshotId])
+  @@index([userId])
 }
 
 model Feedback {

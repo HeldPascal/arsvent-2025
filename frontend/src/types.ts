@@ -186,10 +186,15 @@ export interface PrizePoolMeta {
   cutoffAt: string | null;
 }
 
+export type LocalizedText = {
+  en: string;
+  de: string;
+};
+
 export interface AdminPrize {
   id: string;
-  name: string;
-  description: string;
+  name: LocalizedText;
+  description: LocalizedText;
   image?: string | null;
   pool: PrizePool;
   quantity?: number | null;
@@ -203,6 +208,7 @@ export interface AdminPrize {
 export interface AdminPrizeStore {
   pools: Record<PrizePool, PrizePoolMeta>;
   prizes: AdminPrize[];
+  validationErrors?: Array<{ prizeId: string | null; message: string }>;
 }
 
 export interface PublicPrize {
@@ -213,6 +219,81 @@ export interface PublicPrize {
   pool: PrizePool;
   quantity: number | null;
   isFiller: boolean;
+}
+
+export type DrawStatus = "DRAFT" | "PUBLISHED" | "DELIVERED";
+export type DrawAssignmentStatus = "ASSIGNED" | "NONE";
+export type DrawDeliveryStatus = "PENDING" | "DELIVERED";
+export type DeliveryMethod = "INGAME_MAIL" | "CROWN_STORE_GIFT" | "PHYSICAL" | "CODE" | "OTHER";
+
+export interface DrawPrize {
+  id: string;
+  name: string;
+  description: string;
+  image: string | null;
+}
+
+export interface DrawOverride {
+  id: string;
+  oldPrizeId: string | null;
+  newPrizeId: string | null;
+  reason: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface AdminDraw {
+  id: string;
+  pool: PrizePool;
+  status: DrawStatus;
+  seed: string | null;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  publishedAt: string | null;
+  publishedBy: string | null;
+  eligibleCount: number;
+  assignedCount: number;
+}
+
+export interface AdminDrawAssignment {
+  id: string;
+  userId: string;
+  user: {
+    id: string;
+    username: string;
+    globalName: string | null;
+  };
+  prizeId: string | null;
+  status: DrawAssignmentStatus;
+  deliveryStatus: DrawDeliveryStatus | null;
+  deliveredAt: string | null;
+  deliveryMethod: DeliveryMethod | null;
+  deliveryMethodNote: string | null;
+  prize: DrawPrize | null;
+  currentPrize: DrawPrize | null;
+  overrides: DrawOverride[];
+}
+
+export interface AdminDrawDetail {
+  draw: AdminDraw & {
+    publishedByUser: { id: string; username: string; globalName: string | null } | null;
+  };
+  assignments: AdminDrawAssignment[];
+}
+
+export interface UserDrawSummary {
+  id: string;
+  pool: PrizePool;
+  status: string;
+}
+
+export interface UserDrawDetail {
+  id: string;
+  pool: PrizePool;
+  status: string;
+  prize: DrawPrize | null;
+  delivery: { status: "pending" | "delivered"; method: DeliveryMethod | null; note: string | null } | null;
 }
 
 export interface AdminAsset {

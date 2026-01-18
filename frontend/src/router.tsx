@@ -15,6 +15,8 @@ import AdminTestPage from "./views/AdminTestPage";
 import AdminSettingsPage from "./views/AdminSettingsPage";
 import AdminPrizesPage from "./views/AdminPrizesPage";
 import AdminAssetsPage from "./views/AdminAssetsPage";
+import AdminDrawsPage from "./views/AdminDrawsPage";
+import AdminDrawDetailPage from "./views/AdminDrawDetailPage";
 import { fetchMe, updateLocale as apiUpdateLocale } from "./services/api";
 import type { Locale, User } from "./types";
 import Layout from "./views/Layout";
@@ -366,6 +368,38 @@ export default function AppRouter() {
               user ? (
                 user.isAdmin || user.isSuperAdmin ? (
                   <AdminPrizesPage />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              ) : loading ? (
+                <div className="panel">Loading…</div>
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/admin/draws"
+            element={
+              user ? (
+                user.isAdmin || user.isSuperAdmin ? (
+                  <AdminDrawsPage />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              ) : loading ? (
+                <div className="panel">Loading…</div>
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/admin/draws/:id"
+            element={
+              user ? (
+                user.isAdmin || user.isSuperAdmin ? (
+                  <AdminDrawDetailPage />
                 ) : (
                   <Navigate to="/" replace />
                 )

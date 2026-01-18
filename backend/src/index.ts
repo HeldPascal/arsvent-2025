@@ -40,7 +40,7 @@ import { maskHtmlAssets, getAssetToken } from "./content/tokens.js";
 import { loadInventory } from "./content/inventory.js";
 import { loadInventoryTags } from "./content/inventory-tags.js";
 import { loadDayInventorySnapshot } from "./content/day-inventory.js";
-import type { PrizePool, PrizeRecord } from "./prizes/store.js";
+import type { LocalizedText, PrizePool, PrizeRecord } from "./prizes/store.js";
 import {
   ensurePrizeStoreFile,
   loadPrizeStore,
@@ -776,11 +776,49 @@ const normalizeOptionalString = (value: unknown): string | null => {
   return trimmed.length ? trimmed : null;
 };
 
+const normalizeLocalizedTextInput = (value: unknown, fallback: string): LocalizedText => {
+  if (value && typeof value === "object") {
+    const raw = value as { en?: unknown; de?: unknown };
+    const en = normalizeOptionalString(raw.en) ?? fallback;
+    const de = normalizeOptionalString(raw.de) ?? en;
+    return { en, de };
+  }
+  const normalized = normalizeOptionalString(value) ?? fallback;
+  return { en: normalized, de: normalized };
+};
+
+const resolveLocalizedText = (value: LocalizedText, locale: string | null | undefined): string => {
+  if (locale === "de") return value.de || value.en;
+  return value.en || value.de;
+};
+
 const normalizeOptionalInt = (value: unknown): number | null => {
   if (value === null || value === undefined || value === "") return null;
   const parsed = Number(value);
   if (!Number.isInteger(parsed)) return null;
   return parsed;
+};
+
+const normalizeLocaleParam = (value: unknown): Locale => {
+  return normalizeLocale(typeof value === "string" ? value : null);
+};
+
+const deliveryMethodOptions = [
+  "INGAME_MAIL",
+  "CROWN_STORE_GIFT",
+  "PHYSICAL",
+  "CODE",
+  "OTHER",
+] as const;
+
+type DeliveryMethod = (typeof deliveryMethodOptions)[number];
+
+const normalizeDeliveryMethod = (value: unknown): DeliveryMethod | null => {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toUpperCase();
+  return (deliveryMethodOptions as readonly string[]).includes(normalized)
+    ? (normalized as DeliveryMethod)
+    : null;
 };
 
 const createStateToken = () => crypto.randomBytes(16).toString("hex");
@@ -972,6 +1010,9 @@ const scheduleEligibilityRefresh = async () => {
   if (!config.discordServerId || !DISCORD_BOT_TOKEN) {
     return;
   }
+  if (config.userRolesRefreshIntervalMinutes <= 0) {
+    return;
+  }
   const intervalMs = Math.max(5, config.userRolesRefreshIntervalMinutes) * 60_000;
   eligibilityRefreshTimer = setInterval(() => {
     refreshUserRolesForGuild(config.discordServerId as string).catch((err) => {
@@ -983,42 +1024,44 @@ const scheduleEligibilityRefresh = async () => {
 const findPrizeReferences = (prizeId: string, prizes: PrizeRecord[]) =>
   prizes.filter((prize) => prize.backupPrizes?.includes(prizeId)).map((prize) => prize.id);
 
+type PrizeValidationError = { prizeId: string | null; message: string };
+
 const validateBackupPrizeIds = (prize: PrizeRecord, prizes: PrizeRecord[]) => {
   const backupIds = prize.backupPrizes ?? [];
-  const errors: string[] = [];
+  const errors: PrizeValidationError[] = [];
   const seen = new Set<string>();
   for (const id of backupIds) {
     if (seen.has(id)) {
-      errors.push(`Duplicate backup prize id: ${id}`);
+      errors.push({ prizeId: prize.id, message: `Duplicate backup prize id: ${id}` });
       continue;
     }
     seen.add(id);
     if (id === prize.id) {
-      errors.push(`Backup prize cannot reference itself (${id}).`);
+      errors.push({ prizeId: prize.id, message: `Backup prize cannot reference itself (${id}).` });
       continue;
     }
     const target = prizes.find((entry) => entry.id === id);
     if (!target) {
-      errors.push(`Backup prize not found: ${id}`);
+      errors.push({ prizeId: prize.id, message: `Backup prize not found: ${id}` });
       continue;
     }
     if (target.pool !== prize.pool) {
-      errors.push(`Backup prize ${id} must be in pool ${prize.pool}.`);
+      errors.push({ prizeId: prize.id, message: `Backup prize ${id} must be in pool ${prize.pool}.` });
       continue;
     }
     if (!target.isActive) {
-      errors.push(`Backup prize ${id} must be active.`);
+      errors.push({ prizeId: prize.id, message: `Backup prize ${id} must be active.` });
     }
   }
   return errors;
 };
 
 const validatePrizeStore = async (store: { prizes: PrizeRecord[] }) => {
-  const errors: string[] = [];
+  const errors: PrizeValidationError[] = [];
   const ids = new Set<string>();
   for (const prize of store.prizes) {
     if (ids.has(prize.id)) {
-      errors.push(`Duplicate prize id: ${prize.id}`);
+      errors.push({ prizeId: prize.id, message: `Duplicate prize id: ${prize.id}` });
     } else {
       ids.add(prize.id);
     }
@@ -1026,13 +1069,210 @@ const validatePrizeStore = async (store: { prizes: PrizeRecord[] }) => {
   for (const prize of store.prizes) {
     const backupErrors = validateBackupPrizeIds(prize, store.prizes);
     errors.push(...backupErrors);
+    if (prize.isFiller) {
+      if (prize.quantity !== null && prize.quantity !== undefined) {
+        errors.push({
+          prizeId: prize.id,
+          message: `Filler prize ${prize.id} must use quantity=null (unlimited).`,
+        });
+      }
+    } else if (prize.quantity === null || prize.quantity === undefined) {
+      errors.push({
+        prizeId: prize.id,
+        message: `Non-filler prize ${prize.id} must define quantity.`,
+      });
+    } else if (prize.quantity <= 0) {
+      errors.push({
+        prizeId: prize.id,
+        message: `Non-filler prize ${prize.id} must define quantity > 0.`,
+      });
+    }
     if (prize.image) {
       const asset = await resolveAssetById(prize.image);
-      if (!asset) errors.push(`Image asset not found for prize ${prize.id}: ${prize.image}`);
+      if (!asset) {
+        errors.push({
+          prizeId: prize.id,
+          message: `Image asset not found for prize ${prize.id}: ${prize.image}`,
+        });
+      }
     }
   }
   return errors;
 };
+
+const buildPrizeUsage = async (drawId: string) => {
+  const assignments = await prisma.drawAssignment.findMany({
+    where: { drawId },
+    include: { overrides: { orderBy: { createdAt: "asc" } } },
+  });
+  const usage = new Map<string, number>();
+  for (const assignment of assignments) {
+    const currentPrizeId = assignment.overrides.at(-1)?.newPrizeId ?? assignment.prizeId;
+    if (!currentPrizeId) continue;
+    usage.set(currentPrizeId, (usage.get(currentPrizeId) ?? 0) + 1);
+  }
+  return usage;
+};
+
+const buildDrawSeed = (value: unknown) => {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  return crypto.randomBytes(16).toString("hex");
+};
+
+const createMulberry32 = (seed: number) => {
+  let value = seed >>> 0;
+  return () => {
+    value |= 0;
+    value = (value + 0x6d2b79f5) | 0;
+    let t = Math.imul(value ^ (value >>> 15), 1 | value);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+const createSeededRng = (seed: string) => {
+  const hash = crypto.createHash("sha256").update(seed).digest();
+  const seedValue = hash.readUInt32LE(0);
+  return createMulberry32(seedValue);
+};
+
+const shuffleWithRng = <T>(values: T[], rng: () => number) => {
+  const items = [...values];
+  for (let i = items.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    const a = items[i]!;
+    const b = items[j]!;
+    [items[i], items[j]] = [b, a];
+  }
+  return items;
+};
+
+const parseCutoffDate = (value: string | null | undefined) => {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+};
+
+const getEligibleUsersForPool = async (pool: PrizePool, cutoffAt: Date | null) => {
+  const config = await getEligibilityConfig();
+  if (!config.discordServerId || config.eligibleRoleIds.length === 0) {
+    throw new Error("eligibility_config_missing");
+  }
+  const roleMatches = await prisma.userDiscordRole.findMany({
+    where: {
+      guildId: config.discordServerId,
+      roleId: { in: config.eligibleRoleIds },
+    },
+    select: { userId: true },
+  });
+  const userIds = Array.from(new Set(roleMatches.map((entry) => entry.userId)));
+  if (userIds.length === 0) return { users: [], config };
+  const users = await prisma.user.findMany({
+    where: {
+      id: { in: userIds },
+      isAdmin: false,
+      isSuperAdmin: false,
+      lastSolvedDay: { gte: MAX_DAY },
+      ...(pool === "VETERAN" ? { mode: "VETERAN" } : {}),
+    },
+    select: {
+      id: true,
+      lastSolvedAt: true,
+    },
+  });
+  const filtered = cutoffAt
+    ? users.filter((user) => {
+        if (!user.lastSolvedAt) return true;
+        return user.lastSolvedAt.getTime() <= cutoffAt.getTime();
+      })
+    : users;
+  return {
+    users: filtered.sort((a, b) => a.id.localeCompare(b.id)),
+    config,
+  };
+};
+
+const buildPrizeAssignments = (
+  pool: PrizePool,
+  users: Array<{ id: string }>,
+  store: { prizes: PrizeRecord[] },
+  seed: string,
+) => {
+  const activePrizes = store.prizes.filter((prize) => prize.pool === pool && prize.isActive);
+  const nonFillers = activePrizes
+    .filter((prize) => !prize.isFiller)
+    .sort((a, b) => a.priority - b.priority || a.id.localeCompare(b.id));
+  const fillers = activePrizes
+    .filter((prize) => prize.isFiller)
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  const prizeErrors: string[] = [];
+  nonFillers.forEach((prize) => {
+    if (prize.quantity === null || prize.quantity === undefined) {
+      prizeErrors.push(`Non-filler prize ${prize.id} must define quantity.`);
+    } else if (prize.quantity <= 0) {
+      prizeErrors.push(`Non-filler prize ${prize.id} must define quantity > 0.`);
+    }
+  });
+  fillers.forEach((prize) => {
+    if (prize.quantity !== null && prize.quantity !== undefined) {
+      prizeErrors.push(`Filler prize ${prize.id} must use quantity=null (unlimited).`);
+    }
+  });
+  if (prizeErrors.length) {
+    return { assignments: [], assignedCount: 0, errors: prizeErrors };
+  }
+
+  const expanded: PrizeRecord[] = [];
+  nonFillers.forEach((prize) => {
+    const count = prize.quantity ?? 0;
+    for (let i = 0; i < count; i += 1) {
+      expanded.push(prize);
+    }
+  });
+
+  const rng = createSeededRng(seed);
+  const shuffledUsers = shuffleWithRng(users, rng);
+  const assignments = shuffledUsers.map((user, index) => {
+    let prize: PrizeRecord | null = null;
+    if (index < expanded.length) {
+      prize = expanded[index] ?? null;
+    } else if (fillers.length > 0) {
+      const fillerIndex = (index - expanded.length) % fillers.length;
+      prize = fillers[fillerIndex] ?? null;
+    }
+    return { userId: user.id, prize };
+  });
+  const assignedCount = assignments.filter((entry) => entry.prize).length;
+  return { assignments, assignedCount, errors: [] };
+};
+
+const serializeDraw = (draw: {
+  id: string;
+  pool: string;
+  status: string;
+  seed: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+  publishedAt: Date | null;
+  publishedBy: string | null;
+  eligibleCount: number;
+  assignedCount: number;
+}) => ({
+  id: draw.id,
+  pool: draw.pool,
+  status: draw.status,
+  seed: draw.seed ?? null,
+  createdAt: draw.createdAt.toISOString(),
+  updatedAt: draw.updatedAt.toISOString(),
+  createdBy: draw.createdBy,
+  publishedAt: draw.publishedAt ? draw.publishedAt.toISOString() : null,
+  publishedBy: draw.publishedBy ?? null,
+  eligibleCount: draw.eligibleCount,
+  assignedCount: draw.assignedCount,
+});
 
 type ProgressScope = "default" | "preview";
 const progressStoreKey = (scope: ProgressScope) => (scope === "preview" ? "previewPuzzleProgress" : "puzzleProgress");
@@ -2144,7 +2384,11 @@ app.put("/api/admin/eligibility", requireAuth, requireAdmin, async (req, res, ne
       if (!Number.isFinite(parsed)) {
         return res.status(400).json({ error: "invalid_refresh_interval" });
       }
-      userRolesRefreshIntervalMinutes = Math.max(5, parsed);
+      if (parsed <= 0) {
+        userRolesRefreshIntervalMinutes = 0;
+      } else {
+        userRolesRefreshIntervalMinutes = Math.max(5, parsed);
+      }
     }
     const updatePayload: {
       discordServerId?: string | null;
@@ -2236,7 +2480,8 @@ app.get("/api/eligibility", requireAuth, async (req, res, next) => {
 app.get("/api/admin/prizes", requireAuth, requireAdmin, async (_req, res, next) => {
   try {
     const store = await loadPrizeStore();
-    return res.json(store);
+    const validationErrors = await validatePrizeStore(store);
+    return res.json({ ...store, validationErrors });
   } catch (err) {
     return next(err);
   }
@@ -2256,8 +2501,8 @@ app.post("/api/admin/prizes", requireAuth, requireAdmin, async (req, res, next) 
       return res.status(400).json({ error: "prize_id_exists" });
     }
 
-    const name = normalizePrizeId(body.name) || id;
-    const description = normalizePrizeId(body.description);
+    const name = normalizeLocalizedTextInput(body.name, id);
+    const description = normalizeLocalizedTextInput(body.description, "");
     const image = normalizeOptionalString(body.image);
     const quantity = normalizeOptionalInt(body.quantity);
     if (quantity !== null && quantity < 1) {
@@ -2271,6 +2516,12 @@ app.post("/api/admin/prizes", requireAuth, requireAdmin, async (req, res, next) 
     const isActive = typeof body.isActive === "boolean" ? body.isActive : true;
     const backupPrizes = normalizeStringArray(body.backupPrizes);
     const adminNotes = normalizeOptionalString(body.adminNotes);
+    if (isFiller && quantity !== null) {
+      return res.status(400).json({ error: "filler_quantity_must_be_null" });
+    }
+    if (!isFiller && quantity === null) {
+      return res.status(400).json({ error: "non_filler_quantity_required" });
+    }
 
     if (image) {
       const asset = await resolveAssetById(image);
@@ -2346,8 +2597,14 @@ app.patch("/api/admin/prizes/:id", requireAuth, requireAdmin, async (req, res, n
 
     const pool = body.pool !== undefined ? normalizePrizePool(body.pool) : current.pool;
     if (!pool) return res.status(400).json({ error: "invalid_prize_pool" });
-    const name = body.name !== undefined ? normalizePrizeId(body.name) : current.name;
-    const description = body.description !== undefined ? normalizePrizeId(body.description) : current.description;
+    const name =
+      body.name !== undefined
+        ? normalizeLocalizedTextInput(body.name, current.name.en)
+        : current.name;
+    const description =
+      body.description !== undefined
+        ? normalizeLocalizedTextInput(body.description, current.description.en)
+        : current.description;
     const image =
       body.image !== undefined ? normalizeOptionalString(body.image) : current.image ?? null;
     const quantity =
@@ -2366,6 +2623,12 @@ app.patch("/api/admin/prizes/:id", requireAuth, requireAdmin, async (req, res, n
       body.backupPrizes !== undefined ? normalizeStringArray(body.backupPrizes) : current.backupPrizes ?? [];
     const adminNotes =
       body.adminNotes !== undefined ? normalizeOptionalString(body.adminNotes) : current.adminNotes ?? null;
+    if (isFiller && quantity !== null) {
+      return res.status(400).json({ error: "filler_quantity_must_be_null" });
+    }
+    if (!isFiller && quantity === null) {
+      return res.status(400).json({ error: "non_filler_quantity_required" });
+    }
 
     if (image) {
       const asset = await resolveAssetById(image);
@@ -2471,6 +2734,504 @@ app.post(
     }
   },
 );
+
+app.post("/api/admin/draws", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const body = req.body as { pool?: unknown; seed?: unknown };
+    const pool = normalizePrizePool(body.pool);
+    if (!pool) return res.status(400).json({ error: "invalid_draw_pool" });
+
+    const publishedDraw = await prisma.draw.findFirst({
+      where: { pool, status: { in: ["PUBLISHED", "DELIVERED"] } },
+    });
+    if (publishedDraw) {
+      return res.status(400).json({ error: "draw_already_published" });
+    }
+
+    const store = await loadPrizeStore();
+    const cutoffAt = parseCutoffDate(store.pools[pool]?.cutoffAt ?? null);
+    const seed = buildDrawSeed(body.seed);
+    const eligibility = await getEligibleUsersForPool(pool, cutoffAt);
+    const eligibleUsers = eligibility.users;
+    const assignmentResult = buildPrizeAssignments(pool, eligibleUsers, store, seed);
+    if (assignmentResult.errors.length) {
+      return res.status(400).json({ error: "invalid_prize_draw_config", details: assignmentResult.errors });
+    }
+
+    const existingDraft = await prisma.draw.findFirst({ where: { pool, status: "DRAFT" } });
+    if (existingDraft) {
+      const updated = await prisma.$transaction(async (tx) => {
+        const snapshot = await tx.eligibilitySnapshot.create({
+          data: {
+            pool,
+            discordServerId: eligibility.config.discordServerId,
+            eligibleRoleIds: JSON.stringify(eligibility.config.eligibleRoleIds ?? []),
+            eligibleCount: eligibleUsers.length,
+            cutoffAt,
+          },
+        });
+        if (eligibleUsers.length) {
+          await tx.eligibilitySnapshotUser.createMany({
+            data: eligibleUsers.map((user) => ({ snapshotId: snapshot.id, userId: user.id })),
+          });
+        }
+        await tx.drawAssignment.deleteMany({ where: { drawId: existingDraft.id } });
+        if (assignmentResult.assignments.length) {
+          await tx.drawAssignment.createMany({
+            data: assignmentResult.assignments.map((entry) => ({
+              drawId: existingDraft.id,
+              userId: entry.userId,
+              prizeId: entry.prize?.id ?? null,
+              status: entry.prize ? "ASSIGNED" : "NONE",
+              deliveryStatus: entry.prize ? "PENDING" : null,
+            })),
+          });
+        }
+        return tx.draw.update({
+          where: { id: existingDraft.id },
+          data: {
+            seed,
+            eligibleCount: eligibleUsers.length,
+            assignedCount: assignmentResult.assignedCount,
+            eligibilitySnapshotId: snapshot.id,
+          },
+        });
+      });
+      await logAdminAction("admin:draw:rerun", req.user?.id, { drawId: updated.id, pool });
+      return res.json({ draw: serializeDraw(updated) });
+    }
+
+    const created = await prisma.$transaction(async (tx) => {
+      const snapshot = await tx.eligibilitySnapshot.create({
+        data: {
+          pool,
+          discordServerId: eligibility.config.discordServerId,
+          eligibleRoleIds: JSON.stringify(eligibility.config.eligibleRoleIds ?? []),
+          eligibleCount: eligibleUsers.length,
+          cutoffAt,
+        },
+      });
+      if (eligibleUsers.length) {
+        await tx.eligibilitySnapshotUser.createMany({
+          data: eligibleUsers.map((user) => ({ snapshotId: snapshot.id, userId: user.id })),
+        });
+      }
+      const draw = await tx.draw.create({
+        data: {
+          pool,
+          status: "DRAFT",
+          seed,
+          createdBy: req.user!.id,
+          eligibleCount: eligibleUsers.length,
+          assignedCount: assignmentResult.assignedCount,
+          eligibilitySnapshotId: snapshot.id,
+        },
+      });
+      if (assignmentResult.assignments.length) {
+        await tx.drawAssignment.createMany({
+          data: assignmentResult.assignments.map((entry) => ({
+            drawId: draw.id,
+            userId: entry.userId,
+            prizeId: entry.prize?.id ?? null,
+            status: entry.prize ? "ASSIGNED" : "NONE",
+            deliveryStatus: entry.prize ? "PENDING" : null,
+          })),
+        });
+      }
+      return draw;
+    });
+    await logAdminAction("admin:draw:create", req.user?.id, { drawId: created.id, pool });
+    return res.status(201).json({ draw: serializeDraw(created) });
+  } catch (err) {
+    if ((err as Error).message === "eligibility_config_missing") {
+      return res.status(400).json({ error: "eligibility_config_missing" });
+    }
+    return next(err);
+  }
+});
+
+app.get("/api/admin/draws", requireAuth, requireAdmin, async (_req, res, next) => {
+  try {
+    const draws = await prisma.draw.findMany({ orderBy: { createdAt: "desc" } });
+    return res.json({ draws: draws.map(serializeDraw) });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.get("/api/admin/draws/:id", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const drawId = req.params.id;
+    if (!drawId) return res.status(400).json({ error: "draw_not_found" });
+    const draw = await prisma.draw.findUnique({ where: { id: drawId } });
+    if (!draw) return res.status(404).json({ error: "draw_not_found" });
+    const locale = normalizeLocale(req.user?.locale);
+    const publishedByUser = draw.publishedBy
+      ? await prisma.user.findUnique({
+          where: { id: draw.publishedBy },
+          select: { id: true, username: true, globalName: true },
+        })
+      : null;
+
+    const assignmentsRaw = await prisma.drawAssignment.findMany({
+      where: { drawId },
+      include: {
+        overrides: { orderBy: { createdAt: "asc" } },
+        user: { select: { id: true, username: true, globalName: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    const store = await loadPrizeStore();
+    const prizeMap = new Map(store.prizes.map((prize) => [prize.id, prize]));
+    const imageCache = new Map<string, string | null>();
+    const resolvePrizePayload = async (prizeId?: string | null) => {
+      if (!prizeId) return null;
+      const prize = prizeMap.get(prizeId);
+      if (!prize) return null;
+      if (!prize.image) {
+        return {
+          id: prize.id,
+          name: resolveLocalizedText(prize.name, locale),
+          description: resolveLocalizedText(prize.description, locale),
+          image: null,
+        };
+      }
+      const cached = imageCache.get(prize.image);
+      if (cached !== undefined) {
+        return {
+          id: prize.id,
+          name: resolveLocalizedText(prize.name, locale),
+          description: resolveLocalizedText(prize.description, locale),
+          image: cached,
+        };
+      }
+      const url = await resolveAssetUrlById(prize.image);
+      imageCache.set(prize.image, url);
+      return {
+        id: prize.id,
+        name: resolveLocalizedText(prize.name, locale),
+        description: resolveLocalizedText(prize.description, locale),
+        image: url,
+      };
+    };
+
+    const assignments = await Promise.all(
+      assignmentsRaw.map(async (assignment) => {
+        const latestOverride = assignment.overrides.at(-1);
+        const currentPrizeId = latestOverride?.newPrizeId ?? assignment.prizeId;
+        return {
+          id: assignment.id,
+          userId: assignment.userId,
+          user: {
+            id: assignment.user.id,
+            username: assignment.user.username,
+            globalName: assignment.user.globalName,
+          },
+          prizeId: assignment.prizeId,
+          status: assignment.status,
+          deliveryStatus: assignment.deliveryStatus,
+          deliveredAt: assignment.deliveredAt ? assignment.deliveredAt.toISOString() : null,
+          deliveryMethod: assignment.deliveryMethod ?? null,
+          deliveryMethodNote: assignment.deliveryMethodNote ?? null,
+          prize: await resolvePrizePayload(assignment.prizeId),
+          currentPrize: await resolvePrizePayload(currentPrizeId),
+          overrides: assignment.overrides.map((override) => ({
+            id: override.id,
+            oldPrizeId: override.oldPrizeId ?? null,
+            newPrizeId: override.newPrizeId ?? null,
+            reason: override.reason,
+            createdAt: override.createdAt.toISOString(),
+            createdBy: override.createdBy,
+          })),
+        };
+      }),
+    );
+
+    return res.json({
+      draw: {
+        ...serializeDraw(draw),
+        publishedByUser: publishedByUser
+          ? {
+              id: publishedByUser.id,
+              username: publishedByUser.username,
+              globalName: publishedByUser.globalName,
+            }
+          : null,
+      },
+      assignments,
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+const syncDrawDeliveryStatus = async (drawId: string) => {
+  const draw = await prisma.draw.findUnique({ where: { id: drawId } });
+  if (!draw || draw.status === "DRAFT") return draw;
+  const assignments = await prisma.drawAssignment.findMany({
+    where: { drawId, prizeId: { not: null } },
+    select: { deliveryStatus: true },
+  });
+  const allDelivered =
+    assignments.length === 0 || assignments.every((entry) => entry.deliveryStatus === "DELIVERED");
+  const nextStatus = allDelivered ? "DELIVERED" : "PUBLISHED";
+  if (draw.status === nextStatus) return draw;
+  return prisma.draw.update({
+    where: { id: drawId },
+    data: { status: nextStatus },
+  });
+};
+
+app.post("/api/admin/draws/:id/publish", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const drawId = req.params.id;
+    if (!drawId) return res.status(400).json({ error: "draw_not_found" });
+    const draw = await prisma.draw.findUnique({ where: { id: drawId } });
+    if (!draw) return res.status(404).json({ error: "draw_not_found" });
+    if (draw.status !== "DRAFT") {
+      return res.status(400).json({ error: "draw_already_published" });
+    }
+    const updated = await prisma.draw.update({
+      where: { id: draw.id },
+      data: {
+        status: "PUBLISHED",
+        publishedAt: new Date(),
+        publishedBy: req.user!.id,
+      },
+    });
+    await logAdminAction("admin:draw:publish", req.user?.id, { drawId: draw.id, pool: draw.pool });
+    await syncDrawDeliveryStatus(draw.id);
+    return res.json({ draw: serializeDraw(updated) });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.post("/api/admin/draws/:id/override", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const drawId = req.params.id;
+    if (!drawId) return res.status(400).json({ error: "draw_assignment_not_found" });
+    const body = req.body as { assignmentId?: unknown; newPrizeId?: unknown; reason?: unknown };
+    const assignmentId = typeof body.assignmentId === "string" ? body.assignmentId.trim() : "";
+    const newPrizeId = normalizePrizeId(body.newPrizeId);
+    const reason = typeof body.reason === "string" ? body.reason.trim() : "";
+    if (!assignmentId || !newPrizeId || !reason) {
+      return res.status(400).json({ error: "invalid_override_request" });
+    }
+
+    const assignment = await prisma.drawAssignment.findUnique({
+      where: { id: assignmentId },
+      include: {
+        draw: true,
+        overrides: { orderBy: { createdAt: "asc" } },
+      },
+    });
+    if (!assignment || assignment.drawId !== drawId) {
+      return res.status(404).json({ error: "draw_assignment_not_found" });
+    }
+    if (assignment.draw.status === "DELIVERED") {
+      return res.status(400).json({ error: "draw_already_delivered" });
+    }
+
+    const currentPrizeId = assignment.overrides.at(-1)?.newPrizeId ?? assignment.prizeId;
+    if (currentPrizeId === newPrizeId) {
+      return res.status(400).json({ error: "override_same_prize" });
+    }
+
+    const store = await loadPrizeStore();
+    const targetPrize = store.prizes.find((prize) => prize.id === newPrizeId);
+    if (!targetPrize || !targetPrize.isActive || targetPrize.pool !== assignment.draw.pool) {
+      return res.status(400).json({ error: "invalid_override_prize" });
+    }
+    if (targetPrize.quantity !== null && targetPrize.quantity !== undefined) {
+      const usage = await buildPrizeUsage(assignment.drawId);
+      const usedCount = usage.get(targetPrize.id) ?? 0;
+      if (usedCount >= targetPrize.quantity) {
+        return res.status(400).json({ error: "override_prize_exhausted" });
+      }
+    }
+
+    if (assignment.draw.status !== "DRAFT") {
+      const basisPrizeId = assignment.overrides.at(-1)?.newPrizeId ?? assignment.prizeId;
+      if (!basisPrizeId) {
+        return res.status(400).json({ error: "override_no_original_prize" });
+      }
+      const basisPrize = store.prizes.find((prize) => prize.id === basisPrizeId);
+      const backupPrizes = basisPrize?.backupPrizes ?? [];
+      if (!backupPrizes.includes(newPrizeId)) {
+        return res.status(400).json({ error: "override_not_backup_prize" });
+      }
+    }
+
+    const override = await prisma.drawOverride.create({
+      data: {
+        drawAssignmentId: assignment.id,
+        oldPrizeId: currentPrizeId,
+        newPrizeId,
+        reason,
+        createdBy: req.user!.id,
+      },
+    });
+    await logAdminAction("admin:draw:override", req.user?.id, {
+      drawId,
+      assignmentId: assignment.id,
+      newPrizeId,
+    });
+    return res.json({
+      override: {
+        id: override.id,
+        oldPrizeId: override.oldPrizeId ?? null,
+        newPrizeId: override.newPrizeId ?? null,
+        reason: override.reason,
+        createdAt: override.createdAt.toISOString(),
+        createdBy: override.createdBy,
+      },
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.post(
+  "/api/admin/draws/:id/assignments/:assignmentId/delivery",
+  requireAuth,
+  requireAdmin,
+  async (req, res, next) => {
+    try {
+      const drawId = req.params.id;
+      const assignmentId = req.params.assignmentId;
+      if (!drawId || !assignmentId) {
+        return res.status(400).json({ error: "draw_assignment_not_found" });
+      }
+      const body = req.body as { status?: unknown; method?: unknown; note?: unknown };
+      const statusRaw = typeof body.status === "string" ? body.status.toLowerCase() : "";
+      const deliveryStatus =
+        statusRaw === "delivered" ? "DELIVERED" : statusRaw === "pending" ? "PENDING" : null;
+      if (!deliveryStatus) {
+        return res.status(400).json({ error: "invalid_delivery_status" });
+      }
+      const deliveryMethod = normalizeDeliveryMethod(body.method);
+      const deliveryMethodNote = normalizeOptionalString(body.note);
+      const assignment = await prisma.drawAssignment.findFirst({
+        where: { id: assignmentId },
+        include: { draw: true },
+      });
+      if (!assignment || assignment.drawId !== drawId) {
+        return res.status(404).json({ error: "draw_assignment_not_found" });
+      }
+      if (assignment.draw.status === "DRAFT") {
+        return res.status(400).json({ error: "draw_not_published" });
+      }
+      if (!assignment.prizeId) {
+        return res.status(400).json({ error: "no_prize_assigned" });
+      }
+      if (deliveryStatus === "DELIVERED") {
+        if (!deliveryMethod) {
+          return res.status(400).json({ error: "invalid_delivery_method" });
+        }
+        if (deliveryMethod === "OTHER" && !deliveryMethodNote) {
+          return res.status(400).json({ error: "delivery_method_note_required" });
+        }
+      }
+      const updated = await prisma.drawAssignment.update({
+        where: { id: assignment.id },
+        data: {
+          deliveryStatus,
+          deliveryMethod: deliveryStatus === "DELIVERED" ? deliveryMethod : null,
+          deliveryMethodNote: deliveryStatus === "DELIVERED" ? deliveryMethodNote : null,
+          deliveredAt: deliveryStatus === "DELIVERED" ? new Date() : null,
+        },
+      });
+      await syncDrawDeliveryStatus(drawId);
+      return res.json({
+        assignment: {
+          id: updated.id,
+          deliveryStatus: updated.deliveryStatus,
+          deliveryMethod: updated.deliveryMethod ?? null,
+          deliveryMethodNote: updated.deliveryMethodNote ?? null,
+          deliveredAt: updated.deliveredAt ? updated.deliveredAt.toISOString() : null,
+        },
+      });
+    } catch (err) {
+      return next(err);
+    }
+  },
+);
+
+app.get("/api/draws", requireAuth, async (req, res, next) => {
+  try {
+    const assignments = await prisma.drawAssignment.findMany({
+      where: {
+        userId: req.user!.id,
+        draw: { status: { in: ["PUBLISHED", "DELIVERED"] } },
+      },
+      include: { draw: true },
+    });
+    const draws = assignments.map((assignment) => ({
+      id: assignment.draw.id,
+      pool: assignment.draw.pool,
+      status: assignment.draw.status.toLowerCase(),
+    }));
+    const unique = new Map(draws.map((draw) => [draw.id, draw]));
+    return res.json({ draws: Array.from(unique.values()) });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.get("/api/draws/:id", requireAuth, async (req, res, next) => {
+  try {
+    const drawId = req.params.id;
+    if (!drawId) return res.status(404).json({ error: "draw_not_found" });
+    const assignment = await prisma.drawAssignment.findFirst({
+      where: {
+        drawId,
+        userId: req.user!.id,
+        draw: { status: { in: ["PUBLISHED", "DELIVERED"] } },
+      },
+      include: {
+        draw: true,
+        overrides: { orderBy: { createdAt: "asc" } },
+      },
+    });
+    if (!assignment) return res.status(404).json({ error: "draw_not_found" });
+
+    const store = await loadPrizeStore();
+    const prizeMap = new Map(store.prizes.map((prize) => [prize.id, prize]));
+    const locale = normalizeLocale(req.user?.locale);
+    const resolvePrize = async (prizeId?: string | null) => {
+      if (!prizeId) return null;
+      const prize = prizeMap.get(prizeId);
+      if (!prize) return null;
+      return {
+        id: prize.id,
+        name: resolveLocalizedText(prize.name, locale),
+        description: resolveLocalizedText(prize.description, locale),
+        image: prize.image ? await resolveAssetUrlById(prize.image) : null,
+      };
+    };
+    const currentPrizeId = assignment.overrides.at(-1)?.newPrizeId ?? assignment.prizeId;
+    const prize = await resolvePrize(currentPrizeId);
+    const delivery =
+      prize && assignment.deliveryStatus
+        ? {
+            status: assignment.deliveryStatus === "DELIVERED" ? "delivered" : "pending",
+            method: assignment.deliveryMethod ?? null,
+            note: assignment.deliveryMethodNote ?? null,
+          }
+        : null;
+    return res.json({
+      id: assignment.draw.id,
+      pool: assignment.draw.pool,
+      status: assignment.draw.status.toLowerCase(),
+      prize,
+      delivery,
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
 
 app.get("/api/admin/assets", requireAuth, requireAdmin, async (_req, res, next) => {
   try {
@@ -2596,6 +3357,7 @@ app.delete("/api/admin/assets/:id", requireAuth, requireAdmin, async (req, res, 
 
 app.get("/api/prizes", async (_req, res, next) => {
   try {
+    const locale = normalizeLocaleParam(_req.query.locale);
     const store = await loadPrizeStore();
     const active = store.prizes.filter((prize) => prize.isActive);
     const publicPrizes = await Promise.all(
@@ -2603,8 +3365,8 @@ app.get("/api/prizes", async (_req, res, next) => {
         .sort((a, b) => a.priority - b.priority)
         .map(async (prize) => ({
           id: prize.id,
-          name: prize.name,
-          description: prize.description,
+          name: resolveLocalizedText(prize.name, locale),
+          description: resolveLocalizedText(prize.description, locale),
           image: prize.image ? await resolveAssetUrlById(prize.image) : null,
           pool: prize.pool,
           quantity: prize.quantity ?? null,
@@ -2748,7 +3510,7 @@ app.get("/api/intro", requireAuth, async (req, res, next) => {
   try {
     const requestedLocale =
       typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
-        ? normalizeLocale(req.query.locale)
+        ? normalizeLocaleParam(req.query.locale)
         : null;
     const locale = requestedLocale ?? normalizeLocale(getUserLocale(req.user as PrismaUser));
     const funSwap = Boolean((req.user as PrismaUser)?.creatureSwap);
@@ -2851,7 +3613,7 @@ app.get("/api/days/:day", requireAuth, requireIntroComplete, async (req, res, ne
 
     const requestedLocale =
       typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
-        ? normalizeLocale(req.query.locale)
+        ? normalizeLocaleParam(req.query.locale)
         : null;
     const requestedMode = typeof req.query.mode === "string" ? normalizeModeValue(req.query.mode) : null;
     const resetPreview =
@@ -2945,7 +3707,7 @@ app.post("/api/days/:day/memory/check", requireAuth, requireIntroComplete, async
 
     const requestedLocale =
       typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
-        ? normalizeLocale(req.query.locale)
+        ? normalizeLocaleParam(req.query.locale)
         : null;
     const requestedMode = typeof req.query.mode === "string" ? normalizeModeValue(req.query.mode) : null;
     const locale = isAdminOverride && requestedLocale ? requestedLocale : normalizeLocale(getUserLocale(req.user as PrismaUser));
@@ -3006,7 +3768,7 @@ app.post("/api/days/:day/pair-items/check", requireAuth, requireIntroComplete, a
 
     const requestedLocale =
       typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
-        ? normalizeLocale(req.query.locale)
+        ? normalizeLocaleParam(req.query.locale)
         : null;
     const requestedMode = typeof req.query.mode === "string" ? normalizeModeValue(req.query.mode) : null;
     const locale = isAdminOverride && requestedLocale ? requestedLocale : normalizeLocale(getUserLocale(req.user as PrismaUser));
@@ -3068,7 +3830,7 @@ app.post("/api/days/:day/submit", requireAuth, requireIntroComplete, async (req,
 
     const requestedLocale =
       typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
-        ? normalizeLocale(req.query.locale)
+        ? normalizeLocaleParam(req.query.locale)
         : null;
     const requestedMode = typeof req.query.mode === "string" ? normalizeModeValue(req.query.mode) : null;
 
@@ -3186,7 +3948,7 @@ app.post("/api/days/:day/puzzle/:puzzleId/reset", requireAuth, requireIntroCompl
 
     const requestedLocale =
       typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
-        ? normalizeLocale(req.query.locale)
+        ? normalizeLocaleParam(req.query.locale)
         : null;
     const requestedMode = typeof req.query.mode === "string" ? normalizeModeValue(req.query.mode) : null;
 
@@ -3252,7 +4014,7 @@ app.post("/api/days/:day/puzzle/:puzzleId/solve", requireAuth, requireIntroCompl
     const funSwap = Boolean(req.user?.creatureSwap);
     const requestedLocale =
       typeof req.query.locale === "string" && (req.query.locale === "en" || req.query.locale === "de")
-        ? normalizeLocale(req.query.locale)
+        ? normalizeLocaleParam(req.query.locale)
         : null;
     const requestedMode = typeof req.query.mode === "string" ? normalizeModeValue(req.query.mode) : null;
 

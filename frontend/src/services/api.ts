@@ -10,6 +10,8 @@ import type {
   AdminEligibilityConfig,
   AdminEligibilityResponse,
   AdminEligibilityRole,
+  AdminDraw,
+  AdminDrawDetail,
   ContentDiagnostics,
   AdminUserSummary,
   DayDetail,
@@ -20,8 +22,11 @@ import type {
   InventoryResponse,
   Locale,
   Mode,
+  PrizePool,
   PrizePoolMeta,
   PublicPrize,
+  UserDrawDetail,
+  UserDrawSummary,
   RiddleAnswerPayload,
   User,
 } from "../types";
@@ -367,6 +372,38 @@ export const importPrizesYaml = (file: File) => {
 
 export const exportPrizesYaml = () => apiFetchRaw("/api/admin/prizes/export");
 
+export const fetchAdminDraws = () => apiFetch<{ draws: AdminDraw[] }>("/api/admin/draws");
+
+export const fetchAdminDraw = (id: string) => apiFetch<AdminDrawDetail>(`/api/admin/draws/${id}`);
+
+export const createAdminDraw = (payload: { pool: PrizePool; seed?: string | null }) =>
+  apiFetch<{ draw: AdminDraw }>("/api/admin/draws", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+export const publishAdminDraw = (id: string) =>
+  apiFetch<{ draw: AdminDraw }>(`/api/admin/draws/${id}/publish`, { method: "POST" });
+
+export const overrideAdminDraw = (id: string, payload: { assignmentId: string; newPrizeId: string; reason: string }) =>
+  apiFetch<{ override: unknown }>(`/api/admin/draws/${id}/override`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+export const updateAdminDrawDelivery = (
+  drawId: string,
+  assignmentId: string,
+  payload: { status: "pending" | "delivered"; method?: string; note?: string },
+) =>
+  apiFetch<{ assignment: { id: string; deliveryStatus: string | null } }>(
+    `/api/admin/draws/${drawId}/assignments/${assignmentId}/delivery`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+
 export const fetchAdminAssets = () => apiFetch<{ assets: AdminAsset[] }>("/api/admin/assets");
 
 export const uploadAdminAsset = (
@@ -403,8 +440,17 @@ export const updateAdminAsset = (id: string, payload: { id?: string; name?: stri
 export const deleteAdminAsset = (id: string) =>
   apiFetch<{ ok: true }>(`/api/admin/assets/${id}`, { method: "DELETE" });
 
-export const fetchPublicPrizes = () =>
-  apiFetch<{ pools: Record<string, PrizePoolMeta>; prizes: PublicPrize[] }>("/api/prizes");
+export const fetchPublicPrizes = (locale?: string) =>
+  apiFetch<{ pools: Record<string, PrizePoolMeta>; prizes: PublicPrize[] }>(
+    `/api/prizes${locale ? `?locale=${locale}` : ""}`,
+  );
+
+export const fetchUserDraws = () => apiFetch<{ draws: UserDrawSummary[] }>("/api/draws");
+
+export const fetchUserDraw = (id: string, locale?: string) => {
+  const query = locale ? `?locale=${encodeURIComponent(locale)}` : "";
+  return apiFetch<UserDrawDetail>(`/api/draws/${id}${query}`);
+};
 
 export const fetchAudit = (limit?: number) =>
   apiFetch<AdminOverview["recentAudit"] extends Array<infer T> ? T[] : never>(
