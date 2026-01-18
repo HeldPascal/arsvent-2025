@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import type { User } from "../types";
-import { fetchEligibility, fetchPublicPrizes, submitFeedback } from "../services/api";
+import type { DeliveryMethod, User } from "../types";
+import { fetchEligibility, fetchPublicPrizes, fetchUserDraw, fetchUserDraws, submitFeedback } from "../services/api";
 import { useI18n } from "../i18n";
-import type { EligibilityStatus, PrizePool, PrizePoolMeta } from "../types";
+import type { EligibilityStatus, PrizePool, PrizePoolMeta, UserDrawDetail } from "../types";
 
 interface Props {
   user: User;
@@ -27,6 +27,9 @@ export default function PrizesPage({ user, onFeedbackSubmitted }: Props) {
   const [prizeLoadError, setPrizeLoadError] = useState<string | null>(null);
   const [eligibility, setEligibility] = useState<EligibilityStatus | null>(null);
   const [eligibilityError, setEligibilityError] = useState<string | null>(null);
+  const [drawDetails, setDrawDetails] = useState<Record<string, UserDrawDetail>>({});
+  const [drawLoadError, setDrawLoadError] = useState<string | null>(null);
+  const [drawLoading, setDrawLoading] = useState(false);
 
   const feedbackEndsAt = useMemo(
     () => (user.feedbackEndsAt ? new Date(user.feedbackEndsAt) : null),
@@ -46,6 +49,7 @@ export default function PrizesPage({ user, onFeedbackSubmitted }: Props) {
   );
   const calendarCompleted = user.lastSolvedDay >= 24;
   const needsFeedback = calendarCompleted && !user.hasSubmittedFeedback && feedbackOpen;
+  const canViewPrizes = Boolean(user.hasSubmittedFeedback) || !feedbackOpen;
   const poolOrder: PrizePool[] = ["MAIN", "VETERAN"];
 
   const parseCutoff = (value: string | null) => (value ? new Date(value) : null);
@@ -57,6 +61,22 @@ export default function PrizesPage({ user, onFeedbackSubmitted }: Props) {
     const ended = isCutoffPassed(cutoff, lastSolvedAt);
     if (ended) return t("prizeStatusEnded");
     return t("prizeStatusPending");
+  };
+
+  const deliveryMethodLabel = (method: DeliveryMethod | null, note: string | null) => {
+    if (!method) return "—";
+    const labels: Record<DeliveryMethod, string> = {
+      INGAME_MAIL: t("deliveryMethodIngameMail"),
+      CROWN_STORE_GIFT: t("deliveryMethodCrownStoreGift"),
+      PHYSICAL: t("deliveryMethodPhysical"),
+      CODE: t("deliveryMethodCode"),
+      OTHER: t("deliveryMethodOther"),
+    };
+    const base = labels[method];
+    if (method === "OTHER" && note) {
+      return `${base}: ${note}`;
+    }
+    return base;
   };
 
   const eligibilityMessage = useMemo(() => {
@@ -85,7 +105,7 @@ export default function PrizesPage({ user, onFeedbackSubmitted }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    fetchPublicPrizes()
+    fetchPublicPrizes(locale)
       .then((payload) => {
         if (cancelled) return;
         setPoolMeta(payload.pools as Record<PrizePool, PrizePoolMeta>);
@@ -98,7 +118,7 @@ export default function PrizesPage({ user, onFeedbackSubmitted }: Props) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     if (!calendarCompleted) {
@@ -120,6 +140,48 @@ export default function PrizesPage({ user, onFeedbackSubmitted }: Props) {
       cancelled = true;
     };
   }, [calendarCompleted]);
+
+  useEffect(() => {
+    if (!calendarCompleted) {
+      setDrawDetails({});
+      return;
+    }
+    let cancelled = false;
+    setDrawLoading(true);
+    setDrawLoadError(null);
+    fetchUserDraws()
+      .then(async (payload) => {
+        if (cancelled) return;
+        const details = await Promise.all(
+          payload.draws.map(async (draw) => ({
+            id: draw.id,
+            detail: await fetchUserDraw(draw.id, locale),
+          })),
+        );
+        if (cancelled) return;
+        const map = details.reduce<Record<string, UserDrawDetail>>((acc, entry) => {
+          acc[entry.id] = entry.detail;
+          return acc;
+        }, {});
+        setDrawDetails(map);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setDrawLoadError((err as Error).message);
+      })
+      .finally(() => {
+        if (!cancelled) setDrawLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [calendarCompleted, locale]);
+
+  const drawsByPool = useMemo(() => {
+    const map = new Map<PrizePool, UserDrawDetail>();
+    Object.values(drawDetails).forEach((detail) => map.set(detail.pool, detail));
+    return map;
+  }, [drawDetails]);
 
   const sendToast = (key: string) => {
     window.dispatchEvent(new CustomEvent("app:toast", { detail: { type: "success", key } }));
@@ -217,31 +279,79 @@ export default function PrizesPage({ user, onFeedbackSubmitted }: Props) {
         )}
       </div>
 
-      <div className="panel">
+      <div className="panel prize-panel">
         <h2>{t("prizeSectionTitle")}</h2>
         {!calendarCompleted ? (
           <p className="muted">{t("prizeSectionBodyLocked")}</p>
         ) : (
           <>
             {prizeLoadError && <p className="error">{prizeLoadError}</p>}
+            {drawLoadError && <p className="error">{drawLoadError}</p>}
             {eligibilityError && <p className="error">{eligibilityError}</p>}
-            {eligibilityMessage && (
+            {eligibilityMessage && canViewPrizes && (
               <div className="panel subpanel prize-eligibility">
                 <div className="eyebrow">{t("eligibilityTitle")}</div>
                 <p>{eligibilityMessage}</p>
                 <p className="muted small">{eligibilityCheckedAt}</p>
               </div>
             )}
-            <div className="prize-status-grid">
-              {poolOrder.map((pool) => (
-                <div key={pool} className="panel subpanel">
-                  <div className="eyebrow">{pool}</div>
-                  <h4>{t("prizeSectionTitle")}</h4>
-                  <p className="muted">{prizeStatusMessage(pool)}</p>
-                  {prizesAvailable && <p className="muted small">{t("prizeSectionBody")}</p>}
-                </div>
-              ))}
-            </div>
+            {!canViewPrizes ? (
+              <div className="panel subpanel prize-eligibility">
+                <div className="eyebrow">{t("prizeFeedbackGateTitle")}</div>
+                <p>{t("prizeFeedbackGateBody")}</p>
+              </div>
+            ) : (
+              <div className="prize-status-grid">
+                {poolOrder.map((pool) => {
+                  const draw = drawsByPool.get(pool);
+                  return (
+                    <div key={pool} className="panel subpanel prize-status-card">
+                      <div className="eyebrow">{pool}</div>
+                      <h4>{t("prizeSectionTitle")}</h4>
+                      {!draw ? (
+                        <>
+                          {drawLoading ? (
+                            <p className="muted">{t("loading")}</p>
+                          ) : (
+                            <p className="muted">{prizeStatusMessage(pool)}</p>
+                          )}
+                          {prizesAvailable && <p className="muted small">{t("prizeSectionBody")}</p>}
+                        </>
+                      ) : draw.prize ? (
+                        <div className="prize-result prize-result-wide">
+                          <div className="prize-art">
+                            {draw.prize.image ? (
+                              <img src={draw.prize.image} alt={draw.prize.name} loading="lazy" />
+                            ) : (
+                              <div className="prize-art-placeholder" aria-hidden="true">
+                                ★
+                              </div>
+                            )}
+                          </div>
+                          <div className="prize-body">
+                            <div>
+                              <p className="prize-name">{draw.prize.name}</p>
+                              <p className="muted">{draw.prize.description}</p>
+                            </div>
+                            {draw.delivery && (
+                              <p className="muted small">
+                                {draw.delivery.status === "delivered"
+                                  ? t("prizeDeliveryDelivered", {
+                                      method: deliveryMethodLabel(draw.delivery.method, draw.delivery.note),
+                                    })
+                                  : t("prizeDeliveryPending")}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="muted">{t("prizeNoPrize")}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </>
         )}
       </div>

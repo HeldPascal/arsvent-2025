@@ -74,6 +74,17 @@ type TranslationKey =
   | "prizesBannerCta"
   | "prizeStatusEnded"
   | "prizeStatusPending"
+  | "prizeNoPrize"
+  | "prizeFeedbackGateTitle"
+  | "prizeFeedbackGateBody"
+  | "prizeDeliveryPending"
+  | "prizeDeliveryDelivered"
+  | "deliveryMethodIngameMail"
+  | "deliveryMethodCrownStoreGift"
+  | "deliveryMethodPhysical"
+  | "deliveryMethodCode"
+  | "deliveryMethodOther"
+  | "deliveryMethodOtherNote"
   | "eligibilityTitle"
   | "eligibilitySubtitle"
   | "eligibilityEligible"
@@ -250,6 +261,17 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     prizesBannerCta: "Open",
     prizeStatusEnded: "Prizes ended for this pool because you completed after the cutoff.",
     prizeStatusPending: "Prize draw not published yet.",
+    prizeNoPrize: "No prize this time.",
+    prizeFeedbackGateTitle: "Feedback required",
+    prizeFeedbackGateBody: "Please submit or skip the feedback form to see your prize details.",
+    prizeDeliveryPending: "Delivery pending.",
+    prizeDeliveryDelivered: "Delivered via {method}.",
+    deliveryMethodIngameMail: "In-game mail",
+    deliveryMethodCrownStoreGift: "Crown Store gift",
+    deliveryMethodPhysical: "Physical delivery",
+    deliveryMethodCode: "Code / voucher",
+    deliveryMethodOther: "Other",
+    deliveryMethodOtherNote: "Delivery note",
     eligibilityTitle: "Prize eligibility",
     eligibilitySubtitle: "Status based on your Discord roles.",
     eligibilityEligible: "You are eligible for prizes.",
@@ -424,6 +446,17 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     prizesBannerCta: "Öffnen",
     prizeStatusEnded: "Preise sind für diesen Pool beendet, weil du nach dem Stichtag abgeschlossen hast.",
     prizeStatusPending: "Die Ziehung ist noch nicht veröffentlicht.",
+    prizeNoPrize: "Diesmal leider kein Preis.",
+    prizeFeedbackGateTitle: "Feedback erforderlich",
+    prizeFeedbackGateBody: "Bitte Feedback absenden oder überspringen, um deine Preisinformationen zu sehen.",
+    prizeDeliveryPending: "Zustellung ausstehend.",
+    prizeDeliveryDelivered: "Zugestellt via {method}.",
+    deliveryMethodIngameMail: "Ingame-Post",
+    deliveryMethodCrownStoreGift: "Crown-Store-Geschenk",
+    deliveryMethodPhysical: "Physische Lieferung",
+    deliveryMethodCode: "Code / Gutschein",
+    deliveryMethodOther: "Sonstiges",
+    deliveryMethodOtherNote: "Zustellhinweis",
     eligibilityTitle: "Preisberechtigung",
     eligibilitySubtitle: "Status basierend auf deinen Discord-Rollen.",
     eligibilityEligible: "Du bist für Preise berechtigt.",

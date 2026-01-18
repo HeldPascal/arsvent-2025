@@ -15,7 +15,7 @@ export default function CalendarPage({ user, version }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [poolMeta, setPoolMeta] = useState<Record<PrizePool, PrizePoolMeta> | null>(null);
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const epilogueUnlocked = user.lastSolvedDay >= 24 || user.isAdmin || user.isSuperAdmin;
   const calendarCompleted = user.lastSolvedDay >= 24;
   const availableRef = useRef<number | null>(null);
@@ -68,7 +68,7 @@ export default function CalendarPage({ user, version }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    fetchPublicPrizes()
+    fetchPublicPrizes(locale)
       .then((payload) => {
         if (!cancelled) setPoolMeta(payload.pools as Record<PrizePool, PrizePoolMeta>);
       })
@@ -78,7 +78,7 @@ export default function CalendarPage({ user, version }: Props) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [locale]);
 
 
   useEffect(() => {
